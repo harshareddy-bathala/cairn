@@ -7,7 +7,7 @@ export const dbms: Module = {
   order: 2,
   title: "DBMS & SQL",
   summary:
-    "SQL rounds are common and they are easy marks — but only if you have actually written queries by hand. Your roadmap says fifty of them; that number is right.",
+    "SQL rounds reward practice rather than theory: the queries are not hard, but they have to be written from scratch rather than recognised. Roughly fifty hand-written queries is where the syntax stops needing thought.",
   units: [
     {
       slug: "corecs-dbms-modelling",
@@ -45,7 +45,7 @@ Then the answer that shows judgement: **denormalisation is a legitimate performa
       estMinutes: 90,
       conceptMd: `**Joins**: INNER (matches only), LEFT (all left rows, NULLs where unmatched), RIGHT, FULL OUTER, CROSS (cartesian), SELF (a table joined to itself, for hierarchies like employee → manager).
 
-**WHERE filters rows before grouping; HAVING filters groups after.** That is the single most-asked SQL distinction:
+**WHERE filters rows before grouping; HAVING filters groups after.** The distinction is asked constantly, and the answer is mechanical:
 
 \`\`\`sql
 SELECT department, COUNT(*) AS n, AVG(salary) AS avg_salary

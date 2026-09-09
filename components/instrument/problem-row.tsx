@@ -82,7 +82,7 @@ export function ProblemRow({
           href={p.url}
           target="_blank"
           rel="noreferrer noopener"
-          className="min-w-0 flex-1 truncate text-sm text-hi underline-offset-4 hover:underline"
+          className="tap min-w-0 flex-1 truncate text-sm text-hi underline-offset-4 hover:underline"
         >
           {p.title}
         </a>
@@ -97,7 +97,7 @@ export function ProblemRow({
           type="button"
           onClick={() => setOpen((v) => !v)}
           aria-expanded={open}
-          className="shrink-0 rounded-[2px] px-1 text-2xs text-lo transition-colors duration-[120ms] hover:text-mid"
+          className="tap shrink-0 rounded-[2px] px-1 text-2xs text-lo transition-colors duration-[120ms] hover:text-mid"
         >
           {open ? "−" : "+"}
         </button>

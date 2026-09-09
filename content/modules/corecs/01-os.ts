@@ -120,7 +120,7 @@ Also know **spinlock** (busy-waits — right only for very short critical sectio
       resources: [
         {
           title: "GeeksforGeeks — deadlock and Banker's algorithm",
-          url: "https://www.geeksforgeeks.org/deadlock-in-operating-system/",
+          url: "https://www.geeksforgeeks.org/introduction-of-deadlock-in-operating-system/",
           kind: "read",
           minutes: 35,
           whyThisOne: "Worked Banker's examples in the exam format you will actually be tested in.",

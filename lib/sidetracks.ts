@@ -7,7 +7,8 @@ import type { AppStatus, MockKind } from "@/db/schema";
  *
  * These are the lanes that die quietly. There is no repo to show for a week of
  * aptitude drills and no commit for five applications sent, so they vanish
- * first and you only notice in November. Counting them is the whole point.
+ * first and the absence is only noticed much later. Counting them is the whole
+ * point.
  */
 
 export type Metrics = {

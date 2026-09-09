@@ -90,25 +90,27 @@ const appSchema = z.object({
   company: z.string().min(1).max(120),
   role: z.string().min(1).max(120),
   source: z.string().max(60).default("direct"),
-  link: z.string().max(500).optional(),
+  link: optionalSafeUrlSchema,
 });
 
 export async function addApplication(input: z.input<typeof appSchema>) {
   const userId = await requireUser();
   const v = appSchema.parse(input);
 
-  const res = await db.execute<{ id: number; journey_week: number }>(sql`
+  const res = await db.execute<{ id: number; journey_week: number; link: string | null }>(sql`
     with d as (select ${CURRENT_DAY(userId)} as day_index)
     insert into applications (user_id, company, role, source, journey_week, link)
     select ${userId}, ${v.company}, ${v.role}, ${v.source || "direct"},
-           ceil(d.day_index / 7.0)::int, ${v.link || null}
+           ceil(d.day_index / 7.0)::int, ${v.link ?? null}
     from d
-    returning id, journey_week
+    returning id, journey_week, link
   `);
   revalidatePath("/career");
   revalidatePath("/metrics");
   const row = res.rows[0]!;
-  return { id: Number(row.id), journeyWeek: Number(row.journey_week) };
+  // the normalised link comes back so the optimistic row can adopt it: what was
+  // typed ("acme.com/jobs/1") is not what was stored ("https://acme.com/jobs/1")
+  return { id: Number(row.id), journeyWeek: Number(row.journey_week), link: row.link };
 }
 
 const statusSchema = z.enum([
@@ -203,7 +205,7 @@ export async function rehearseStory(prompt: string) {
  * Ticks a deliverable against its definition of done.
  *
  * Evidence is optional but asked for every time, because "done" without a link
- * is the same self-report that let the old roadmap drift.
+ * is a self-report, and a plan made of self-reports drifts.
  */
 export async function setDeliverable(slug: string, done: boolean, evidenceUrl?: string) {
   const userId = await requireUser();
@@ -216,21 +218,28 @@ export async function setDeliverable(slug: string, done: boolean, evidenceUrl?: 
     `);
     revalidatePath("/projects");
     revalidatePath("/metrics");
-    return { done: false, dayIndex: null };
+    return { done: false, dayIndex: null, evidenceUrl: null };
   }
 
-  const res = await db.execute<{ day_index: number }>(sql`
+  const res = await db.execute<{ day_index: number; evidence_url: string | null }>(sql`
     with d as (select ${CURRENT_DAY(userId)} as day_index)
     insert into deliverable_done (user_id, deliverable_slug, day_index, evidence_url)
     select ${userId}, ${s}, d.day_index, ${evidence} from d
     on conflict (user_id, deliverable_slug) do update
       set evidence_url = coalesce(excluded.evidence_url, deliverable_done.evidence_url)
-    returning day_index
+    returning day_index, evidence_url
   `);
   revalidatePath("/projects");
   revalidatePath("/metrics");
   revalidatePath("/today");
-  return { done: true, dayIndex: Number(res.rows[0]!.day_index) };
+  // the stored URL goes back, not the typed one: "github.com/x" is normalised on
+  // the way in, and a caller that keeps the raw string holds a value its own
+  // href check will reject
+  return {
+    done: true,
+    dayIndex: Number(res.rows[0]!.day_index),
+    evidenceUrl: res.rows[0]!.evidence_url,
+  };
 }
 
 /**
@@ -259,11 +268,12 @@ export async function setRepoUrl(projectSlug: string, repoUrl: string) {
   const userId = await requireUser();
   const s = z.string().min(1).max(120).parse(projectSlug);
   const repo = optionalSafeUrlSchema.parse(repoUrl) ?? null;
-  await db.execute(sql`
+  const res = await db.execute<{ repo_url: string | null }>(sql`
     insert into user_projects (user_id, project_slug, repo_url)
     values (${userId}, ${s}, ${repo})
     on conflict (user_id, project_slug) do update set repo_url = excluded.repo_url
+    returning repo_url
   `);
   revalidatePath("/projects");
-  return { ok: true };
+  return { repoUrl: res.rows[0]?.repo_url ?? null };
 }

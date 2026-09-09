@@ -7,7 +7,7 @@ export const linuxFoundations: Module = {
   order: 1,
   title: "Linux, seriously deep",
   summary:
-    "Your WSA/LSA subject is the floor, not the ceiling. This is the module that makes the rest of the DevOps track possible — and Bandit is the assignment, not the optional extra.",
+    "A university operating-systems course teaches the concepts; this teaches the shell you will actually sit in front of. Everything later in the track — containers, networking, CI — assumes these commands are automatic. Bandit is the assignment, not the optional extra.",
   units: [
     {
       slug: "devops-linux-fs",
@@ -52,11 +52,11 @@ On a **directory** the bits mean something different and this is the part people
 \`umask\` subtracts from the default creation mode. The special bits: **SUID** runs the file with the *owner's* privileges (this is how \`passwd\` writes to \`/etc/shadow\`), **SGID** on a directory makes new files inherit its group, and the **sticky bit** on \`/tmp\` stops you deleting other people's files.`,
       resources: [
         {
-          title: "Linux Journey — Permissions",
-          url: "https://linuxjourney.com/lesson/file-permissions",
+          title: "Red Hat — Linux file permissions explained",
+          url: "https://www.redhat.com/en/blog/linux-file-permissions-explained",
           kind: "read",
           minutes: 25,
-          whyThisOne: "Short, interactive, and covers the special bits most tutorials skip.",
+          whyThisOne: "Covers SUID, SGID and the sticky bit, which most permissions tutorials leave out.",
           isPrimary: true,
         },
         {
@@ -119,7 +119,7 @@ A **zombie** has exited but its parent has not reaped its exit status — it hol
           url: "https://linuxjourney.com/lesson/monitor-processes-ps-command",
           kind: "read",
           minutes: 30,
-          whyThisOne: "Covers states, ps, and signals at exactly the depth an SRE screen asks for.",
+          whyThisOne: "Walks through reading process state with ps; the signal half of this unit is covered by man 7 signal below.",
           isPrimary: true,
         },
         {
@@ -192,7 +192,7 @@ set -euo pipefail
 
 \`-e\` exits on any failing command, \`-u\` on an undefined variable, \`-o pipefail\` makes a pipeline fail if *any* stage fails rather than only the last. Without pipefail, \`false | true\` succeeds — which is how silent data loss happens in a backup script.
 
-**Quote every variable expansion.** \`"$var"\`, not \`$var\`. Unquoted expansion word-splits on spaces and is the single most common bash bug.
+**Quote every variable expansion.** \`"$var"\`, not \`$var\`. Unquoted expansion word-splits on spaces, so a script works until a filename contains one.
 
 \`trap 'rm -f "$tmp"' EXIT\` guarantees cleanup on any exit path. Exit codes matter: 0 is success, anything else is failure, and \`$?\` holds the last one.`,
       resources: [

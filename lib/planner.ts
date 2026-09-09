@@ -241,7 +241,14 @@ export function generatePlan(input: PlanInput): DayPlan {
   }
 
   // 2. DSA — the compounding lane, never trimmed.
-  const used = new Set<string>();
+  //
+  // Seeded with the redo queue. An "editorial" outcome schedules a redo but
+  // does not count as solved, so the same problem is still a candidate here —
+  // without this it lands in the plan twice, and its minutes are charged to the
+  // budget twice, which then trims a block that would otherwise have fitted.
+  // Every problem awaiting a redo is excluded, not just the ones shown: past
+  // the cap it is still work you have already attempted, not fresh work.
+  const used = new Set<string>(input.redo.map((p) => p.slug));
   for (let i = 0; i <= extra.dsa; i++) {
     const u = nextInTrack(input, "dsa", i);
     if (!u) break;

@@ -62,7 +62,7 @@ export const CADENCE: Quota[] = [
     label: "Full mock interview",
     perWeek: 1,
     minutes: 45,
-    why: "A senior, a teacher, a friend, or solo out-loud and recorded. Most people start these too late and discover in October that they freeze.",
+    why: "A senior, a teacher, a friend, or solo out-loud and recorded. Most people start these too late and find out mid-season that they freeze.",
     fromWeek: 6,
   },
   {
@@ -105,18 +105,22 @@ export function dsaTargetAt(dayIndex: number) {
   return prevTarget;
 }
 
+/** how many need a real answer; the list is longer so there is room to choose */
+export const STAR_READY_TARGET = 6;
+
 /**
  * The behavioural questions worth having a real answer to.
  *
- * Six by the time Phase 2 ends. "Tell me about yourself" is first because it
- * sets the tone for everything after it.
+ * More prompts than the target, so there is room to pick the ones you have real
+ * material for. "Tell me about yourself" is first because it sets the tone for
+ * everything after it.
  */
 export const STAR_PROMPTS = [
   "Tell me about yourself — 90 seconds: who you are, what you've built, what you want, why this company.",
   "Walk me through your best project. Have a 60-second, a 3-minute and a 10-minute version.",
   "A time you failed, and what you changed afterwards.",
   "A conflict on a team, and how it actually resolved.",
-  "A time you led — you lead a team of three, so this one is real.",
+  "A time you led — a team, a subgroup, a single handover. Scope matters less than what you decided.",
   "Your biggest weakness: a real one, plus what you are actively doing about it.",
   "Why this role, why DevOps, why this company.",
   "A time you had to learn something hard, fast.",

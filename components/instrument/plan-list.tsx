@@ -97,7 +97,7 @@ function Block({
       <div className="flex items-baseline gap-3 py-2.5">
         <span
           className={cn(
-            "w-4 shrink-0 text-center text-sm leading-none",
+            "tap w-4 shrink-0 text-center text-sm leading-none",
             b.done
               ? "text-phos"
               : b.kind === "redo" || b.kind === "cadence"
@@ -113,7 +113,7 @@ function Block({
           {b.href && !b.done ? (
             <Link
               href={b.href}
-              className="block truncate text-sm text-hi transition-colors duration-[120ms] hover:text-phos"
+              className="tap block truncate text-sm text-hi transition-colors duration-[120ms] hover:text-phos"
             >
               {b.title}
             </Link>
@@ -139,7 +139,7 @@ function Block({
             onClick={onToggleOpen}
             aria-expanded={open}
             aria-label={open ? "collapse" : "expand"}
-            className="w-4 shrink-0 text-center text-2xs text-lo transition-colors duration-[120ms] hover:text-mid"
+            className="tap w-4 shrink-0 text-center text-2xs text-lo transition-colors duration-[120ms] hover:text-mid"
           >
             {/* chevrons, not +/−: the plus is already spoken for by the
                 catch-up marker two columns to the left */}

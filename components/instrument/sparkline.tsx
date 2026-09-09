@@ -8,18 +8,27 @@ const STROKE = {
   info: "stroke-info",
 } as const;
 
+/**
+ * A trend line.
+ *
+ * Pass `label` whenever the shape is the only place a number appears. Without
+ * one the svg stays `aria-hidden`, which is correct only when the same figure is
+ * already written out beside it.
+ */
 export function Sparkline({
   data,
   tone = "neutral",
   width = 56,
   height = 14,
   className,
+  label,
 }: {
   data: number[];
   tone?: keyof typeof STROKE;
   width?: number;
   height?: number;
   className?: string;
+  label?: string;
 }) {
   if (data.length < 2) return null;
   const min = Math.min(...data);
@@ -38,7 +47,9 @@ export function Sparkline({
       height={height}
       viewBox={`0 0 ${width} ${height}`}
       className={cn("overflow-visible", className)}
-      aria-hidden
+      role={label ? "img" : undefined}
+      aria-label={label}
+      aria-hidden={label ? undefined : true}
     >
       <polyline
         points={pts.join(" ")}

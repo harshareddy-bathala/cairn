@@ -1,10 +1,12 @@
 import { cn } from "@/lib/cn";
+import { safeUrl } from "@/lib/safe-url";
 
 /**
  * A deliberately small markdown renderer for unit concept notes. Supports only
  * what the content actually uses: paragraphs, fenced code, inline code, bold,
- * italics, links, tables and bullet lists. No dependency, no sanitiser gap —
- * the source is our own authored content, not user input.
+ * italics, links, tables and bullet lists. No dependency: React escapes every
+ * text node, and link hrefs are scheme-checked, so there is no sanitiser gap
+ * even if this is ever pointed at text a person typed.
  */
 function inline(s: string, key: string) {
   const nodes: React.ReactNode[] = [];
@@ -15,16 +17,27 @@ function inline(s: string, key: string) {
   while ((m = re.exec(s))) {
     if (m.index > last) nodes.push(s.slice(last, m.index));
     const t = m[0];
+    // Bold and italics recurse, so `code` inside **bold** is still a chip rather
+    // than literal backticks. Code itself is a leaf: nothing inside it is markup.
     if (t.startsWith("`")) nodes.push(<code key={`${key}-${i}`}>{t.slice(1, -1)}</code>);
-    else if (t.startsWith("**")) nodes.push(<strong key={`${key}-${i}`}>{t.slice(2, -2)}</strong>);
+    else if (t.startsWith("**"))
+      nodes.push(<strong key={`${key}-${i}`}>{inline(t.slice(2, -2), `${key}-${i}b`)}</strong>);
     else if (t.startsWith("[")) {
       const [, label, href] = /\[([^\]]+)\]\(([^)]+)\)/.exec(t)!;
+      // The concept notes are our own content, but this is the one place the
+      // renderer turns text into an href — so the scheme is checked regardless.
+      // A rejected link degrades to its label rather than disappearing.
+      const safe = safeUrl(href);
       nodes.push(
-        <a key={`${key}-${i}`} href={href} target="_blank" rel="noreferrer noopener">
-          {label}
-        </a>,
+        safe ? (
+          <a key={`${key}-${i}`} href={safe} target="_blank" rel="noreferrer noopener">
+            {label}
+          </a>
+        ) : (
+          <span key={`${key}-${i}`}>{label}</span>
+        ),
       );
-    } else nodes.push(<em key={`${key}-${i}`}>{t.slice(1, -1)}</em>);
+    } else nodes.push(<em key={`${key}-${i}`}>{inline(t.slice(1, -1), `${key}-${i}e`)}</em>);
     last = m.index + t.length;
     i++;
   }

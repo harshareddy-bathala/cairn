@@ -14,6 +14,8 @@ import {
   CADENCE,
   DSA_CURVE,
   dsaTargetAt,
+  STAR_PROMPTS,
+  STAR_READY_TARGET,
 } from "@/content/cadence";
 import { fmtMin } from "@/lib/format";
 
@@ -186,9 +188,9 @@ export default async function MetricsPage() {
               <Readout label="contacts" value={m.contacts} tone="neutral" />
               <Readout
                 label="star stories"
-                value={`${m.starReady}/6`}
-                note="six is the standard"
-                tone={m.starReady >= 6 ? "ok" : "neutral"}
+                value={`${Math.min(m.starReady, STAR_READY_TARGET)}/${STAR_READY_TARGET}`}
+                note={`${STAR_READY_TARGET} of ${STAR_PROMPTS.length} prompts`}
+                tone={m.starReady >= STAR_READY_TARGET ? "ok" : "neutral"}
               />
               <Readout
                 label="deliverables"
@@ -201,7 +203,13 @@ export default async function MetricsPage() {
                 {minutes.length > 1 ? `minutes, last ${minutes.length} closed days` : "minutes per day"}
               </p>
               {minutes.length > 1 ? (
-                <Sparkline data={minutes} width={200} height={28} tone="neutral" />
+                <Sparkline
+                  data={minutes}
+                  width={200}
+                  height={28}
+                  tone="neutral"
+                  label={`minutes per day over the last ${minutes.length} closed days, ${minutes.join(", ")}`}
+                />
               ) : (
                 <p className="text-2xs text-lo">Close a few days and the shape appears here.</p>
               )}

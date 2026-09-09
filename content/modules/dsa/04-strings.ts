@@ -20,7 +20,27 @@ export const strings: Module = {
 
 Useful and often forgotten: \`find\` returns \`string::npos\` (not \`-1\`) when absent, \`stoi\`/\`to_string\` convert, \`+=\` appends cheaply while \`s = s + c\` may reallocate, and \`isalnum\`/\`tolower\` from \`<cctype>\` save hand-rolled character checks.
 
-For building a result, \`reserve()\` the expected size and \`push_back\`. For splitting on a delimiter, \`istringstream\` plus \`getline(ss, token, ',')\` is the idiomatic route.`,
+For building a result, \`reserve()\` the expected size and \`push_back\`. For splitting on a delimiter, \`istringstream\` plus \`getline(ss, token, ',')\` is the idiomatic route.
+
+The \`substr\` trap, concretely — this is O(n^2) because each call copies:
+
+\`\`\`cpp
+for (int i = 0; i < n; i++)
+  if (s.substr(i, m) == t) { }          // copies m chars, n times
+
+for (int i = 0; i + m <= n; i++)
+  if (s.compare(i, m, t) == 0) { }      // compares in place, no copy
+\`\`\`
+
+**Splitting on a delimiter** has no built-in, so learn one route and keep it:
+
+\`\`\`cpp
+istringstream ss(line);
+string tok;
+while (getline(ss, tok, ',')) parts.push_back(tok);
+\`\`\`
+
+Two more that come up: \`s.back()\` on an empty string is undefined behaviour, so check \`!s.empty()\` first; and a \`char\` is an integer, so \`s[i] - '0'\` gives the digit and \`s[i] - 'a'\` gives the 0..25 index every frequency array is built on.`,
       resources: [
         {
           title: "cppreference — std::string",
@@ -42,7 +62,24 @@ For building a result, \`reserve()\` the expected size and \`push_back\`. For sp
 
 **Valid palindrome with filtering** is the canonical version: converge from both ends, skipping non-alphanumeric characters, comparing lowercased. The bug to avoid is advancing a pointer past the other — guard with \`while (l < r && !isalnum(s[l])) l++\`.
 
-**Reverse words** has a neat in-place trick: reverse the entire string, then reverse each word individually. Handling arbitrary runs of spaces while doing it is the actual difficulty, and it is a fair interview question precisely because of that.`,
+**Reverse words** has a neat in-place trick: reverse the entire string, then reverse each word individually. Handling arbitrary runs of spaces while doing it is the actual difficulty, and it is a fair interview question precisely because of that.
+
+The palindrome-with-filtering loop, written so the guards are visible:
+
+\`\`\`cpp
+int l = 0, r = s.size() - 1;
+while (l < r) {
+  while (l < r && !isalnum((unsigned char)s[l])) l++;
+  while (l < r && !isalnum((unsigned char)s[r])) r--;
+  if (tolower((unsigned char)s[l]) != tolower((unsigned char)s[r])) return false;
+  l++; r--;
+}
+return true;
+\`\`\`
+
+Every inner \`while\` repeats the \`l < r\` test — without it a string of only punctuation walks a pointer off the end. The \`(unsigned char)\` cast is not decoration either: passing a negative \`char\` to \`isalnum\` is undefined behaviour, which is a genuinely obscure bug on inputs with non-ASCII bytes.
+
+**Palindrome with one deletion allowed** is the natural follow-up: converge as normal, and on the first mismatch return \`isPalindrome(l+1, r) || isPalindrome(l, r-1)\`. Still O(n), because that branch happens at most once.`,
       resources: [
         {
           title: "Striver A2Z — Step 5: strings",
@@ -64,7 +101,22 @@ For building a result, \`reserve()\` the expected size and \`push_back\`. For sp
 
 **Grouping anagrams** needs a canonical key per word. Two options: the sorted word — O(k log k) per word — or the 26-length count vector serialised to a string, which is O(k). The second is the better answer when words are long.
 
-**Sort characters by frequency** is a count plus a sort of (char, count) pairs, or a bucket by count when you want O(n).`,
+**Sort characters by frequency** is a count plus a sort of (char, count) pairs, or a bucket by count when you want O(n).
+
+The two canonical keys, side by side:
+
+\`\`\`cpp
+string k1 = w; sort(k1.begin(), k1.end());            // O(k log k)
+
+string k2(26, '0');                                    // O(k)
+for (char c : w) k2[c - 'a']++;
+\`\`\`
+
+\`k2\` works because two anagrams have identical counts. Watch the ceiling though: storing a count as a single \`char\` breaks past 9 occurrences of one letter, so use a separator or a \`vector<int>\` key when words can be long.
+
+**Anagram check without extra passes:** if the lengths differ they cannot be anagrams — test that first and return early. It is one line, and interviewers do notice when it is missing.
+
+The 26-slot assumption is worth stating out loud rather than assuming: it holds for lowercase ASCII only. Unicode, mixed case, or arbitrary bytes need the map, and saying "I am assuming lowercase a-z, otherwise I would use a hash map" is exactly the sentence that makes the choice look deliberate.`,
       resources: [
         {
           title: "Striver — sort characters by frequency",

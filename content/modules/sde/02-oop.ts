@@ -56,16 +56,16 @@ Your \`sentinel\` project has natural homes for all four — use it as your exam
 
 **I — Interface Segregation.** Do not force clients to depend on methods they do not use. Violation: one fat \`Worker\` interface. Fix: several small ones.
 
-**D — Dependency Inversion.** Depend on abstractions, not concretions. Violation: a service constructing its own \`PostgresClient\`. Fix: inject a \`Store\` interface — and note that this is also what makes the thing testable, which ties straight into your Software Testing subject.
+**D — Dependency Inversion.** Depend on abstractions, not concretions. Violation: a service constructing its own \`PostgresClient\`. Fix: inject a \`Store\` interface — and note that this is also what makes the thing testable, since a test can pass in a fake.
 
 Do not over-apply these. "I would not split this yet, it is only one reason to change today" is a *better* answer than reflexive abstraction, and senior interviewers listen for exactly that judgement.`,
       resources: [
         {
-          title: "Refactoring Guru — Design principles",
-          url: "https://refactoring.guru/design-patterns/design-principles",
+          title: "DigitalOcean — SOLID, the first five principles",
+          url: "https://www.digitalocean.com/community/conceptual-articles/s-o-l-i-d-the-first-five-principles-of-object-oriented-design",
           kind: "read",
           minutes: 35,
-          whyThisOne: "One page per principle with a before/after, which is exactly the shape of a good answer.",
+          whyThisOne: "Works through all five with code before and after, which is the shape a good interview answer takes.",
           isPrimary: true,
         },
       ],

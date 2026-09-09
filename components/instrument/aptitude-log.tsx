@@ -30,6 +30,7 @@ export function AptitudeLog({
   const [correct, setCorrect] = useState("");
   const [total, setTotal] = useState("25");
   const [flash, setFlash] = useState<number | null>(null);
+  const [err, setErr] = useState<string | null>(null);
 
   const loggedToday = scores.some((s) => s.dayIndex === dayIndex);
 
@@ -40,7 +41,11 @@ export function AptitudeLog({
           startTransition(async () => {
             const c = Number(correct);
             const t = Number(total);
-            if (!Number.isFinite(c) || !Number.isFinite(t) || t <= 0 || c > t) return;
+            if (correct === "") return setErr("how many did you get right?");
+            if (!Number.isFinite(t) || t <= 0) return setErr("out of how many?");
+            if (c > t) return setErr(`${c} out of ${t}?`);
+            if (!topic.trim()) return setErr("name the topic");
+            setErr(null);
             const optimistic = { dayIndex, topic, correct: c, total: t };
             setScores((s) => [...s, optimistic]);
             setCorrect("");
@@ -62,7 +67,10 @@ export function AptitudeLog({
           <span className="legend">correct</span>
           <input
             value={correct}
-            onChange={(e) => setCorrect(e.target.value.replace(/\D/g, ""))}
+            onChange={(e) => {
+              setCorrect(e.target.value.replace(/\D/g, ""));
+              setErr(null);
+            }}
             inputMode="numeric"
             placeholder="—"
             className="mt-1 w-full rounded-[3px] border border-line bg-ink-900 px-2.5 py-1.5 text-sm tabular-nums text-hi placeholder:text-lo focus:border-phos-dim focus:outline-none"
@@ -72,7 +80,10 @@ export function AptitudeLog({
           <span className="legend">of</span>
           <input
             value={total}
-            onChange={(e) => setTotal(e.target.value.replace(/\D/g, ""))}
+            onChange={(e) => {
+              setTotal(e.target.value.replace(/\D/g, ""));
+              setErr(null);
+            }}
             inputMode="numeric"
             className="mt-1 w-full rounded-[3px] border border-line bg-ink-900 px-2.5 py-1.5 text-sm tabular-nums text-hi focus:border-phos-dim focus:outline-none"
           />
@@ -83,7 +94,12 @@ export function AptitudeLog({
         >
           log
         </button>
-        {flash != null && (
+        {err && (
+          <span role="status" className="pb-1.5 text-2xs text-warn">
+            {err}
+          </span>
+        )}
+        {err == null && flash != null && (
           <motion.span
             key={flash}
             initial={{ opacity: 0, y: 4 }}

@@ -79,7 +79,7 @@ export default async function UnitPage({ params }: { params: Promise<{ slug: str
     <Boot className="mx-auto max-w-3xl space-y-6 px-6 py-10">
       <BootItem>
         <header>
-          <Link href="/roadmap" className="legend hover:text-mid">
+          <Link href="/roadmap" className="tap legend hover:text-mid">
             ← {unit.moduleTitle}
           </Link>
           <h1 className="mt-2 text-2xl leading-tight text-hi">{unit.title}</h1>

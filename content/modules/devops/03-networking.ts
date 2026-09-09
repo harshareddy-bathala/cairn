@@ -53,7 +53,7 @@ Record types worth knowing cold: **A** (IPv4), **AAAA** (IPv6), **CNAME** (alias
 
 **TTL is the thing that causes incidents.** "DNS propagation" is not propagation at all — it is caches expiring. If you plan to change a record, lower the TTL *well in advance*, or you will be waiting out the old value while users hit the old address.
 
-\`dig +trace example.com\` walks the delegation live and is the single best debugging command here. \`dig @8.8.8.8 example.com\` asks a specific resolver, which distinguishes "the record is wrong" from "my resolver has it cached".`,
+\`dig +trace example.com\` walks the delegation live, which is usually the fastest way to see where resolution breaks. \`dig @8.8.8.8 example.com\` asks a specific resolver, which distinguishes "the record is wrong" from "my resolver has it cached".`,
       resources: [
         {
           title: "Julia Evans — How DNS works / dig",
@@ -65,10 +65,10 @@ Record types worth knowing cold: **A** (IPv4), **AAAA** (IPv6), **CNAME** (alias
         },
         {
           title: "dig +trace drills",
-          url: "https://linux.die.net/man/1/dig",
+          url: "https://manpages.debian.org/bookworm/bind9-dnsutils/dig.1.en.html",
           kind: "lab",
           minutes: 25,
-          whyThisOne: "Trace three domains you use. Watching the delegation chain once makes the hierarchy concrete.",
+          whyThisOne: "The flag reference for the drill: trace three domains you use, and the delegation chain stops being abstract.",
         },
       ],
     },
@@ -141,7 +141,7 @@ Forgetting those headers means your application logs every request as coming fro
       objective:
         "Narrate the full path of a slow request and name the diagnostic at every hop. Fluently.",
       estMinutes: 60,
-      conceptMd: `**This is the SRE interview question.** Not "do you know TCP" but "a user says the site is slow — walk me through it." Rehearse it out loud until it flows.
+      conceptMd: `**The diagnostic question, not the factual one.** Not "do you know TCP" but "a user says the site is slow — walk me through it." Rehearse it out loud until it flows.
 
 The path, with what could break and how you would check:
 

@@ -12,6 +12,7 @@ import {
 } from "@/app/actions/sidetracks";
 import type { CareerView } from "@/lib/sidetracks";
 import { CADENCE, STAR_PROMPTS } from "@/content/cadence";
+import { safeUrl } from "@/lib/safe-url";
 import { cn } from "@/lib/cn";
 import { DUR, EASE } from "@/lib/motion";
 
@@ -38,7 +39,13 @@ const button =
  * Applications. The counter exists because this lane dies silently —
  * there is no artefact for a week of not applying.
  */
-export function ApplicationDesk({ applications: initial }: { applications: CareerView["applications"] }) {
+export function ApplicationDesk({
+  applications: initial,
+  journeyWeek,
+}: {
+  applications: CareerView["applications"];
+  journeyWeek: number;
+}) {
   const [, startTransition] = useTransition();
   const [rows, setRows] = useState(initial);
   const [company, setCompany] = useState("");
@@ -57,7 +64,7 @@ export function ApplicationDesk({ applications: initial }: { applications: Caree
               role: role.trim(),
               source: "direct",
               status: "applied" as const,
-              journeyWeek: 0,
+              journeyWeek,
               link: link.trim() || null,
             };
             setRows((r) => [draft, ...r]);
@@ -68,7 +75,11 @@ export function ApplicationDesk({ applications: initial }: { applications: Caree
               company: draft.company, role: draft.role, link: draft.link ?? undefined,
             });
             setRows((r) =>
-              r.map((x) => (x.id === draft.id ? { ...x, id: res.id, journeyWeek: res.journeyWeek } : x)),
+              r.map((x) =>
+                x.id === draft.id
+                  ? { ...x, id: res.id, journeyWeek: res.journeyWeek, link: res.link }
+                  : x,
+              ),
             );
           })
         }
@@ -98,13 +109,26 @@ export function ApplicationDesk({ applications: initial }: { applications: Caree
         </p>
       ) : (
         <ul className="divide-y divide-line-soft border-t border-line-soft">
-          {rows.map((a) => (
+          {rows.map((a) => {
+            const href = safeUrl(a.link);
+            return (
             <li key={a.id} className="flex items-baseline gap-3 py-2">
               <span className="legend w-10 shrink-0 tabular-nums">
                 w{String(a.journeyWeek).padStart(2, "0")}
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm text-hi">{a.company}</span>
+                {href ? (
+                  <a
+                    href={href}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    className="tap block truncate text-sm text-hi underline-offset-4 hover:underline"
+                  >
+                    {a.company}
+                  </a>
+                ) : (
+                  <span className="block truncate text-sm text-hi">{a.company}</span>
+                )}
                 <span className="block truncate text-2xs text-lo">{a.role}</span>
               </span>
               <select
@@ -130,7 +154,8 @@ export function ApplicationDesk({ applications: initial }: { applications: Caree
                 ))}
               </select>
             </li>
-          ))}
+            );
+          })}
         </ul>
       )}
     </div>
@@ -291,7 +316,7 @@ export function StarBank({ stories: initial }: { stories: CareerView["stories"] 
             <div className="flex items-baseline gap-3 py-2.5">
               <span
                 className={cn(
-                  "w-4 shrink-0 text-center text-sm leading-none",
+                  "tap w-4 shrink-0 text-center text-sm leading-none",
                   ready ? "text-phos" : "text-lo",
                 )}
                 aria-hidden
@@ -302,7 +327,7 @@ export function StarBank({ stories: initial }: { stories: CareerView["stories"] 
                 type="button"
                 onClick={() => setOpen(isOpen ? null : prompt)}
                 aria-expanded={isOpen}
-                className="min-w-0 flex-1 text-left text-sm text-hi transition-colors duration-[120ms] hover:text-phos"
+                className="tap min-w-0 flex-1 text-left text-sm text-hi transition-colors duration-[120ms] hover:text-phos"
               >
                 {prompt}
               </button>

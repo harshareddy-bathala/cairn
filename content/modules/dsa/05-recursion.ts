@@ -52,7 +52,30 @@ Draw the tree for \`n = 3\` once, by hand. Every leaf is one subset, there are 2
 
 **Combination sum II** (each element once, no duplicate combinations): sort first, then inside the loop skip \`if (j > i && a[j] == a[j-1]) continue;\`. The \`j > i\` guard is essential — it allows a duplicate value at the *first* position of this level while forbidding it as a sibling.
 
-That skip-duplicates-at-the-same-level idea is the single most reused trick in backtracking, and it recurs in subsets II and permutations II.`,
+That skip-duplicates-at-the-same-level idea recurs throughout backtracking — in subsets II and permutations II it is the same line of code.
+
+The template everything else is an edit of:
+
+\`\`\`cpp
+void go(int i, vector<int> &a, vector<int> &cur, vector<vector<int>> &out) {
+  if (i == (int)a.size()) { out.push_back(cur); return; }
+  cur.push_back(a[i]); go(i + 1, a, cur, out);   // pick
+  cur.pop_back();      go(i + 1, a, cur, out);   // not pick
+}
+\`\`\`
+
+There are 2^n subsets and each is copied on the way out, so this is O(2^n * n) time and O(n) extra stack — worth stating before you are asked, because "exponential" alone is not the answer.
+
+**Subsets II** (the input has duplicates, the output must not): sort, then use the loop form and skip a value that already appeared *at this level*:
+
+\`\`\`cpp
+for (int j = i; j < (int)a.size(); j++) {
+  if (j > i && a[j] == a[j - 1]) continue;   // sibling duplicate, skip
+  cur.push_back(a[j]); go(j + 1, ...); cur.pop_back();
+}
+\`\`\`
+
+The \`j > i\` guard is doing precise work: it permits a repeated value *deeper* in the tree (where it means "use it twice") while forbidding it *beside* itself (where it would produce an identical subset).`,
       resources: [
         {
           title: "Striver A2Z — Step 9: recursion (subsets, combinations)",
@@ -98,7 +121,7 @@ For permutations II, sort and skip \`if (i > 0 && a[i] == a[i-1] && !used[i-1]) 
 
 For N-Queens, place one queen per row and keep three boolean arrays: \`col[]\`, \`diag1[row + col]\`, \`diag2[row - col + n - 1]\`. That makes the validity check O(1) instead of rescanning the board — and deriving those two diagonal index formulas yourself is the part worth doing on paper.
 
-The universal shape: **choose → explore → un-choose.** Forgetting the un-choose is the most common backtracking bug, and it produces answers that are subtly, confusingly wrong rather than crashing.`,
+The universal shape: **choose → explore → un-choose.** Forgetting the un-choose is a common backtracking bug, and it produces answers that are subtly, confusingly wrong rather than crashing.`,
       resources: [
         {
           title: "Striver — N-Queens",

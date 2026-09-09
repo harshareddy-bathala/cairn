@@ -7,7 +7,7 @@ export const binarySearch: Module = {
   order: 3,
   title: "Binary search (and on the answer)",
   summary:
-    "Your roadmap calls this the single highest-value pattern, and it is right. Half of it is searching sorted arrays; the other half — binary search on the answer space — is what separates people who pass the medium tier from people who do not.",
+    "Half of this is searching a sorted array. The other half — binary search on the answer space — collapses a large family of medium problems into one template, and it appears in problems that are never filed under the name.",
   prereqSlugs: ["dsa-arrays-sorting"],
   units: [
     {
@@ -63,7 +63,26 @@ For the first occurrence, record \`mid\` as a candidate and then set \`hi = mid 
 
 Count is then \`last - first + 1\`, or equivalently \`upper_bound − lower_bound\`. Write it both ways once so the equivalence is obvious.
 
-The same "record and keep going" shape solves *kth missing positive* and *floor/ceil in a sorted array*, so it is worth the drill.`,
+The same "record and keep going" shape solves *kth missing positive* and *floor/ceil in a sorted array*, so it is worth the drill.
+
+The template, with the candidate made explicit:
+
+\`\`\`cpp
+int firstOccurrence(vector<int> &a, int x) {
+  int lo = 0, hi = a.size() - 1, ans = -1;
+  while (lo <= hi) {
+    int mid = lo + (hi - lo) / 2;      // not (lo + hi) / 2 — that can overflow
+    if (a[mid] == x) { ans = mid; hi = mid - 1; }   // record, keep going LEFT
+    else if (a[mid] < x) lo = mid + 1;
+    else hi = mid - 1;
+  }
+  return ans;
+}
+\`\`\`
+
+For the last occurrence, change exactly one line: \`lo = mid + 1\` in the match branch. Everything else is identical, which is the point — one template, one edit.
+
+\`mid = lo + (hi - lo) / 2\` rather than \`(lo + hi) / 2\` matters once \`lo + hi\` can exceed \`INT_MAX\`. It is a famous bug — it sat in the JDK's binary search for nine years — and mentioning why you wrote it that way costs you one sentence.`,
       resources: [
         {
           title: "Striver — first and last occurrence in a sorted array",
@@ -110,7 +129,7 @@ Finding the minimum is the same skill: the unsorted half always contains the piv
       objective:
         "Recognise the monotonic-predicate shape and solve Koko / bouquets / ship-packages / allocate-books with one template.",
       estMinutes: 90,
-      conceptMd: `**This is the highest-value unit in the module.** The array is not what you search — you search the *space of possible answers*.
+      conceptMd: `**The array is not what you search — you search the space of possible answers.**
 
 The trigger, and it is remarkably consistent: *"find the minimum X such that some condition holds"* (or the maximum). The unlock is that the condition is **monotonic** — if a capacity of 10 works, so does 11. That monotonicity is exactly what binary search needs.
 
@@ -159,7 +178,23 @@ Allocate books, split array, minimum days for bouquets, smallest divisor and pai
 
 **Fully sorted** (each row sorted, and every row starts after the previous ends): treat it as one flat array of length \`m*n\` and binary search it, mapping \`idx → (idx / n, idx % n)\`. O(log mn).
 
-**Row- and column-sorted only** (a "staircase" matrix — LeetCode 240): flattening is invalid. Instead start at the **top-right corner**. If the value is too large, move left; too small, move down. Each step eliminates a whole row or column, giving O(m + n). Starting at any other corner does not work, which is worth understanding rather than memorising.`,
+**Row- and column-sorted only** (a "staircase" matrix — LeetCode 240): flattening is invalid. Instead start at the **top-right corner**. If the value is too large, move left; too small, move down. Each step eliminates a whole row or column, giving O(m + n). Starting at any other corner does not work, which is worth understanding rather than memorising.
+
+The staircase walk, which is the half people get wrong:
+
+\`\`\`cpp
+int r = 0, c = n - 1;                  // start TOP-RIGHT
+while (r < m && c >= 0) {
+  if (mat[r][c] == target) return true;
+  if (mat[r][c] > target) c--;         // too big: this whole column is too big
+  else r++;                            // too small: this whole row is too small
+}
+return false;
+\`\`\`
+
+**Why the top-right corner.** At that cell the two directions disagree: moving left strictly decreases, moving down strictly increases. So whichever comparison you get, exactly one direction is eliminated — a whole row or a whole column at a time. The bottom-left corner works for the same reason. The top-left does not: both moves increase, so a mismatch tells you nothing about which way to go.
+
+Deciding which of the two problems you are looking at takes one question: *does every row start after the previous row ends?* If yes, flatten. If not, walk the staircase.`,
       resources: [
         {
           title: "Striver — search in a 2D matrix",

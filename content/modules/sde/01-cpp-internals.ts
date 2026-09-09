@@ -7,7 +7,7 @@ export const cppInternals: Module = {
   order: 1,
   title: "C++ language internals",
   summary:
-    "National Instruments and TI interviews go deep on C and memory. This is the module that makes you comfortable when the questions stop being about algorithms and start being about what the machine is doing.",
+    "Embedded and systems interviews ask about memory rather than algorithms. This module covers what the machine does underneath the language, so those questions become descriptive rather than speculative.",
   units: [
     {
       slug: "sde-cpp-memory",

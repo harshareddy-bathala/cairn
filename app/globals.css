@@ -22,7 +22,8 @@
   /* --- text ---------------------------------------------------- */
   --color-hi: oklch(0.945 0.005 240);
   --color-mid: oklch(0.720 0.008 240);
-  --color-lo: oklch(0.545 0.010 240);
+  /* 4.68:1 on ink-900 — the legend is 11px, and small text needs 4.5 to pass AA */
+  --color-lo: oklch(0.585 0.010 240);
 
   /* --- signal (state only) ------------------------------------- */
   --color-phos: oklch(0.82 0.17 152);
@@ -124,6 +125,25 @@ body::before {
   letter-spacing: 0.08em;
   color: var(--color-lo);
   font-variant-numeric: tabular-nums;
+}
+
+/**
+ * WCAG 2.2 target size (24x24 minimum) without inflating the design.
+ *
+ * The instrument's controls are deliberately small glyphs — a 16px toggle, a
+ * one-character expander. This keeps them exactly that size on screen and grows
+ * only the *hit area*, so a thumb has something to land on and the layout does
+ * not move a pixel.
+ */
+.tap { position: relative; }
+.tap::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  translate: -50% -50%;
+  width: max(100%, 24px);
+  height: max(100%, 24px);
 }
 
 ::selection { background: var(--color-phos-dim); color: var(--color-ink-900); }

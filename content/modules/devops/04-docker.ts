@@ -59,7 +59,7 @@ RUN npm ci              # cached unless dependencies changed
 COPY . .                # changes on every commit
 \`\`\`
 
-Reversing those two lines means reinstalling all dependencies on every single build. This is the most common real-world Dockerfile mistake.
+Reversing those two lines means reinstalling every dependency on every build. It is an easy mistake to make and an invisible one until builds start taking minutes.
 
 **Layers are additive.** \`RUN rm -rf /var/cache\` in a later layer does not shrink the image — the files still exist in the earlier layer, just hidden. Clean up in the *same* \`RUN\`, or use a multi-stage build.
 
@@ -70,7 +70,7 @@ Reversing those two lines means reinstalling all dependencies on every single bu
           url: "https://docs.docker.com/build/building/best-practices/",
           kind: "read",
           minutes: 35,
-          whyThisOne: "The cache-ordering and layer-size sections are the two highest-value pages in Docker's docs.",
+          whyThisOne: "The cache-ordering and layer-size sections are the two worth reading closely.",
           isPrimary: true,
         },
       ],
@@ -136,7 +136,7 @@ This project's own \`docker-compose.yml\` is a working example — read it.`,
           url: "https://docs.docker.com/reference/compose-file/",
           kind: "docs",
           minutes: 30,
-          whyThisOne: "The healthcheck and depends_on conditions section resolves the most common compose confusion.",
+          whyThisOne: "The healthcheck and depends_on conditions section resolves a common source of compose confusion.",
           isPrimary: true,
         },
         {

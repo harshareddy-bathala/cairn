@@ -3,7 +3,7 @@ const b = await chromium.launch({ executablePath: process.env.HOME + "/.cache/ms
 const ctx = await b.newContext({ viewport: { width: 1280, height: 860 }, deviceScaleFactor: 2 });
 const p = await ctx.newPage();
 await p.goto("http://localhost:3000/api/dev-login?email=harshareddy.bathala@gmail.com", { waitUntil: "domcontentloaded", timeout: 60000 });
-for (const [name, url] of [["today","http://localhost:3000/today"],["trail","http://localhost:3000/roadmap"],["module","http://localhost:3000/module/dsa-binary-search"],["unit","http://localhost:3000/unit/dsa-bs-answer-space"]]) {
+for (const [name, url] of [["today","http://localhost:3000/today"],["trail","http://localhost:3000/roadmap"],["module","http://localhost:3000/module/dsa-binary-search"],["unit","http://localhost:3000/unit/dsa-bs-answer-space"],["settings","http://localhost:3000/settings"]]) {
   await p.goto(url, { waitUntil: "domcontentloaded", timeout: 60000 });
   await p.waitForLoadState("load");
   await p.waitForTimeout(1200);

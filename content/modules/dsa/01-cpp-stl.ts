@@ -15,11 +15,34 @@ export const cppStl: Module = {
       objective:
         "Compile and run C++ from your own terminal with warnings on, and know why competitive I/O is written the way it is.",
       estMinutes: 45,
-      conceptMd: `Set up **g++** with the flags you will actually keep: \`-std=c++17 -O2 -Wall -Wextra\`. Warnings are free bug-finding; leave them on.
+      conceptMd: `Set up **g++** with the flags you will actually keep:
 
-\`cin\`/\`cout\` are synchronised with C's \`stdio\` by default. \`ios_base::sync_with_stdio(false); cin.tie(nullptr);\` unties them and is worth roughly an order of magnitude on large inputs. Know *why* you are typing it — that is a real interview follow-up.
+\`\`\`bash
+g++ -std=c++17 -O2 -Wall -Wextra -o sol sol.cpp && ./sol < in.txt
+\`\`\`
 
-Two traps that cost people whole problems: **integer overflow** (use \`long long\` the moment a product can exceed ~2·10⁹) and **integer division** truncating toward zero.`,
+\`-Wall -Wextra\` is free bug-finding — an unused variable is usually a line you meant to use. While you are still learning, add \`-fsanitize=address,undefined\` for local runs: it turns a silent out-of-bounds write into a message naming the exact line. Drop it when you submit, because it is slow.
+
+**Fast I/O.** \`cin\`/\`cout\` are synchronised with C's \`stdio\` so the two can be mixed freely. You are not mixing them, so untie them:
+
+\`\`\`cpp
+ios_base::sync_with_stdio(false);
+cin.tie(nullptr);
+\`\`\`
+
+That is worth roughly an order of magnitude on large inputs. Know *why* — "it stops flushing cout before every cin read" is the follow-up answer. Never use it alongside \`scanf\`/\`printf\` in the same program.
+
+**Overflow is the bug that costs whole problems.** \`int\` tops out near 2.1·10⁹:
+
+\`\`\`cpp
+int a = 100000, b = 100000;
+long long bad  = a * b;              // overflows first, then widens: 1410065408
+long long good = 1LL * a * b;        // widen first: 10000000000
+\`\`\`
+
+The rule: the moment a product, sum, or prefix sum can pass ~2·10⁹, make one operand \`long long\`. Constraints like *n ≤ 10⁵, a[i] ≤ 10⁹* are the tell — their product does not fit.
+
+**Integer division truncates toward zero**, so \`-7 / 2 == -3\` and \`-7 % 2 == -1\`. For a ceiling on non-negative numbers use \`(a + b - 1) / b\`, not \`ceil(a / b)\` — the division has already truncated before \`ceil\` ever sees it.`,
       resources: [
         {
           title: "Striver A2Z — Step 1: Learn the basics",
@@ -45,11 +68,30 @@ Two traps that cost people whole problems: **integer overflow** (use \`long long
       objective:
         "Use vector and string without thinking, and explain why push_back is amortised O(1).",
       estMinutes: 60,
-      conceptMd: `\`vector\` doubles its capacity when it fills. Copying n elements every doubling averages to a **constant** per push — that is amortised analysis, and "why is push_back O(1)?" is a standard interview probe.
+      conceptMd: `\`vector\` doubles its capacity when it fills. Copying n elements every doubling averages to a **constant** per push — that is amortised analysis, and "why is push_back O(1)?" is a standard interview probe. The answer they want: *n pushes cost n + n/2 + n/4 + … < 2n copies total, so O(1) each on average, with one O(n) spike at each reallocation.*
 
-Learn the difference between \`size()\` and \`capacity()\`, \`resize()\` and \`reserve()\`.
+| | does what | when |
+|---|---|---|
+| \`size()\` | elements present | always |
+| \`capacity()\` | slots allocated | ≥ size |
+| \`resize(n)\` | changes size, value-initialises | you want n real elements |
+| \`reserve(n)\` | changes capacity only | you know the count up front |
 
-The single most-missed C++ tell in interviews: **\`for (auto x : v)\` copies every element.** Write \`for (auto &x : v)\` to mutate, \`for (const auto &x : v)\` to read. Interviewers notice.`,
+Calling \`reserve\` before a known number of pushes removes every reallocation. It does **not** change \`size()\`, so \`v.reserve(10); v[0] = 1;\` is undefined behaviour — reserve gives you room, not elements.
+
+**Reallocation invalidates everything.** Pointers, references and iterators into a vector are dead after a push that grows it:
+
+\`\`\`cpp
+int &first = v[0];
+v.push_back(9);      // may reallocate
+first = 5;           // undefined behaviour
+\`\`\`
+
+**The copy that hides in a loop:** \`for (auto x : v)\` copies every element. Write \`for (auto &x : v)\` to mutate, \`for (const auto &x : v)\` to read. On a \`vector<string>\` that is a real cost, not a style note.
+
+**2D vectors** are built by nesting the fill constructor — \`vector<vector<int>> g(rows, vector<int>(cols, 0));\`. Read it inside out: the inner vector is the row that gets copied \`rows\` times.
+
+**string** is a vector of \`char\` with extra methods. \`s.substr(i, len)\` takes a *length*, not an end index, and \`s.find(t)\` returns \`string::npos\` — not \`-1\` — when it fails. Compare against \`string::npos\` explicitly. Building a string with \`+=\` in a loop is fine; building it with \`s = s + c\` is quadratic.`,
       resources: [
         {
           title: "Striver A2Z — C++ STL playlist",
@@ -75,9 +117,28 @@ The single most-missed C++ tell in interviews: **\`for (auto x : v)\` copies eve
       estMinutes: 60,
       conceptMd: `Anyone can recite "binary search is O(log n)". The skill being tested is **deriving** it from a loop you just wrote, under pressure.
 
-Method: count how many times the innermost statement runs as a function of n, then drop constants and lower-order terms. For recursion, write the recurrence and expand it two levels.
+**Method.** Count how many times the innermost statement runs as a function of n, drop constants and lower-order terms. For recursion, write the recurrence and expand it two levels until the pattern shows.
 
-Know the constant-factor reality too — a \`map\` (red-black tree, O(log n)) versus an \`unordered_map\` (hash, O(1) average) is a real decision, and hash collisions make the worst case O(n).`,
+\`\`\`cpp
+for (int i = 0; i < n; i++)          // n times
+  for (int j = i + 1; j < n; j++)    // n-1, n-2, ... 1
+    check(i, j);                     // total n(n-1)/2  ->  O(n^2)
+\`\`\`
+
+The giveaway that a loop is logarithmic is a variable that is *multiplied or divided* rather than incremented: \`for (int i = 1; i < n; i *= 2)\` runs log₂n times.
+
+| shape | complexity | typical n at 1s |
+|---|---|---|
+| nested loops over pairs | O(n²) | ~10⁴ |
+| sort, or a loop with a log inside | O(n log n) | ~10⁶ |
+| single pass, hash lookups | O(n) | ~10⁷ |
+| halving the search space | O(log n) | any |
+
+Read the constraints backwards: *n ≤ 10⁵* rules out O(n²) and points at O(n log n). That inference is worth saying out loud before you start coding.
+
+**Space counts the recursion stack.** A recursion of depth n costs O(n) space even with no allocations — which is why the iterative version of a linked-list reversal is O(1) and the recursive one is O(n).
+
+**Amortised is not average.** Amortised means *worst case, spread across a sequence of operations* — \`push_back\` is genuinely O(1) amortised. Average means *over a distribution of inputs* — \`unordered_map\` lookup is O(1) average but O(n) worst case, because every key can collide into one bucket. Interviewers do probe that difference, and the honest answer to "is unordered_map O(1)?" is "on average, yes; adversarial keys make it O(n)".`,
       resources: [
         {
           title: "Striver — Time and space complexity",
@@ -97,9 +158,31 @@ Know the constant-factor reality too — a \`map\` (red-black tree, O(log n)) ve
       estMinutes: 60,
       conceptMd: `\`map\` and \`set\` are balanced binary search trees: **ordered**, O(log n), and they support \`lower_bound\`. \`unordered_map\` and \`unordered_set\` are hash tables: O(1) average, no order, no \`lower_bound\`.
 
-The decision rule: if you ever need "the smallest key ≥ x", or you need to iterate in sorted order, you need the ordered one. Otherwise take the hash.
+| | order | lookup | has lower_bound |
+|---|---|---|---|
+| \`map\` / \`set\` | sorted by key | O(log n) | yes |
+| \`unordered_map\` / \`unordered_set\` | none | O(1) average, O(n) worst | no |
+| \`multiset\` | sorted, keeps duplicates | O(log n) | yes |
 
-\`multiset\` keeps duplicates and is the quiet answer to a surprising number of sliding-window problems. Note \`erase(value)\` removes *every* copy — erase the iterator instead.`,
+**The decision rule.** If you ever need "the smallest key ≥ x", or you need to iterate in sorted order, take the ordered one. Otherwise take the hash. Say the reason out loud in an interview — choosing \`map\` by habit when order is never used is a small tell.
+
+**The bug that catches everyone:** \`operator[]\` on a map *inserts* a default-constructed value when the key is missing.
+
+\`\`\`cpp
+if (freq[c] > 0) { }        // INSERTS c with value 0
+if (freq.count(c)) { }      // asks without inserting
+auto it = freq.find(c);     // asks, and keeps the position
+\`\`\`
+
+That silent insert turns "count the distinct characters" into a wrong answer. Use \`count\` or \`find\` to *ask*, and \`[]\` only when inserting-if-absent is what you want — which is exactly why \`freq[c]++\` is the right idiom for building a frequency map.
+
+**\`multiset\` keeps duplicates** and is the quiet answer to a surprising number of sliding-window problems, because it gives you a running min and max in O(log n). Note that \`ms.erase(value)\` removes *every* copy — to remove one, erase an iterator:
+
+\`\`\`cpp
+ms.erase(ms.find(value));   // removes exactly one
+\`\`\`
+
+**When the key is not a built-in type**, \`unordered_map\` needs a hash and has none for \`pair\` — either write one, or use \`map<pair<int,int>, T>\`, which only needs \`<\` and already has it.`,
       resources: [
         {
           title: "Striver A2Z — Step 1.3: hashing",
@@ -123,11 +206,31 @@ The decision rule: if you ever need "the smallest key ≥ x", or you need to ite
       objective:
         "Sort by any rule you can state, and use lower_bound / upper_bound correctly on the first attempt.",
       estMinutes: 60,
-      conceptMd: `\`sort(v.begin(), v.end(), cmp)\` where \`cmp(a,b)\` returns **true if a must come before b**. It must be a strict weak ordering — returning \`true\` for equal elements is undefined behaviour and does crash in practice.
+      conceptMd: `\`sort(v.begin(), v.end(), cmp)\` where \`cmp(a, b)\` returns **true if a must come before b**.
 
-\`lower_bound\` gives the first element **not less than** x; \`upper_bound\` the first **greater than** x. The gap between them is the run of x's, which counts occurrences in O(log n).
+\`\`\`cpp
+// by second descending, then first ascending
+sort(v.begin(), v.end(), [](const auto &a, const auto &b) {
+  if (a.second != b.second) return a.second > b.second;
+  return a.first < b.first;
+});
+\`\`\`
 
-Also worth having in hand: \`next_permutation\`, \`accumulate\`, \`__gcd\`, and \`max_element\`.`,
+It must be a **strict weak ordering**: \`cmp(a, a)\` has to be false. Writing \`>=\` instead of \`>\` is undefined behaviour and really does segfault, because the implementation runs off the end of the range looking for a pivot that never satisfies the comparison. If you need equal elements to keep their original relative order, that is \`stable_sort\`, not a cleverer comparator.
+
+**lower_bound / upper_bound**, on a *sorted* range:
+
+\`\`\`cpp
+vector<int> v = {1, 2, 2, 2, 5};
+lower_bound(v.begin(), v.end(), 2);   // -> index 1, first NOT LESS than 2
+upper_bound(v.begin(), v.end(), 2);   // -> index 4, first GREATER than 2
+\`\`\`
+
+The gap between them is the run of 2s, so \`upper_bound(..) - lower_bound(..)\` counts occurrences in O(log n) — and \`equal_range\` returns both at once. When the value is absent, \`lower_bound\` returns the position where it *would* be inserted, which is precisely the answer to "search insert position".
+
+**They are O(log n) only on random-access iterators.** On a \`set\`, the free function \`std::lower_bound\` degrades to O(n) because it has to walk; use the member \`s.lower_bound(x)\`, which uses the tree.
+
+Also worth having in hand: \`next_permutation\`, \`accumulate\` (pass \`0LL\` as the init value or the sum overflows at \`int\`), \`__gcd\`, \`max_element\`, and the erase-remove idiom \`v.erase(remove(v.begin(), v.end(), x), v.end())\` — \`remove\` alone only shuffles elements and returns the new logical end, it never shortens the vector.`,
       resources: [
         {
           title: "Striver — sorting and comparators in STL",
@@ -151,11 +254,31 @@ Also worth having in hand: \`next_permutation\`, \`accumulate\`, \`__gcd\`, and 
       objective:
         "Write base case and recursive step without hesitating, and trace a recursion tree on paper.",
       estMinutes: 60,
-      conceptMd: `Every recursive function is two questions: **what is the smallest case I can answer outright**, and **how do I reduce toward it**. Write the base case first, always.
+      conceptMd: `Every recursive function is two questions: **what is the smallest case I can answer outright**, and **how do I reduce toward it**. Write the base case first, always — a missing base case is not a wrong answer, it is a stack overflow.
 
-Drill the primitives until they are automatic: sum to n, factorial, reverse an array in place, check a palindrome, print 1..n without a loop.
+\`\`\`cpp
+int sumTo(int n) {
+  if (n == 0) return 0;        // base: answered outright
+  return n + sumTo(n - 1);     // step: strictly smaller argument
+}
+\`\`\`
 
-Then draw the tree for \`fib(5)\`. Seeing the repeated subtrees is the whole motivation for memoisation later — you want that picture in your head before you reach dynamic programming.`,
+Check the step really does shrink. \`sumTo(n - 1)\` terminates; \`sumTo(n / 2)\` on \`n = 1\` does not, because \`1 / 2 == 0\` only if your base case covers 0.
+
+**Drill the primitives** until they are automatic: sum to n, factorial, reverse an array in place, check a palindrome, print 1..n without a loop. Each is five lines, and having them cold means the recursion is never the hard part of a harder problem.
+
+**Then draw the tree for \`fib(5)\`:**
+
+\`\`\`text
+                fib(5)
+          fib(4)      fib(3)
+      fib(3)  fib(2)  fib(2) fib(1)
+  fib(2) fib(1)
+\`\`\`
+
+\`fib(3)\` is computed twice, \`fib(2)\` three times. That repetition is the entire motivation for memoisation — and the reason the naive version is O(2ⁿ) while the memoised one is O(n). You want this picture in your head before you reach dynamic programming, because every DP problem is this observation applied to a bigger tree.
+
+**Depth is space.** Each call holds a frame, so a recursion of depth n costs O(n) stack. The default stack is around 1 MB — roughly 10⁴–10⁵ frames — so a recursion over n = 10⁶ will crash where the equivalent loop is fine. That trade, not elegance, is why some solutions are written iteratively.`,
       resources: [
         {
           title: "Striver A2Z — Step 1.4: basic recursion",

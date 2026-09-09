@@ -10,7 +10,12 @@ import {
 } from "@/components/instrument/career-desk";
 import { getJourneyStateCached } from "@/lib/journey";
 import { getCareer } from "@/lib/sidetracks";
-import { APPLICATIONS_FROM_WEEK, APPLICATIONS_PER_WEEK } from "@/content/cadence";
+import {
+  APPLICATIONS_FROM_WEEK,
+  APPLICATIONS_PER_WEEK,
+  STAR_PROMPTS,
+  STAR_READY_TARGET,
+} from "@/content/cadence";
 
 export const metadata = { title: "Career" };
 
@@ -21,6 +26,7 @@ export default async function CareerPage() {
   const journey = await getJourneyStateCached(session.user.id);
   const c = await getCareer(session.user.id);
   const thisWeek = c.applications.filter((a) => a.journeyWeek === journey.journeyWeek).length;
+  const starReady = c.stories.filter((s) => s.result.trim()).length;
 
   return (
     <Boot className="mx-auto max-w-3xl space-y-6 px-6 py-10">
@@ -30,8 +36,8 @@ export default async function CareerPage() {
           <h1 className="mt-1 text-2xl text-hi">Career desk</h1>
           <p className="mt-1 max-w-xl text-2xs leading-relaxed text-lo">
             Interviews are a separate skill from the one you practise every morning, and
-            they are the one you get graded on. Most people start here too late and
-            discover in October that they freeze.
+            they are the one you get graded on. Most people start here too late and find
+            out, in the room, that they freeze.
           </p>
         </header>
       </BootItem>
@@ -46,10 +52,15 @@ export default async function CareerPage() {
       </BootItem>
 
       <BootItem>
-        <Panel legend="star bank" aux={`${c.stories.filter((s) => s.result.trim()).length}/8 written`}>
+        <Panel
+          legend="star bank"
+          aux={`${Math.min(starReady, STAR_READY_TARGET)}/${STAR_READY_TARGET} ready`}
+        >
           <p className="mb-2 text-2xs leading-relaxed text-lo">
-            Six of these ready is the standard. "Tell me about yourself" is first because
-            it sets the tone for everything after it.
+            {STAR_READY_TARGET} of these {STAR_PROMPTS.length} ready is the standard — the
+            list is longer so you can pick the ones you have real material for. &ldquo;Tell
+            me about yourself&rdquo; is first because it sets the tone for everything after
+            it.
           </p>
           <StarBank stories={c.stories} />
         </Panel>
@@ -65,7 +76,7 @@ export default async function CareerPage() {
           }
           active={journey.journeyWeek >= APPLICATIONS_FROM_WEEK && thisWeek === 0}
         >
-          <ApplicationDesk applications={c.applications} />
+          <ApplicationDesk applications={c.applications} journeyWeek={journey.journeyWeek} />
         </Panel>
       </BootItem>
 

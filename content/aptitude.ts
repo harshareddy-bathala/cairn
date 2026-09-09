@@ -1,12 +1,12 @@
 /**
  * The daily aptitude drill — 25 questions, timed, every day.
  *
- * This is the one lane the roadmap marks pass/fail: companies gate on it before
+ * This is the one lane that is graded pass/fail: companies gate on it before
  * a human ever reads your code. It is also the lane that dies quietly, because
  * there is no repo to show for it. So it is generated into every plan, it is
  * never trimmed to fit the budget, and the topic is chosen for you.
  *
- * Topics are §5 of the roadmap verbatim. The rotation cycles pool-by-pool so a
+ * The topic list is fixed. The rotation cycles pool-by-pool so a
  * week always touches quant, reasoning and verbal rather than grinding one.
  */
 

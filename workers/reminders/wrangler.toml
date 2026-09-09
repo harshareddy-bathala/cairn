@@ -1,0 +1,15 @@
+name = "cairn-reminders"
+main = "src/index.ts"
+compatibility_date = "2026-09-01"
+
+# Every five minutes. Slots have a 20-minute grace window in the app, so a tick
+# that misses (or a deploy that eats one) is absorbed rather than lost — and the
+# (user, kind, local date) key means the overlap never sends twice.
+[triggers]
+crons = ["*/5 * * * *"]
+
+[vars]
+APP_URL = "https://cairn.example.com"
+
+# CRON_SECRET is a secret, not a var:
+#   npx wrangler secret put CRON_SECRET
