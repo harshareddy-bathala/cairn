@@ -47,3 +47,4 @@ shots/
 
 # personal source material — stays local, never published
 docs/roadmap/
+.neon

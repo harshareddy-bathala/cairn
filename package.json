@@ -10,10 +10,13 @@
     "db:studio": "drizzle-kit studio",
     "seed": "tsx --env-file=.env.local scripts/seed.ts",
     "typecheck": "tsc --noEmit",
-    "shots": "node scripts/shot.mjs"
+    "shots": "node scripts/shot.mjs",
+    "invite": "tsx --env-file=.env.local scripts/invite.ts"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.3",
+    "@neon/config": "^1.3.2",
+    "@neon/env": "^1.2.3",
     "drizzle-orm": "^0.45.2",
     "motion": "^13.2.0",
     "next": "16.3.4",

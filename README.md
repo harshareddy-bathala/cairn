@@ -42,18 +42,24 @@ glassmorphism, emoji. Terminal cosplay is as generic as the SaaS look it reacts 
 ## Running it
 
 ```bash
-docker compose up -d          # postgres on :5433
-cp .env.example .env.local    # then fill in AUTH_SECRET
 npm install
+cp .env.example .env.local    # then fill in AUTH_SECRET and the Google OAuth pair
 npm run db:push               # schema -> database
 npm run seed                  # content/ -> database
 npm run dev
 ```
 
-Add yourself to the allowlist, then sign in:
+**Database.** `DATABASE_URL` points at Neon; `neon link` writes it into `.env.local`
+for you and `neon deploy` re-pulls it. To work offline instead, run
+`docker compose up -d` and point `DATABASE_URL` at
+`postgres://cairn:cairn@127.0.0.1:5433/cairn` — the client detects local hosts and
+disables TLS automatically.
+
+Cairn is invite-only. Add people to the allowlist:
 
 ```bash
-psql "$DATABASE_URL" -c "insert into allowed_emails (email) values ('you@example.com');"
+npm run invite -- friend@example.com "batchmate"
+npm run invite                       # list everyone invited
 ```
 
 Without Google OAuth credentials, set `AUTH_DEV_LOGIN=1` in `.env.local` and visit
@@ -68,6 +74,7 @@ enforces the allowlist.
 | `npm run db:push` | apply `db/schema.ts` to the database |
 | `npm run seed` | validate and load `content/` (idempotent) |
 | `npm run typecheck` | `tsc --noEmit` |
+| `npm run invite` | add an email to the allowlist, or list the allowlist |
 | `npm run shots` | screenshot key pages into `shots/` for design QA |
 
 ## Layout
@@ -83,5 +90,6 @@ docs/roadmap/  personal source material (git-ignored, local only)
 
 ## Status
 
-Day 1 of 7 — schema, content pipeline, auth, design system, and the app shell.
-The daily plan generator lands day 4; Telegram reminders day 5; certificates day 7.
+Day 2 of 7 — Phase 1 authored in full: 17 modules, 75 units, 108 curated resources,
+98 problems. Running on Neon. The daily plan generator lands day 4; Telegram
+reminders day 5; certificates day 7.
