@@ -2,13 +2,37 @@ import type { Module } from "./types";
 import { phases } from "./phases";
 import { tracks } from "./tracks";
 import { cppStl } from "./modules/dsa/01-cpp-stl";
+import { arraysSorting } from "./modules/dsa/02-arrays";
+import { binarySearch } from "./modules/dsa/03-binary-search";
+import { strings } from "./modules/dsa/04-strings";
+import { recursionBacktracking } from "./modules/dsa/05-recursion";
+import { bitManipulation } from "./modules/dsa/06-bits";
+import { linkedLists } from "./modules/dsa/07-linked-lists";
 import { linuxFoundations } from "./modules/devops/01-linux";
+import { git } from "./modules/devops/02-git";
+import { networking } from "./modules/devops/03-networking";
+import { docker } from "./modules/devops/04-docker";
+import { cppInternals } from "./modules/sde/01-cpp-internals";
+import { oop } from "./modules/sde/02-oop";
+import { restFastapi } from "./modules/sde/03-rest-fastapi";
+import { os } from "./modules/corecs/01-os";
+import { dbms } from "./modules/corecs/02-dbms";
+import { cn } from "./modules/corecs/03-cn";
 
 /**
  * The curriculum registry. Content is authored here in git and pushed into
  * Postgres by scripts/seed.ts — the database is a cache, this is the source.
  */
-export const modules: Module[] = [cppStl, linuxFoundations];
+export const modules: Module[] = [
+  // dsa
+  cppStl, arraysSorting, binarySearch, strings, recursionBacktracking, bitManipulation, linkedLists,
+  // devops / sre
+  linuxFoundations, git, networking, docker,
+  // sde / backend
+  cppInternals, oop, restFastapi,
+  // core cs
+  os, dbms, cn,
+];
 
 export { phases, tracks };
 

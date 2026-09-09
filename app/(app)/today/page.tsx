@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { auth } from "@/auth";
 import { Panel } from "@/components/instrument/panel";
 import { Readout } from "@/components/instrument/readout";
@@ -95,7 +96,8 @@ export default async function TodayPage() {
           ) : (
             <ul className="divide-y divide-line-soft">
               {next.map((u) => (
-                <li key={u.unitSlug} className="flex items-baseline gap-3 py-2.5 first:pt-0 last:pb-0">
+                <li key={u.unitSlug} className="first:pt-0 last:pb-0">
+                  <Link href={`/unit/${u.unitSlug}`} className="flex items-baseline gap-3 py-2.5 transition-colors duration-[120ms] hover:text-hi">
                   <span className="legend w-8 shrink-0 text-phos-dim">
                     {TRACK_LABEL[u.trackSlug] ?? u.trackSlug}
                   </span>
@@ -104,6 +106,7 @@ export default async function TodayPage() {
                     <span className="block truncate text-2xs text-lo">{u.moduleTitle}</span>
                   </span>
                   <span className="legend shrink-0 tabular-nums">~{u.estMinutes}m</span>
+                  </Link>
                 </li>
               ))}
             </ul>

@@ -1,0 +1,195 @@
+import type { Module } from "@/content/types";
+
+export const binarySearch: Module = {
+  slug: "dsa-binary-search",
+  trackSlug: "dsa",
+  phaseSlug: "foundations",
+  order: 3,
+  title: "Binary search (and on the answer)",
+  summary:
+    "Your roadmap calls this the single highest-value pattern, and it is right. Half of it is searching sorted arrays; the other half — binary search on the answer space — is what separates people who pass the medium tier from people who do not.",
+  prereqSlugs: ["dsa-arrays-sorting"],
+  units: [
+    {
+      slug: "dsa-bs-invariant",
+      title: "The invariant, written once and reused forever",
+      objective:
+        "Write binary search without off-by-one errors by stating the loop invariant before the loop.",
+      estMinutes: 60,
+      conceptMd: `Most binary search bugs are not logic errors, they are **boundary conventions applied inconsistently**. Pick one convention and never mix them.
+
+Use the closed interval \`[lo, hi]\`:
+
+\`\`\`cpp
+int lo = 0, hi = n - 1;
+while (lo <= hi) {
+    int mid = lo + (hi - lo) / 2;   // never (lo + hi) / 2 — that overflows
+    if (a[mid] == target) return mid;
+    if (a[mid] < target) lo = mid + 1;
+    else hi = mid - 1;
+}
+return -1;
+\`\`\`
+
+Three rules that make it reliable: the condition is \`<=\` because \`lo == hi\` is still an unexamined element; \`mid\` is computed as \`lo + (hi - lo) / 2\` to avoid integer overflow; and every branch **must** exclude \`mid\`, or the loop can spin forever.
+
+When the loop exits, \`lo\` is the insertion point — which is precisely \`lower_bound\`. That fact is worth internalising, because it is the answer to a whole family of problems.`,
+      resources: [
+        {
+          title: "Striver A2Z — Step 4: binary search",
+          url: "https://takeuforward.org/data-structure/binary-search-explained/",
+          kind: "do",
+          minutes: 45,
+          whyThisOne: "Sets the boundary convention early and holds it for the whole step. Follow its convention, not a mixture.",
+          isPrimary: true,
+        },
+        {
+          title: "cppreference — std::lower_bound",
+          url: "https://en.cppreference.com/w/cpp/algorithm/lower_bound",
+          kind: "docs",
+          whyThisOne: "Confirms your hand-written version against the standard definition.",
+        },
+      ],
+    },
+    {
+      slug: "dsa-bs-occurrences",
+      title: "First, last & counting occurrences",
+      objective:
+        "Find the first and last index of a repeated value, and count occurrences in O(log n).",
+      estMinutes: 60,
+      conceptMd: `The move that unlocks this family: **on a match, do not return — keep searching the side that could hold a better answer.**
+
+For the first occurrence, record \`mid\` as a candidate and then set \`hi = mid - 1\` to keep looking left. For the last occurrence, record and set \`lo = mid + 1\`.
+
+Count is then \`last - first + 1\`, or equivalently \`upper_bound − lower_bound\`. Write it both ways once so the equivalence is obvious.
+
+The same "record and keep going" shape solves *kth missing positive* and *floor/ceil in a sorted array*, so it is worth the drill.`,
+      resources: [
+        {
+          title: "Striver — first and last occurrence in a sorted array",
+          url: "https://takeuforward.org/arrays/first-and-last-occurrences-in-array/",
+          kind: "watch",
+          minutes: 25,
+          whyThisOne: "Shows the record-and-continue variant explicitly instead of hiding it behind lower_bound.",
+          isPrimary: true,
+        },
+      ],
+    },
+    {
+      slug: "dsa-bs-rotated",
+      title: "Rotated & partially sorted arrays",
+      objective:
+        "Search a rotated sorted array, with and without duplicates, and explain why duplicates break the O(log n) guarantee.",
+      estMinutes: 75,
+      conceptMd: `A rotated sorted array has one pivot, which means **at least one half of any split is properly sorted**. Identify which half that is, decide whether the target lies inside it, and discard the other half.
+
+\`\`\`
+if (a[lo] <= a[mid])        // left half sorted
+    target in [a[lo], a[mid]) ? hi = mid-1 : lo = mid+1;
+else                        // right half sorted
+    target in (a[mid], a[hi]] ? lo = mid+1 : hi = mid-1;
+\`\`\`
+
+**With duplicates** the comparison \`a[lo] <= a[mid]\` stops being decisive — consider \`[3,1,3,3,3]\`, where you cannot tell which side is sorted. The standard patch is: when \`a[lo] == a[mid] == a[hi]\`, shrink both ends by one. That degrades the worst case to O(n), and being able to say so out loud is the point of the exercise.
+
+Finding the minimum is the same skill: the unsorted half always contains the pivot.`,
+      resources: [
+        {
+          title: "Striver — search in rotated sorted array I & II",
+          url: "https://takeuforward.org/data-structure/search-element-in-a-rotated-sorted-array/",
+          kind: "watch",
+          minutes: 35,
+          whyThisOne: "Handles the duplicates case honestly, including why the complexity guarantee is lost.",
+          isPrimary: true,
+        },
+      ],
+    },
+    {
+      slug: "dsa-bs-answer-space",
+      title: "Binary search on the answer",
+      objective:
+        "Recognise the monotonic-predicate shape and solve Koko / bouquets / ship-packages / allocate-books with one template.",
+      estMinutes: 90,
+      conceptMd: `**This is the highest-value unit in the module.** The array is not what you search — you search the *space of possible answers*.
+
+The trigger, and it is remarkably consistent: *"find the minimum X such that some condition holds"* (or the maximum). The unlock is that the condition is **monotonic** — if a capacity of 10 works, so does 11. That monotonicity is exactly what binary search needs.
+
+The template:
+
+\`\`\`cpp
+int lo = <smallest conceivable answer>, hi = <largest>;
+while (lo < hi) {
+    int mid = lo + (hi - lo) / 2;
+    if (feasible(mid)) hi = mid;      // mid might be the answer, keep it
+    else               lo = mid + 1;  // mid is too small, discard it
+}
+return lo;
+\`\`\`
+
+The whole job is writing \`feasible(mid)\` and choosing the bounds. For Koko: \`feasible(speed)\` sums \`ceil(pile / speed)\` and compares to h; \`lo = 1\`, \`hi = max(piles)\`. For ship-packages: \`feasible(capacity)\` greedily counts days; \`lo = max(weights)\` — you must fit the heaviest single item — and \`hi = sum(weights)\`.
+
+Getting \`lo\` wrong is the classic error. Ask yourself what the smallest answer that is even *possible* is, not the smallest number.
+
+Allocate books, split array, minimum days for bouquets, smallest divisor and painter's partition are all the same problem wearing different clothes. Solve two carefully and the rest become mechanical.`,
+      resources: [
+        {
+          title: "Striver A2Z — Step 4.2: BS on answers",
+          url: "https://takeuforward.org/arrays/koko-eating-bananas/",
+          kind: "do",
+          minutes: 75,
+          whyThisOne: "The entire family in one sequence, which is how you see that it is one pattern and not six problems.",
+          isPrimary: true,
+        },
+        {
+          title: "NeetCode — Binary search on answer",
+          url: "https://neetcode.io/courses/advanced-algorithms/2",
+          kind: "watch",
+          minutes: 20,
+          whyThisOne: "The second framing that usually makes the feasibility predicate click.",
+        },
+      ],
+    },
+    {
+      slug: "dsa-bs-matrix",
+      title: "Binary search in 2D",
+      objective:
+        "Search a row-sorted matrix by flattening indices, and handle the staircase variant.",
+      estMinutes: 60,
+      conceptMd: `Two different matrix problems that look alike and are not.
+
+**Fully sorted** (each row sorted, and every row starts after the previous ends): treat it as one flat array of length \`m*n\` and binary search it, mapping \`idx → (idx / n, idx % n)\`. O(log mn).
+
+**Row- and column-sorted only** (a "staircase" matrix — LeetCode 240): flattening is invalid. Instead start at the **top-right corner**. If the value is too large, move left; too small, move down. Each step eliminates a whole row or column, giving O(m + n). Starting at any other corner does not work, which is worth understanding rather than memorising.`,
+      resources: [
+        {
+          title: "Striver — search in a 2D matrix",
+          url: "https://takeuforward.org/data-structure/search-in-a-sorted-2d-matrix/",
+          kind: "watch",
+          minutes: 25,
+          whyThisOne: "Separates the two variants clearly — the distinction is the whole trap.",
+          isPrimary: true,
+        },
+      ],
+    },
+  ],
+  problems: [
+    { slug: "lc-binary-search", title: "Binary Search", platform: "leetcode", url: "https://leetcode.com/problems/binary-search/", difficulty: "easy", patternTag: "binary-search", triggerHint: "Sorted array, find an exact value.", approachHint: "The base template. Fix your boundary convention here and keep it for every problem below.", estMinutes: 10, unitSlug: "dsa-bs-invariant" },
+    { slug: "lc-find-first-last-position", title: "Find First and Last Position of Element", platform: "leetcode", url: "https://leetcode.com/problems/find-first-and-last-position-of-element-in-sorted-array/", difficulty: "medium", patternTag: "binary-search", triggerHint: "Repeated values, need the boundaries of the run.", approachHint: "Two searches. On a match, record and keep searching left (first) or right (last).", estMinutes: 25, unitSlug: "dsa-bs-occurrences" },
+    { slug: "lc-kth-missing-positive", title: "Kth Missing Positive Number", platform: "leetcode", url: "https://leetcode.com/problems/kth-missing-positive-number/", difficulty: "easy", patternTag: "binary-search", triggerHint: "Counting absences in a sorted array — sounds linear, is logarithmic.", approachHint: "Missing count before index i is a[i] - (i+1). Binary search for where that count reaches k.", estMinutes: 30, unitSlug: "dsa-bs-occurrences" },
+    { slug: "lc-search-rotated", title: "Search in Rotated Sorted Array", platform: "leetcode", url: "https://leetcode.com/problems/search-in-rotated-sorted-array/", difficulty: "medium", patternTag: "binary-search-rotated", triggerHint: "Sorted then rotated, no duplicates.", approachHint: "One half is always sorted. Identify it, test whether the target lies within it, discard the other half.", estMinutes: 30, unitSlug: "dsa-bs-rotated" },
+    { slug: "lc-search-rotated-ii", title: "Search in Rotated Sorted Array II", platform: "leetcode", url: "https://leetcode.com/problems/search-in-rotated-sorted-array-ii/", difficulty: "medium", patternTag: "binary-search-rotated", triggerHint: "Same as above but duplicates are allowed.", approachHint: "When a[lo] == a[mid] == a[hi] you cannot tell which half is sorted — shrink both ends by one. Worst case becomes O(n); say so.", estMinutes: 30, unitSlug: "dsa-bs-rotated" },
+    { slug: "lc-find-min-rotated", title: "Find Minimum in Rotated Sorted Array", platform: "leetcode", url: "https://leetcode.com/problems/find-minimum-in-rotated-sorted-array/", difficulty: "medium", patternTag: "binary-search-rotated", triggerHint: "Locate the pivot itself.", approachHint: "Compare a[mid] with a[hi]. If a[mid] > a[hi] the pivot is to the right, else it is at mid or left.", estMinutes: 25, unitSlug: "dsa-bs-rotated" },
+    { slug: "lc-single-element-sorted", title: "Single Element in a Sorted Array", platform: "leetcode", url: "https://leetcode.com/problems/single-element-in-a-sorted-array/", difficulty: "medium", patternTag: "binary-search", triggerHint: "Everything is in pairs except one, and O(log n) is demanded.", approachHint: "Before the loner, pairs start at even indices; after it, at odd. Binary search on that parity change.", estMinutes: 30, unitSlug: "dsa-bs-occurrences" },
+    { slug: "lc-find-peak-element", title: "Find Peak Element", platform: "leetcode", url: "https://leetcode.com/problems/find-peak-element/", difficulty: "medium", patternTag: "binary-search", triggerHint: "Unsorted array, but O(log n) is required — the giveaway that a local property is enough.", approachHint: "If a[mid] < a[mid+1] a peak must exist to the right, else at mid or left. Uphill always leads to one.", estMinutes: 25, unitSlug: "dsa-bs-invariant" },
+    { slug: "lc-sqrtx", title: "Sqrt(x)", platform: "leetcode", url: "https://leetcode.com/problems/sqrtx/", difficulty: "easy", patternTag: "binary-search-answer", triggerHint: "Largest integer whose square does not exceed x.", approachHint: "Binary search 0..x on the predicate mid*mid <= x. Use long long for the product.", estMinutes: 15, unitSlug: "dsa-bs-answer-space" },
+    { slug: "lc-koko-eating-bananas", title: "Koko Eating Bananas", platform: "leetcode", url: "https://leetcode.com/problems/koko-eating-bananas/", difficulty: "medium", patternTag: "binary-search-answer", triggerHint: "Minimum speed such that the work finishes in time — a monotonic predicate.", approachHint: "feasible(speed) = sum of ceil(pile/speed) <= h. Search lo=1, hi=max(piles).", estMinutes: 30, unitSlug: "dsa-bs-answer-space" },
+    { slug: "lc-min-days-bouquets", title: "Minimum Number of Days to Make m Bouquets", platform: "leetcode", url: "https://leetcode.com/problems/minimum-number-of-days-to-make-m-bouquets/", difficulty: "medium", patternTag: "binary-search-answer", triggerHint: "Minimum day such that enough adjacent groups have bloomed.", approachHint: "feasible(day) scans once counting runs of bloomed flowers. Answer -1 if m*k > n; check that first.", estMinutes: 35, unitSlug: "dsa-bs-answer-space" },
+    { slug: "lc-ship-packages", title: "Capacity to Ship Packages Within D Days", platform: "leetcode", url: "https://leetcode.com/problems/capacity-to-ship-packages-within-d-days/", difficulty: "medium", patternTag: "binary-search-answer", triggerHint: "Minimum capacity meeting a deadline.", approachHint: "feasible(cap) greedily counts days. lo = max(weights) — the heaviest item must fit — hi = sum(weights).", estMinutes: 30, unitSlug: "dsa-bs-answer-space" },
+    { slug: "lc-smallest-divisor", title: "Find the Smallest Divisor Given a Threshold", platform: "leetcode", url: "https://leetcode.com/problems/find-the-smallest-divisor-given-a-threshold/", difficulty: "medium", patternTag: "binary-search-answer", triggerHint: "Smallest divisor keeping a sum under a limit.", approachHint: "Same shape as Koko. feasible(d) = sum of ceil(a[i]/d) <= threshold.", estMinutes: 25, unitSlug: "dsa-bs-answer-space" },
+    { slug: "lc-split-array-largest-sum", title: "Split Array Largest Sum", platform: "leetcode", url: "https://leetcode.com/problems/split-array-largest-sum/", difficulty: "hard", patternTag: "binary-search-answer", triggerHint: "Minimise the maximum subarray sum across k splits.", approachHint: "Identical to allocate-books and painter's partition. feasible(limit) counts greedy splits; lo = max(a), hi = sum(a).", estMinutes: 40, unitSlug: "dsa-bs-answer-space" },
+    { slug: "lc-search-2d-matrix", title: "Search a 2D Matrix", platform: "leetcode", url: "https://leetcode.com/problems/search-a-2d-matrix/", difficulty: "medium", patternTag: "binary-search-2d", triggerHint: "Fully sorted matrix — rows chain end to end.", approachHint: "Treat it as one flat array of length m*n; map idx to (idx/n, idx%n).", estMinutes: 20, unitSlug: "dsa-bs-matrix" },
+    { slug: "lc-search-2d-matrix-ii", title: "Search a 2D Matrix II", platform: "leetcode", url: "https://leetcode.com/problems/search-a-2d-matrix-ii/", difficulty: "medium", patternTag: "binary-search-2d", triggerHint: "Rows and columns sorted, but rows do not chain — flattening is invalid.", approachHint: "Start top-right. Too big, move left; too small, move down. O(m+n).", estMinutes: 25, unitSlug: "dsa-bs-matrix" },
+    { slug: "lc-median-two-sorted", title: "Median of Two Sorted Arrays", platform: "leetcode", url: "https://leetcode.com/problems/median-of-two-sorted-arrays/", difficulty: "hard", patternTag: "binary-search", triggerHint: "O(log(m+n)) demanded across two sorted arrays.", approachHint: "Binary search the partition point of the shorter array so that left halves total half the elements and maxLeft <= minRight. Stretch goal — attempt it, do not grind it.", estMinutes: 50, isMust: false, unitSlug: "dsa-bs-matrix" },
+    { slug: "gfg-aggressive-cows", title: "Aggressive Cows", platform: "gfg", url: "https://www.geeksforgeeks.org/problems/aggressive-cows/1", difficulty: "medium", patternTag: "binary-search-answer", triggerHint: "Maximise the minimum distance — the mirror image of the minimise-maximum family.", approachHint: "Sort, then binary search the distance. feasible(d) greedily places cows at least d apart and checks the count. Note the flipped bound update.", estMinutes: 35, unitSlug: "dsa-bs-answer-space" },
+  ],
+};

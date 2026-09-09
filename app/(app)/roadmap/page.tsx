@@ -3,6 +3,7 @@ import { asc, eq, and, sql } from "drizzle-orm";
 import { auth } from "@/auth";
 import { db } from "@/db";
 import { modules, phases, tracks, unitProgress, units } from "@/db/schema";
+import Link from "next/link";
 import { Panel } from "@/components/instrument/panel";
 import { Boot, BootItem } from "@/components/instrument/boot";
 import { cn } from "@/lib/cn";
@@ -68,7 +69,9 @@ export default async function RoadmapPage() {
                     const pct = m.total ? m.done / m.total : 0;
                     return (
                       <li key={m.slug}>
-                        <div className="group flex h-full flex-col rounded-[3px] border border-line-soft bg-ink-900/40 p-3 transition-colors duration-[120ms] hover:border-line">
+                        <Link
+                          href={`/module/${m.slug}`}
+                          className="group flex h-full flex-col rounded-[3px] border border-line-soft bg-ink-900/40 p-3 transition-colors duration-[120ms] hover:border-line">
                           <div className="flex items-center gap-2">
                             <span className="text-phos-dim">{track?.glyph}</span>
                             <span className="legend">{track?.name}</span>
@@ -92,7 +95,7 @@ export default async function RoadmapPage() {
                             ))}
                           </div>
                           <span className="sr-only">{Math.round(pct * 100)}% complete</span>
-                        </div>
+                        </Link>
                       </li>
                     );
                   })}
