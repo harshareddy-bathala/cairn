@@ -7,6 +7,7 @@ import { modules, problems, tracks, unitProgress, units } from "@/db/schema";
 import { Panel } from "@/components/instrument/panel";
 import { Boot, BootItem } from "@/components/instrument/boot";
 import { cn } from "@/lib/cn";
+import { CHECKPOINT_PASS, questionsForModule } from "@/content/checkpoints";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -64,7 +65,7 @@ export default async function ModulePage({ params }: { params: Promise<{ slug: s
     <Boot className="mx-auto max-w-3xl space-y-6 px-6 py-10">
       <BootItem>
         <header>
-          <Link href="/roadmap" className="legend hover:text-mid">
+          <Link href="/roadmap" className="tap legend hover:text-mid">
             ← the trail
           </Link>
           <div className="mt-2 flex items-baseline gap-2.5">
@@ -108,6 +109,24 @@ export default async function ModulePage({ params }: { params: Promise<{ slug: s
               </li>
             ))}
           </ul>
+        </Panel>
+      </BootItem>
+
+      <BootItem>
+        <Panel legend="checkpoint">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="max-w-md text-2xs leading-relaxed text-lo">
+              {questionsForModule(slug).length} questions,{" "}
+              {Math.round(CHECKPOINT_PASS * 100)}% to pass. It gates the phase certificate,
+              never the curriculum — and every question explains itself afterwards.
+            </p>
+            <Link
+              href={`/checkpoint/${slug}`}
+              className="shrink-0 rounded-[3px] border border-line px-3 py-1.5 text-2xs text-mid transition-colors duration-[120ms] hover:border-phos hover:text-phos"
+            >
+              take the checkpoint
+            </Link>
+          </div>
         </Panel>
       </BootItem>
     </Boot>

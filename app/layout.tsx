@@ -22,6 +22,7 @@ export const metadata: Metadata = {
     "A self-paced placement-prep trail. One stone per active day — no calendar, no overdue.",
   applicationName: "Cairn",
   appleWebApp: { capable: true, title: "Cairn", statusBarStyle: "black-translucent" },
+  icons: { icon: "/icon.svg", apple: "/icon.svg" },
 };
 
 export const viewport: Viewport = {

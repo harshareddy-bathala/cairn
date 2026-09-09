@@ -26,6 +26,8 @@ export type JourneyState = {
   mode: "normal" | "catchup" | "bad_day";
   multiplier: number;
   unitsDone: number;
+  /** of those, the ones completed on the trail rather than banked at day 0 */
+  unitsEarned: number;
   unitsTotal: number;
   /** units per active day */
   velocity: number;
@@ -58,6 +60,12 @@ export async function getJourneyState(userId: string): Promise<JourneyState> {
         select count(*)::int from unit_progress
         where user_id = ${userId} and state = 'done'
       ),
+      -- units completed ON the trail. Self-placement banks prior work at day 0,
+      -- and counting that as velocity would show you sprinting on day one.
+      'unitsEarned', (
+        select count(*)::int from unit_progress
+        where user_id = ${userId} and state = 'done' and completed_on_day_index > 0
+      ),
       'unitsTotal', (select count(*)::int from units),
       'today', to_char((now() at time zone (
         select coalesce(timezone, 'Asia/Kolkata') from users where id = ${userId}
@@ -70,11 +78,12 @@ export async function getJourneyState(userId: string): Promise<JourneyState> {
   const closed = days.filter((d) => d.closed);
   const dayIndex = days.length;
   const unitsDone = raw.unitsDone ?? 0;
+  const unitsEarned = raw.unitsEarned ?? 0;
   const unitsTotal = raw.unitsTotal ?? 0;
 
   const atTrailhead = closed.length === 0;
   const activeDays = Math.max(1, closed.length);
-  const velocity = atTrailhead ? 0 : unitsDone / activeDays;
+  const velocity = atTrailhead ? 0 : unitsEarned / activeDays;
   const daysLeft = Math.max(1, TARGET_ACTIVE_DAYS - closed.length);
   const requiredVelocity = Math.max(0, unitsTotal - unitsDone) / daysLeft;
 
@@ -85,9 +94,10 @@ export async function getJourneyState(userId: string): Promise<JourneyState> {
   // first day with nothing finished, which is a failure state greeting you
   // before you have had a chance to fail — the exact thing that made the dated
   // roadmap punishing. You get a full week of debt before this empties.
-  const expected = (unitsTotal * closed.length) / TARGET_ACTIVE_DAYS;
-  const allowance = Math.max(1, (unitsTotal * SLACK_DAYS) / TARGET_ACTIVE_DAYS);
-  const deficit = Math.max(0, expected - unitsDone);
+  const remainingAtStart = Math.max(1, unitsTotal - (unitsDone - unitsEarned));
+  const expected = (remainingAtStart * closed.length) / TARGET_ACTIVE_DAYS;
+  const allowance = Math.max(1, (remainingAtStart * SLACK_DAYS) / TARGET_ACTIVE_DAYS);
+  const deficit = Math.max(0, expected - unitsEarned);
   const paceBudget = atTrailhead ? 1 : Math.max(0, Math.min(1, 1 - deficit / allowance));
 
   const last = days.at(-1);
@@ -103,6 +113,7 @@ export async function getJourneyState(userId: string): Promise<JourneyState> {
     mode: last?.mode ?? "normal",
     multiplier: last?.multiplier ?? 1,
     unitsDone,
+    unitsEarned,
     unitsTotal,
     velocity,
     requiredVelocity,
@@ -122,6 +133,7 @@ type RawState = {
     closed: boolean;
   }[];
   unitsDone: number;
+  unitsEarned: number;
   unitsTotal: number;
   today: string;
 };

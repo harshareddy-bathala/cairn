@@ -79,6 +79,7 @@ enforces the allowlist.
 | `npm run e2e` | drive the problem/unit loop in a real browser (needs `npm run dev`) |
 | `npm run e2e:day` | drive the plan, catch-up, bad day and day close in a browser |
 | `npm run e2e:tracks` | drive aptitude, projects, applications and the STAR bank |
+| `npm run e2e:cert` | drive self-placement, checkpoints, the exam and a certificate |
 | `npm run latency` | measure database round-trip cost |
 | `npm run reset-me` | wipe your own progress rows, keeping the curriculum |
 | `npm run reminders` | 19 invariants: the schedule, the copy, the due window |
@@ -89,13 +90,16 @@ enforces the allowlist.
 
 ```
 content/     curriculum source of truth — modules, units, resources, problems,
-             projects and their deliverables, the weekly cadence, the DSA curve
+             projects and their deliverables, the weekly cadence, the DSA curve,
+             and the checkpoint question banks
 db/          drizzle schema + client
 lib/         planner.ts (the daily plan), journey.ts (day math + streak),
              reminders.ts (what a nudge says), reminder-slots.ts (the schedule),
              telegram.ts, motion.ts (the motion budget), format.ts, cn.ts
 components/instrument/   Panel, Readout, Sparkline, Cairn, BurnGauge, Rail, Boot
-app/(app)/   authenticated surfaces: today, roadmap, metrics, projects, career, settings
+app/(app)/   authenticated surfaces: today, roadmap, metrics, projects, career,
+             certification, checkpoint, exam, cohort, start
+app/c/ app/u/  public: certificates and profiles, no sign-in, settings
 app/api/     cron (the reminder tick), telegram (the bot webhook)
 workers/reminders/   the Cloudflare Worker cron trigger — a clock, no logic
 docs/roadmap/  personal source material (git-ignored, local only)
@@ -103,12 +107,17 @@ docs/roadmap/  personal source material (git-ignored, local only)
 
 ## Status
 
-Day 6 of 7. Phase 1 is authored in full (17 modules, 75 units, 108 curated
-resources, 98 problems), the progress loop is live (problem outcomes, the
-self-scheduling redo queue, unit completion), the engine runs the day
-(`lib/planner.ts`, catch-up, bad-day, day close), and the side tracks are in:
-the aptitude log, the three projects with their deliverables, the mock cadence,
-the STAR bank and the applications counter. Certificates land day 7.
+Built in 7 days. Phase 1 is authored in full — 17 modules, 75 units, 108 curated
+resources, 98 problems, 85 checkpoint questions — and the whole loop works:
+
+- **The day.** `lib/planner.ts` generates 4–6 sized blocks against your budget.
+  Catch-up at 1.5×/2× pulls the next unit in each track forward; the bad-day
+  button collapses to one problem and the log; closing the day drops a stone.
+- **The work.** Problem outcomes, a self-scheduling redo queue, unit completion.
+- **The side tracks.** Aptitude log, three projects with 17 deliverables, mock
+  cadence, STAR bank, applications counter.
+- **The certification.** Module checkpoints → a timed phase exam → a defense
+  recording → a certificate at a public `/c/<id>`, with a profile at `/u/<handle>`.
 
 **How a day is built.** Redo first — problems you already believed were done.
 Then DSA, the timed aptitude drill, the domain lane (DevOps four days in five,
@@ -124,6 +133,13 @@ leave no commit, so they are the lanes that vanish first and are only missed in
 November. `/metrics` exists to make them visible: the DSA count against the
 95/165/230 curve, the redo queue's size, the aptitude trend, minutes logged, and
 applications flagged red at zero once that lane opens.
+
+**Which way the gates point.** A phase exam opens at 80% of that phase's units;
+the certificate needs the exam, 80% of the phase's checkpoints, and an out-loud
+defense recording. Nothing in the certification spine can gate the curriculum —
+a bad week on a quiz costs you a certificate, never your place on the trail.
+Self-placement banks work you had already done at day 0, so it counts toward the
+map and the exam but puts no stone on the cairn and never inflates velocity.
 
 **A note on latency.** The database (Neon, `aws-ap-southeast-1`) is ~90ms away, so
 every server action is written to resolve in exactly **one** round trip — `openToday`

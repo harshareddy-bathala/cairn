@@ -19,6 +19,7 @@ import { os } from "./modules/corecs/01-os";
 import { dbms } from "./modules/corecs/02-dbms";
 import { cn } from "./modules/corecs/03-cn";
 import { projects } from "./projects";
+import { questions, questionsForModule } from "./checkpoints";
 
 /**
  * The curriculum registry. Content is authored here in git and pushed into
@@ -35,7 +36,7 @@ export const modules: Module[] = [
   os, dbms, cn,
 ];
 
-export { phases, tracks, projects };
+export { phases, tracks, projects, questions };
 
 /** fail the seed loudly rather than writing a broken curriculum */
 export function validateContent() {
@@ -93,6 +94,24 @@ export function validateContent() {
       // a deliverable without a definition of done is a to-do, and to-dos rot
       if (!d.definitionOfDone.trim()) errors.push(`${d.slug}: no definitionOfDone`);
     }
+  }
+
+  // checkpoints
+  const questionIds = new Set<string>();
+  for (const q of questions) {
+    if (questionIds.has(q.id)) errors.push(`duplicate question id: ${q.id}`);
+    questionIds.add(q.id);
+    if (!moduleSlugs.has(q.moduleSlug)) errors.push(`${q.id}: unknown module ${q.moduleSlug}`);
+    if (q.options.length !== 4) errors.push(`${q.id}: ${q.options.length} options — the shape is 4`);
+    if (q.answer < 0 || q.answer > 3) errors.push(`${q.id}: answer index out of range`);
+    if (new Set(q.options).size !== q.options.length)
+      errors.push(`${q.id}: duplicate options — one of them cannot be wrong`);
+    // the explanation is the point of a checkpoint; a question without one only tests recall
+    if (!q.why.trim()) errors.push(`${q.id}: no explanation`);
+  }
+  for (const m of modules) {
+    const n = questionsForModule(m.slug).length;
+    if (n < 5) errors.push(`${m.slug}: ${n} checkpoint questions — the floor is 5`);
   }
 
   return errors;

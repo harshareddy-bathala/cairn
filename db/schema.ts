@@ -407,3 +407,62 @@ export const certificates = pgTable("certificates", {
   issuedOn: timestamp("issued_on", { mode: "date" }).notNull().defaultNow(),
   snapshot: jsonb("snapshot").$type<Record<string, unknown>>().notNull(),
 });
+
+/* ------------------------------------------------------------------ *
+ * reminders
+ * ------------------------------------------------------------------ */
+
+/**
+ * One row per reminder slot per local day — the idempotency key for the tick.
+ *
+ * The cron fires every few minutes and each slot has a grace window, so the
+ * same slot is evaluated several times. This table is what makes the second
+ * evaluation a no-op. `skipped` is recorded as deliberately as `sent`: a
+ * streak-risk nudge that found nothing at risk must not be reconsidered at the
+ * next tick. Failures write nothing, so they retry on their own.
+ */
+export const reminderSends = pgTable(
+  "reminder_sends",
+  {
+    userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    kind: text("kind").$type<ReminderSlot["kind"]>().notNull(),
+    /** the user's local date the slot belonged to, YYYY-MM-DD */
+    localDate: text("local_date").notNull(),
+    status: text("status").$type<ReminderStatus>().notNull(),
+    /** the day_index the message described, or null when the day was never opened */
+    dayIndex: integer("day_index"),
+    reason: text("reason"),
+    sentAt: timestamp("sent_at", { mode: "date" }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.kind, t.localDate] })],
+);
+
+export type ReminderStatus = "sent" | "skipped";
+
+/* ------------------------------------------------------------------ *
+ * checkpoints
+ * ------------------------------------------------------------------ */
+
+/**
+ * One row per checkpoint attempt.
+ *
+ * Attempts are kept rather than overwritten: passing on the fourth try is a
+ * different fact from passing on the first, and the certificate snapshot should
+ * be able to say which it was.
+ */
+export const checkpointAttempts = pgTable(
+  "checkpoint_attempts",
+  {
+    id: serial("id").primaryKey(),
+    userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    moduleSlug: text("module_slug").notNull().references(() => modules.slug, { onDelete: "cascade" }),
+    score: integer("score").notNull(),
+    total: integer("total").notNull(),
+    passed: boolean("passed").notNull(),
+    /** question id -> chosen option index, so a review page can show the misses */
+    answers: jsonb("answers").$type<Record<string, number>>().notNull().default({}),
+    dayIndex: integer("day_index").notNull(),
+    createdAt: timestamp("created_at", { mode: "date" }).notNull().defaultNow(),
+  },
+  (t) => [index("checkpoint_attempts_user_idx").on(t.userId, t.moduleSlug)],
+);

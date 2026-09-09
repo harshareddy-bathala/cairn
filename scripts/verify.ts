@@ -7,7 +7,9 @@ import { generatePlan, getDayContext, getTodayPlan, budgetWith, cadenceDueFor } 
 import { aptitudeTopicFor } from "@/content/aptitude";
 import { CADENCE, DSA_CURVE, dsaTargetAt } from "@/content/cadence";
 import { getMetrics } from "@/lib/sidetracks";
-import { validateContent } from "@/content";
+import { modules as contentModules, validateContent } from "@/content";
+import { questions, questionsForModule, EXAM_SIZE, CHECKPOINT_PASS } from "@/content/checkpoints";
+import { examPaper, getCertificationState, shapeCertification } from "@/lib/certification";
 
 function ok(label: string, pass: boolean, detail = "") {
   console.log(`${label.padEnd(23)}-> ${detail.padEnd(28)} ${pass ? "PASS" : "FAIL"}`);
@@ -114,12 +116,28 @@ async function main() {
     tiny.blocks.map((b) => b.kind).join(","));
   ok("dsa never trimmed", tiny.blocks.some((b) => b.kind === "dsa"));
 
+  // The redo is seeded with a problem the generator actually schedules, so the
+  // overlap below is guaranteed rather than incidental.
+  const planNoRedo = generatePlan({
+    dayIndex: 4, mode: "normal", multiplier: 1, budgetMin: 240, isWeekend: false,
+    units: ctx.units, problems: ctx.problems, redo: [],
+  });
+  const alreadyScheduled = planNoRedo.blocks.flatMap((b) => b.problems)[0] ?? ctx.problems[0];
+
   const withRedo = generatePlan({
     dayIndex: 4, mode: "normal", multiplier: 1, budgetMin: 240, isWeekend: false,
     units: ctx.units, problems: ctx.problems,
-    redo: [{ ...ctx.problems[0], outcome: "editorial", redoDueDay: 4 }],
+    redo: [{ ...alreadyScheduled, outcome: "editorial", redoDueDay: 4 }],
   });
   ok("redo is block one", withRedo.blocks[0]?.kind === "redo", withRedo.blocks[0]?.kind ?? "none");
+
+  // An editorial schedules a redo without marking the problem solved, so it is
+  // still a candidate for the DSA block. Scheduling it twice also charged its
+  // minutes to the budget twice, which trimmed a block that should have fitted.
+  const scheduled = withRedo.blocks.flatMap((b) => b.problems.map((pr) => pr.slug));
+  ok("a redo is not also fresh work",
+    scheduled.length === new Set(scheduled).size,
+    `${scheduled.length} slots, ${new Set(scheduled).size} distinct`);
 
   const pools = new Set([1, 2, 3, 4, 5, 6, 7].map((d) => aptitudeTopicFor(d).pool));
   ok("aptitude rotates pools", pools.size === 3, [...pools].join(","));
@@ -190,6 +208,46 @@ async function main() {
   ok("metrics read in one trip",
     metrics.deliverablesTotal > 0 && Array.isArray(metrics.aptitude),
     `${metrics.deliverablesTotal} deliverables, ${metrics.dsaSolved} dsa`);
+
+  /* ---------------- certification ---------------- */
+  console.log("");
+
+  ok("every module has a paper",
+    contentModules.every((m) => questionsForModule(m.slug).length >= 5),
+    `${questions.length} questions over ${contentModules.length} modules`);
+
+  const p1Modules = contentModules.filter((m) => m.phaseSlug === "foundations").map((m) => m.slug);
+  const paperA = examPaper("foundations", p1Modules, 1234);
+  const paperB = examPaper("foundations", p1Modules, 1234);
+  const paperC = examPaper("foundations", p1Modules, 9999);
+  ok("exam paper is deterministic",
+    paperA.map((q) => q.id).join() === paperB.map((q) => q.id).join(), "same seed, same paper");
+  ok("exam paper varies by seed",
+    paperA.map((q) => q.id).join() !== paperC.map((q) => q.id).join(), "different seed");
+  ok("exam is the right size", paperA.length === EXAM_SIZE, `${paperA.length} questions`);
+  ok("exam spans the phase",
+    new Set(paperA.map((q) => q.moduleSlug)).size >= 8,
+    `${new Set(paperA.map((q) => q.moduleSlug)).size} modules represented`);
+  ok("exam has no repeats",
+    new Set(paperA.map((q) => q.id)).size === paperA.length, "");
+
+  // the exam is gated on progress; progress is never gated on the exam
+  const certRaw = await getCertificationState(u.id);
+  const { standings } = shapeCertification(certRaw);
+  const found = standings.find((s) => s.phaseSlug === "foundations")!;
+  ok("exam locked below 80% units", !found.examUnlocked,
+    `${found.unitsDone}/${found.unitsTotal} units`);
+
+  // banked work must not inflate the meters
+  await db.insert(unitProgress).values({
+    userId: u.id, unitSlug: "dsa-cpp-stl-toolchain", state: "done", completedOnDayIndex: 0,
+  }).onConflictDoNothing();
+  const s3 = await getJourneyState(u.id);
+  ok("banked work is not velocity", s3.unitsDone === s3.unitsEarned + 1,
+    `${s3.unitsDone} done, ${s3.unitsEarned} earned`);
+  ok("banked work adds no stone", s3.stones.length === 3, `${s3.stones.length} stones`);
+
+  ok("checkpoint bar is 80%", CHECKPOINT_PASS === 0.8, "4 of 5");
 
   /* ---------------- the streak ---------------- */
   console.log("");
