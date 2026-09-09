@@ -99,8 +99,8 @@ Day 3 of 7 — Phase 1 authored in full (17 modules, 75 units, 108 curated resou
 redo queue, and unit completion. The daily plan generator lands day 4; Telegram
 reminders day 5; certificates day 7.
 
-**A note on latency.** The database is ~270ms away, so every server action is
-written to resolve in exactly **one** round trip — `openToday` is inlined as a CTE
-rather than called separately. Running two queries in parallel is worse than
+**A note on latency.** The database (Neon, `aws-ap-southeast-1`) is ~90ms away, so
+every server action is written to resolve in exactly **one** round trip — `openToday`
+is inlined as a CTE rather than called separately. Running two queries in parallel is worse than
 running them in sequence here, because the second one pays for its own TLS
 handshake. `npm run latency` measures it.
