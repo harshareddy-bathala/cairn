@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { and, asc, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { journeyDays, unitProgress, units, modules } from "@/db/schema";
@@ -5,12 +6,24 @@ import { journeyDays, unitProgress, units, modules } from "@/db/schema";
 /** 13 weeks of curriculum, paced against ~90 active days. No calendar anywhere. */
 export const TARGET_ACTIVE_DAYS = 90;
 
+/** how far behind you may fall before the pace budget is spent — one journey week */
+export const SLACK_DAYS = 7;
+
 export type JourneyState = {
   /** how many days you have actually shown up — your position on the trail */
   dayIndex: number;
   /** 7 active days = 1 journey week */
   journeyWeek: number;
   stones: { dayIndex: number; mode: "normal" | "catchup" | "bad_day" }[];
+  /** consecutive calendar days closed, counting back from the last one. This is
+   *  the only place the calendar is allowed to judge you. */
+  streak: number;
+  longestStreak: number;
+  /** today is open but not yet closed — the streak is live and losable */
+  streakAtRisk: boolean;
+  /** today's pace setting and shape */
+  mode: "normal" | "catchup" | "bad_day";
+  multiplier: number;
   unitsDone: number;
   unitsTotal: number;
   /** units per active day */
@@ -30,23 +43,33 @@ export function journeyWeekOf(dayIndex: number) {
 }
 
 export async function getJourneyState(userId: string): Promise<JourneyState> {
-  const [days, doneRow, totalRow] = await Promise.all([
-    db
-      .select({ dayIndex: journeyDays.dayIndex, mode: journeyDays.mode, closedAt: journeyDays.closedAt })
-      .from(journeyDays)
-      .where(eq(journeyDays.userId, userId))
-      .orderBy(asc(journeyDays.dayIndex)),
-    db
-      .select({ n: sql<number>`count(*)::int` })
-      .from(unitProgress)
-      .where(and(eq(unitProgress.userId, userId), eq(unitProgress.state, "done"))),
-    db.select({ n: sql<number>`count(*)::int` }).from(units),
-  ]);
+  // One statement. Three parallel queries would be three TLS handshakes.
+  const res = await db.execute<{ data: RawState }>(sql`
+    select json_build_object(
+      'days', coalesce((
+        select json_agg(json_build_object(
+          'dayIndex', day_index, 'mode', mode, 'multiplier', multiplier,
+          'calendarDate', calendar_date, 'closed', closed_at is not null
+        ) order by day_index)
+        from journey_days where user_id = ${userId}
+      ), '[]'::json),
+      'unitsDone', (
+        select count(*)::int from unit_progress
+        where user_id = ${userId} and state = 'done'
+      ),
+      'unitsTotal', (select count(*)::int from units),
+      'today', to_char((now() at time zone (
+        select coalesce(timezone, 'Asia/Kolkata') from users where id = ${userId}
+      ))::date, 'YYYY-MM-DD')
+    ) as data
+  `);
 
-  const closed = days.filter((d) => d.closedAt);
+  const raw = res.rows[0]!.data;
+  const days = raw.days ?? [];
+  const closed = days.filter((d) => d.closed);
   const dayIndex = days.length;
-  const unitsDone = doneRow[0]?.n ?? 0;
-  const unitsTotal = totalRow[0]?.n ?? 0;
+  const unitsDone = raw.unitsDone ?? 0;
+  const unitsTotal = raw.unitsTotal ?? 0;
 
   const atTrailhead = closed.length === 0;
   const activeDays = Math.max(1, closed.length);
@@ -54,29 +77,60 @@ export async function getJourneyState(userId: string): Promise<JourneyState> {
   const daysLeft = Math.max(1, TARGET_ACTIVE_DAYS - closed.length);
   const requiredVelocity = Math.max(0, unitsTotal - unitsDone) / daysLeft;
 
-  // pace budget: 1 when at or ahead of the pace the plan needs. You cannot be
-  // behind before you have started, so the trailhead is always full.
-  const paceBudget = atTrailhead
-    ? 1
-    : requiredVelocity <= 0
-      ? 1
-      : Math.max(0, Math.min(1, velocity / Math.max(requiredVelocity, 0.0001)));
+  // Pace budget, as an SLO error budget rather than an instantaneous ratio.
+  //
+  // The units you "should" have by now, against a whole journey week of slack.
+  // An instantaneous velocity/required ratio reads 0% the moment you close a
+  // first day with nothing finished, which is a failure state greeting you
+  // before you have had a chance to fail — the exact thing that made the dated
+  // roadmap punishing. You get a full week of debt before this empties.
+  const expected = (unitsTotal * closed.length) / TARGET_ACTIVE_DAYS;
+  const allowance = Math.max(1, (unitsTotal * SLACK_DAYS) / TARGET_ACTIVE_DAYS);
+  const deficit = Math.max(0, expected - unitsDone);
+  const paceBudget = atTrailhead ? 1 : Math.max(0, Math.min(1, 1 - deficit / allowance));
 
   const last = days.at(-1);
+  const streaks = streaksOf(closed.map((d) => d.calendarDate), raw.today);
+
   return {
     dayIndex,
     journeyWeek: journeyWeekOf(Math.max(1, dayIndex)),
     stones: closed.map((d) => ({ dayIndex: d.dayIndex, mode: d.mode })),
+    streak: streaks.current,
+    longestStreak: streaks.longest,
+    streakAtRisk: Boolean(last && !last.closed),
+    mode: last?.mode ?? "normal",
+    multiplier: last?.multiplier ?? 1,
     unitsDone,
     unitsTotal,
     velocity,
     requiredVelocity,
     paceBudget,
-    todayOpen: Boolean(last && !last.closedAt),
-    todayClosed: Boolean(last?.closedAt),
+    todayOpen: Boolean(last && !last.closed),
+    todayClosed: Boolean(last?.closed),
     atTrailhead,
   };
 }
+
+type RawState = {
+  days: {
+    dayIndex: number;
+    mode: "normal" | "catchup" | "bad_day";
+    multiplier: number;
+    calendarDate: string;
+    closed: boolean;
+  }[];
+  unitsDone: number;
+  unitsTotal: number;
+  today: string;
+};
+
+/**
+ * Request-scoped memo. The layout renders the rail and the page renders the
+ * readouts from the same state; without this that is two round trips for one
+ * answer. Scripts import the uncached function directly.
+ */
+export const getJourneyStateCached = cache(getJourneyState);
 
 /** the next unseen unit in each learning track — a stand-in until the Day 4 planner */
 export async function getNextUnits(userId: string, trackSlugs: string[]) {
@@ -162,7 +216,32 @@ export async function openToday(userId: string): Promise<number> {
   return Number(row.day_index);
 }
 
-/** how many active days in a row, counting back from the most recent closed day */
-export function streakOf(stones: { dayIndex: number }[]) {
-  return stones.length;
+function dayNumber(isoDate: string) {
+  return Math.floor(Date.parse(`${isoDate}T00:00:00Z`) / 86_400_000);
+}
+
+/**
+ * The streak, and the one deliberate exception to "no calendar".
+ *
+ * `day_index` must never notice a gap — that is what made the dated roadmap
+ * punishing. But a streak that cannot break is not a streak, so this counts
+ * consecutive *calendar* days on which a day was closed. Miss a Tuesday and you
+ * lose the streak; you do not lose your place on the trail, and nothing is
+ * marked overdue.
+ */
+export function streaksOf(closedDates: string[], today: string) {
+  const days = [...new Set(closedDates)].map(dayNumber).sort((a, b) => a - b);
+  if (days.length === 0) return { current: 0, longest: 0 };
+
+  let longest = 1;
+  let run = 1;
+  for (let i = 1; i < days.length; i++) {
+    run = days[i] === days[i - 1] + 1 ? run + 1 : 1;
+    longest = Math.max(longest, run);
+  }
+
+  // Today still counts as unbroken while it is in progress — the streak is only
+  // lost once a whole day has passed without a close.
+  const gap = dayNumber(today) - days[days.length - 1];
+  return { current: gap <= 1 ? run : 0, longest };
 }

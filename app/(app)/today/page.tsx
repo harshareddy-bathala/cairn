@@ -1,47 +1,55 @@
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import { auth } from "@/auth";
 import { Panel } from "@/components/instrument/panel";
 import { Readout } from "@/components/instrument/readout";
 import { BurnGauge } from "@/components/instrument/burn-gauge";
 import { Boot, BootItem } from "@/components/instrument/boot";
-import { getJourneyState, getNextUnits } from "@/lib/journey";
-import { getRedoQueue } from "@/lib/progress";
-import { ProblemList } from "@/components/instrument/problem-list";
+import { PlanList } from "@/components/instrument/plan-list";
+import { PaceControl } from "@/components/instrument/pace-control";
+import { DayClose } from "@/components/instrument/day-close";
+import { getJourneyStateCached } from "@/lib/journey";
+import { getTodayPlan } from "@/lib/planner";
+import { fmtMin } from "@/lib/format";
 
 export const metadata = { title: "Today" };
-
-const TRACK_LABEL: Record<string, string> = {
-  dsa: "dsa",
-  devops: "ops",
-  sde: "sde",
-  corecs: "cs",
-};
 
 export default async function TodayPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/signin");
 
-  const journey = await getJourneyState(session.user.id);
-  const next = await getNextUnits(session.user.id, ["dsa", "devops", "sde", "corecs"]);
-  const redo = await getRedoQueue(session.user.id, Math.max(journey.dayIndex, 1));
+  const journey = await getJourneyStateCached(session.user.id);
+  const today = await getTodayPlan(session.user.id);
+  const plan = today.plan;
+
+  const remaining = plan.blocks
+    .filter((b) => !b.done && b.kind !== "close")
+    .reduce((n, b) => n + b.minutes, 0);
 
   return (
     <Boot className="mx-auto max-w-3xl space-y-6 px-6 py-10">
       <BootItem>
-        <header className="flex items-end justify-between gap-6">
+        <header className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="legend">
               day {String(journey.dayIndex).padStart(3, "0")} · week{" "}
               {String(journey.journeyWeek).padStart(2, "0")}
+              {journey.streak > 1 && (
+                <span className="text-phos-dim"> · {journey.streak}-day streak</span>
+              )}
             </p>
             <h1 className="mt-1 text-2xl text-hi">
-              {journey.dayIndex === 0 ? "Trailhead" : "Today"}
+              {plan.mode === "bad_day"
+                ? "Bad day"
+                : journey.dayIndex === 0
+                  ? "Trailhead"
+                  : "Today"}
             </h1>
           </div>
-          <p className="max-w-xs text-right text-2xs leading-relaxed text-lo">
-            no dates, no overdue. the only number that moves is the one you move.
-          </p>
+          <PaceControl
+            multiplier={plan.multiplier}
+            badDay={plan.mode === "bad_day"}
+            disabled={today.closed}
+          />
         </header>
       </BootItem>
 
@@ -53,12 +61,16 @@ export default async function TodayPage() {
                 label="velocity"
                 value={journey.atTrailhead ? "—" : journey.velocity.toFixed(2)}
                 unit={journey.atTrailhead ? undefined : "u/d"}
+                // the tone follows the pace budget, not an instantaneous
+                // comparison — one slow day is not a warning state
                 tone={
                   journey.atTrailhead
                     ? "neutral"
-                    : journey.velocity >= journey.requiredVelocity
+                    : journey.paceBudget > 0.5
                       ? "ok"
-                      : "warn"
+                      : journey.paceBudget > 0.2
+                        ? "warn"
+                        : "bad"
                 }
               />
               <Readout
@@ -70,7 +82,7 @@ export default async function TodayPage() {
               <Readout
                 label="active days"
                 value={journey.stones.length}
-                note={`of ~90`}
+                note="of ~90"
                 tone="neutral"
               />
             </div>
@@ -92,54 +104,43 @@ export default async function TodayPage() {
         </Panel>
       </BootItem>
 
-      {redo.length > 0 && (
-        <BootItem>
-          <Panel legend="redo queue" aux={`${redo.length} due`} active>
+      <BootItem>
+        <Panel
+          legend={plan.mode === "bad_day" ? "minimum chain" : "plan"}
+          aux={
+            today.closed
+              ? `${fmtMin(plan.doneMin)} logged`
+              : `${fmtMin(remaining)} left · ${fmtMin(today.budgetMin)} budget`
+          }
+          active={!today.closed}
+        >
+          {plan.mode === "bad_day" && (
             <p className="mb-3 text-2xs leading-relaxed text-lo">
-              You opened the editorial on these, so they were never done. Re-solve clean.
+              One problem and the log. That is a complete day today — the streak does not
+              know the difference, and neither will November.
             </p>
-            <ProblemList
-              problems={redo.map((r) => ({
-                slug: r.problemSlug,
-                title: r.title,
-                url: r.url,
-                platform: "leetcode",
-                difficulty: r.difficulty,
-                patternTag: r.patternTag,
-                triggerHint: r.triggerHint,
-                approachHint: r.approachHint,
-                estMinutes: r.estMinutes,
-                isMust: true,
-                outcome: r.outcome,
-                redoDueDay: r.redoDueDay,
-              }))}
-            />
-          </Panel>
-        </BootItem>
-      )}
+          )}
+          {plan.multiplier > 1 && plan.mode !== "bad_day" && (
+            <p className="mb-3 text-2xs leading-relaxed text-lo">
+              Catch-up at {plan.multiplier}× — the blocks marked{" "}
+              <span className="text-phos-dim">+</span> are pulled forward from the next day.
+            </p>
+          )}
+          <PlanList blocks={plan.blocks} />
+        </Panel>
+      </BootItem>
 
       <BootItem>
-        <Panel legend="next up" aux="planner lands day 4">
-          {next.length === 0 ? (
-            <p className="text-sm text-lo">Nothing seeded yet. Run <code>npm run seed</code>.</p>
-          ) : (
-            <ul className="divide-y divide-line-soft">
-              {next.map((u) => (
-                <li key={u.unitSlug} className="first:pt-0 last:pb-0">
-                  <Link href={`/unit/${u.unitSlug}`} className="flex items-baseline gap-3 py-2.5 transition-colors duration-[120ms] hover:text-hi">
-                  <span className="legend w-8 shrink-0 text-phos-dim">
-                    {TRACK_LABEL[u.trackSlug] ?? u.trackSlug}
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm text-hi">{u.unitTitle}</span>
-                    <span className="block truncate text-2xs text-lo">{u.moduleTitle}</span>
-                  </span>
-                  <span className="legend shrink-0 tabular-nums">~{u.estMinutes}m</span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
+        <Panel legend={today.closed ? "closed" : "close the day"}>
+          <DayClose
+            dayIndex={plan.dayIndex}
+            stones={journey.stones}
+            closed={today.closed}
+            learned={today.learned}
+            tomorrowFirstTask={today.tomorrowFirstTask}
+            minutes={today.minutesTotal}
+            suggestedMinutes={plan.doneMin || undefined}
+          />
         </Panel>
       </BootItem>
     </Boot>

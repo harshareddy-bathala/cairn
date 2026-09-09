@@ -22,7 +22,7 @@ absorb two skipped ones, and a bad-day button collapses the plan to the minimum 
 | Data | Drizzle ORM → Postgres (local Docker; Neon in production) |
 | Auth | Auth.js v5, Google, gated by an `allowed_emails` allowlist |
 | Motion | `motion` — nine named moments, nothing else animates |
-| Reminders | Telegram bot, driven by a Cloudflare Worker cron trigger *(day 5)* |
+| Reminders | Telegram bot, driven by a Cloudflare Worker cron trigger |
 
 Curriculum content lives in `content/` as typed TypeScript and is pushed into Postgres by
 `scripts/seed.ts`. **The database is a cache; git is the source of truth.** Re-seeding is
@@ -75,10 +75,13 @@ enforces the allowlist.
 | `npm run seed` | validate and load `content/` (idempotent) |
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run invite` | add an email to the allowlist, or list the allowlist |
-| `npm run verify` | smoke-test the journey-day and redo-queue invariants |
+| `npm run verify` | 22 invariants: journey days, redo queue, planner, streak |
 | `npm run e2e` | drive the problem/unit loop in a real browser (needs `npm run dev`) |
+| `npm run e2e:day` | drive the plan, catch-up, bad day and day close in a browser |
 | `npm run latency` | measure database round-trip cost |
 | `npm run reset-me` | wipe your own progress rows, keeping the curriculum |
+| `npm run reminders` | 19 invariants: the schedule, the copy, the due window |
+| `npm run telegram` | bot plumbing — `setup`, `info`, `tick`, `preview` |
 | `npm run shots` | screenshot key pages into `shots/` for design QA |
 
 ## Layout
@@ -86,18 +89,48 @@ enforces the allowlist.
 ```
 content/     curriculum source of truth — modules, units, resources, problems
 db/          drizzle schema + client
-lib/         journey.ts (day math), motion.ts (the motion budget), cn.ts
+lib/         planner.ts (the daily plan), journey.ts (day math + streak),
+             reminders.ts (what a nudge says), reminder-slots.ts (the schedule),
+             telegram.ts, motion.ts (the motion budget), format.ts, cn.ts
 components/instrument/   Panel, Readout, Sparkline, Cairn, BurnGauge, Rail, Boot
-app/(app)/   authenticated surfaces: today, roadmap
+app/(app)/   authenticated surfaces: today, roadmap, settings
+app/api/     cron (the reminder tick), telegram (the bot webhook)
+workers/reminders/   the Cloudflare Worker cron trigger — a clock, no logic
 docs/roadmap/  personal source material (git-ignored, local only)
 ```
 
 ## Status
 
-Day 3 of 7 — Phase 1 authored in full (17 modules, 75 units, 108 curated resources,
-98 problems) and the progress loop is live: problem outcomes, the self-scheduling
-redo queue, and unit completion. The daily plan generator lands day 4; Telegram
-reminders day 5; certificates day 7.
+Day 5 of 7. Phase 1 is authored in full (17 modules, 75 units, 108 curated
+resources, 98 problems), the progress loop is live (problem outcomes, the
+self-scheduling redo queue, unit completion), the engine runs the day
+(`lib/planner.ts` sizes 4–6 blocks against your budget, catch-up at 1.5× / 2×,
+the bad-day collapse, closing the day drops a stone), and the reminders that
+the original roadmap never had now arrive in Telegram. Certificates land day 7.
+
+**How a day is built.** Redo first — problems you already believed were done.
+Then DSA, then the timed aptitude drill, then the domain lane (DevOps four days
+in five, SDE the fifth), then rotating Core CS. If that overruns the budget the
+generator sheds DSA *problems* before it drops a whole block, and it will never
+drop DSA, aptitude or the close — that is the roadmap's own "never cut" list,
+encoded. The plan is written into `journey_days.plan` the first time you open
+the app, so finishing a unit does not reshuffle the rest of your morning.
+
+**How a reminder works.** Five slots — morning plan, aptitude, evening block,
+close, streak risk — each at a local time you choose, stored per user. A
+Cloudflare Worker POSTs `/api/cron` every five minutes with a shared secret;
+the app resolves every user's local clock *in Postgres*, picks the slots inside
+a 20-minute grace window, and composes each message from the real state of that
+day. A `(user, kind, local date)` key makes the whole thing idempotent, so an
+overlapping tick, a worker retry and a manual curl all collapse to one message.
+
+The tick is **read-only against `journey_days`**, and that is the load-bearing
+rule: `day_index` advances on showing up, so a cron firing at 07:00 must never
+be the thing that opens your day. A reminder reports the trail; it does not walk
+it. The same rule shapes the copy — nothing a message says can mark you late,
+because nothing here is late. The one exception is the streak-risk slot, which
+is the only thing you can actually lose, and it stays silent when there is no
+streak to lose.
 
 **A note on latency.** The database (Neon, `aws-ap-southeast-1`) is ~90ms away, so
 every server action is written to resolve in exactly **one** round trip — `openToday`
