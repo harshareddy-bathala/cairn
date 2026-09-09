@@ -12,14 +12,32 @@ function isLocal(url?: string) {
   }
 }
 
+/**
+ * Neon supplies `?sslmode=require`, which pg currently treats as verify-full and
+ * warns is about to change meaning. We strip it and state the intent directly:
+ * full verification against the system CA store, which is what Neon supports.
+ */
+function connectionString(raw?: string) {
+  if (!raw) return raw;
+  try {
+    const u = new URL(raw);
+    u.searchParams.delete("sslmode");
+    u.searchParams.delete("channel_binding");
+    return u.toString();
+  } catch {
+    return raw;
+  }
+}
+
 const globalForDb = globalThis as unknown as { pool?: Pool };
+
+const url = connectionString(process.env.DATABASE_URL);
 
 const pool =
   globalForDb.pool ??
   new Pool({
-    connectionString: process.env.DATABASE_URL,
-    // Neon requires TLS; local docker does not.
-    ssl: isLocal(process.env.DATABASE_URL) ? false : { rejectUnauthorized: true },
+    connectionString: url,
+    ssl: isLocal(url) ? false : { rejectUnauthorized: true },
     max: 5,
   });
 

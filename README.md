@@ -75,6 +75,10 @@ enforces the allowlist.
 | `npm run seed` | validate and load `content/` (idempotent) |
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run invite` | add an email to the allowlist, or list the allowlist |
+| `npm run verify` | smoke-test the journey-day and redo-queue invariants |
+| `npm run e2e` | drive the problem/unit loop in a real browser (needs `npm run dev`) |
+| `npm run latency` | measure database round-trip cost |
+| `npm run reset-me` | wipe your own progress rows, keeping the curriculum |
 | `npm run shots` | screenshot key pages into `shots/` for design QA |
 
 ## Layout
@@ -90,6 +94,13 @@ docs/roadmap/  personal source material (git-ignored, local only)
 
 ## Status
 
-Day 2 of 7 — Phase 1 authored in full: 17 modules, 75 units, 108 curated resources,
-98 problems. Running on Neon. The daily plan generator lands day 4; Telegram
+Day 3 of 7 — Phase 1 authored in full (17 modules, 75 units, 108 curated resources,
+98 problems) and the progress loop is live: problem outcomes, the self-scheduling
+redo queue, and unit completion. The daily plan generator lands day 4; Telegram
 reminders day 5; certificates day 7.
+
+**A note on latency.** The database is ~270ms away, so every server action is
+written to resolve in exactly **one** round trip — `openToday` is inlined as a CTE
+rather than called separately. Running two queries in parallel is worse than
+running them in sequence here, because the second one pays for its own TLS
+handshake. `npm run latency` measures it.

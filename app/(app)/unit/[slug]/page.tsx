@@ -3,11 +3,12 @@ import Link from "next/link";
 import { and, asc, eq } from "drizzle-orm";
 import { auth } from "@/auth";
 import { db } from "@/db";
-import { modules, problems, resources, units } from "@/db/schema";
+import { modules, problemAttempts, problems, resources, unitProgress, units } from "@/db/schema";
 import { Panel } from "@/components/instrument/panel";
 import { Boot, BootItem } from "@/components/instrument/boot";
 import { ProblemList } from "@/components/instrument/problem-list";
 import { Markdown } from "@/components/instrument/markdown";
+import { UnitComplete } from "@/components/instrument/unit-complete";
 import { cn } from "@/lib/cn";
 
 const KIND_GLYPH: Record<string, string> = {
@@ -42,14 +43,37 @@ export default async function UnitPage({ params }: { params: Promise<{ slug: str
 
   if (!unit) notFound();
 
-  const [res, probs] = await Promise.all([
+  const [res, probs, progress, attempts] = await Promise.all([
     db.select().from(resources).where(eq(resources.unitSlug, slug)).orderBy(asc(resources.order)),
     db
       .select()
       .from(problems)
       .where(and(eq(problems.moduleSlug, unit.moduleSlug), eq(problems.unitSlug, slug)))
       .orderBy(asc(problems.order)),
+    db
+      .select()
+      .from(unitProgress)
+      .where(and(eq(unitProgress.userId, session.user.id), eq(unitProgress.unitSlug, slug))),
+    db
+      .select({
+        problemSlug: problemAttempts.problemSlug,
+        outcome: problemAttempts.outcome,
+        hintRevealed: problemAttempts.hintRevealed,
+        redoDueDay: problemAttempts.redoDueDay,
+        redoClearedAt: problemAttempts.redoClearedAt,
+        id: problemAttempts.id,
+      })
+      .from(problemAttempts)
+      .where(eq(problemAttempts.userId, session.user.id))
+      .orderBy(asc(problemAttempts.id)),
   ]);
+
+  // last attempt wins; an earlier revealed hint stays revealed
+  const latest = new Map<string, (typeof attempts)[number] & { everRevealed: boolean }>();
+  for (const a of attempts) {
+    const prev = latest.get(a.problemSlug);
+    latest.set(a.problemSlug, { ...a, everRevealed: Boolean(prev?.everRevealed || a.hintRevealed) });
+  }
 
   return (
     <Boot className="mx-auto max-w-3xl space-y-6 px-6 py-10">
@@ -107,6 +131,16 @@ export default async function UnitPage({ params }: { params: Promise<{ slug: str
         </Panel>
       </BootItem>
 
+      <BootItem>
+        <Panel legend="progress" active={progress[0]?.state !== "done"}>
+          <UnitComplete
+            unitSlug={unit.slug}
+            done={progress[0]?.state === "done"}
+            completedOnDayIndex={progress[0]?.completedOnDayIndex}
+          />
+        </Panel>
+      </BootItem>
+
       {probs.length > 0 && (
         <BootItem>
           <Panel legend="practice" aux={`${probs.length} problems`}>
@@ -122,6 +156,11 @@ export default async function UnitPage({ params }: { params: Promise<{ slug: str
                 approachHint: p.approachHint,
                 estMinutes: p.estMinutes,
                 isMust: p.isMust,
+                outcome: latest.get(p.slug)?.outcome ?? null,
+                hintRevealed: latest.get(p.slug)?.everRevealed ?? false,
+                redoDueDay: latest.get(p.slug)?.redoClearedAt
+                  ? null
+                  : (latest.get(p.slug)?.redoDueDay ?? null),
               }))}
             />
           </Panel>

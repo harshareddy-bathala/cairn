@@ -26,6 +26,7 @@ export default async function RoadmapPage() {
         trackSlug: modules.trackSlug,
         phaseSlug: modules.phaseSlug,
         order: modules.order,
+        prereqSlugs: modules.prereqSlugs,
         total: sql<number>`count(${units.slug})::int`,
         done: sql<number>`count(*) filter (where ${unitProgress.state} = 'done')::int`,
       })
@@ -67,6 +68,11 @@ export default async function RoadmapPage() {
                   {inPhase.map((m) => {
                     const track = trackRows.find((t) => t.slug === m.trackSlug);
                     const pct = m.total ? m.done / m.total : 0;
+                    // soft gate: prerequisites are advice, never a lock. Falling
+                    // behind must never wall you out of the map.
+                    const blocking = (m.prereqSlugs ?? [])
+                      .map((ps) => moduleRows.find((x) => x.slug === ps))
+                      .filter((x) => x && x.done < x.total);
                     return (
                       <li key={m.slug}>
                         <Link
@@ -83,6 +89,11 @@ export default async function RoadmapPage() {
                           <p className="mt-1 line-clamp-2 text-2xs leading-relaxed text-lo">
                             {m.summary}
                           </p>
+                          {blocking.length > 0 && (
+                            <p className="mt-1.5 text-2xs text-info">
+                              reads better after {blocking.map((b) => b!.title).join(", ")}
+                            </p>
+                          )}
                           <div className="mt-3 flex gap-[2px]" aria-hidden>
                             {Array.from({ length: Math.max(m.total, 1) }, (_, i) => (
                               <span

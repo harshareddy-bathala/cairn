@@ -21,6 +21,8 @@ export type ProblemRowData = {
   outcome?: Outcome | null;
   hintRevealed?: boolean;
   redoDueDay?: number | null;
+  /** set the instant an editorial is reported, before the server returns the day */
+  redoPending?: boolean;
 };
 
 const DIFF = {
@@ -165,9 +167,10 @@ export function ProblemRow({
             </div>
           )}
 
-          {p.redoDueDay != null && (
+          {(p.redoDueDay != null || p.redoPending) && (
             <p className="text-2xs text-info">
-              redo scheduled — day {String(p.redoDueDay).padStart(3, "0")}
+              redo scheduled
+              {p.redoDueDay != null ? ` — day ${String(p.redoDueDay).padStart(3, "0")}` : "…"}
             </p>
           )}
         </div>

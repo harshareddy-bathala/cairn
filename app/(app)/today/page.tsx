@@ -6,6 +6,8 @@ import { Readout } from "@/components/instrument/readout";
 import { BurnGauge } from "@/components/instrument/burn-gauge";
 import { Boot, BootItem } from "@/components/instrument/boot";
 import { getJourneyState, getNextUnits } from "@/lib/journey";
+import { getRedoQueue } from "@/lib/progress";
+import { ProblemList } from "@/components/instrument/problem-list";
 
 export const metadata = { title: "Today" };
 
@@ -22,6 +24,7 @@ export default async function TodayPage() {
 
   const journey = await getJourneyState(session.user.id);
   const next = await getNextUnits(session.user.id, ["dsa", "devops", "sde", "corecs"]);
+  const redo = await getRedoQueue(session.user.id, Math.max(journey.dayIndex, 1));
 
   return (
     <Boot className="mx-auto max-w-3xl space-y-6 px-6 py-10">
@@ -88,6 +91,32 @@ export default async function TodayPage() {
           </div>
         </Panel>
       </BootItem>
+
+      {redo.length > 0 && (
+        <BootItem>
+          <Panel legend="redo queue" aux={`${redo.length} due`} active>
+            <p className="mb-3 text-2xs leading-relaxed text-lo">
+              You opened the editorial on these, so they were never done. Re-solve clean.
+            </p>
+            <ProblemList
+              problems={redo.map((r) => ({
+                slug: r.problemSlug,
+                title: r.title,
+                url: r.url,
+                platform: "leetcode",
+                difficulty: r.difficulty,
+                patternTag: r.patternTag,
+                triggerHint: r.triggerHint,
+                approachHint: r.approachHint,
+                estMinutes: r.estMinutes,
+                isMust: true,
+                outcome: r.outcome,
+                redoDueDay: r.redoDueDay,
+              }))}
+            />
+          </Panel>
+        </BootItem>
+      )}
 
       <BootItem>
         <Panel legend="next up" aux="planner lands day 4">

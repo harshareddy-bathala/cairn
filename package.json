@@ -11,7 +11,11 @@
     "seed": "tsx --env-file=.env.local scripts/seed.ts",
     "typecheck": "tsc --noEmit",
     "shots": "node scripts/shot.mjs",
-    "invite": "tsx --env-file=.env.local scripts/invite.ts"
+    "invite": "tsx --env-file=.env.local scripts/invite.ts",
+    "verify": "tsx --env-file=.env.local scripts/verify.ts",
+    "latency": "tsx --env-file=.env.local scripts/latency.ts",
+    "reset-me": "tsx --env-file=.env.local scripts/reset-me.ts",
+    "e2e": "node scripts/interact.mjs"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.3",
