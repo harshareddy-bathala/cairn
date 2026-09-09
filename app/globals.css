@@ -1,0 +1,143 @@
+@import "tailwindcss";
+
+/* ================================================================== *
+ *  CAIRN — "Instrument"
+ *  Three rules carry the whole look:
+ *   1. hairline panels, never shadowed cards
+ *   2. every numeral is tabular mono
+ *   3. phosphor is reserved for STATE — never for body prose
+ * ================================================================== */
+
+@theme {
+  /* --- ground & structure ------------------------------------- */
+  --color-ink-900: oklch(0.155 0.008 240);
+  --color-ink-850: oklch(0.190 0.008 240);
+  --color-ink-800: oklch(0.230 0.009 240);
+  --color-ink-700: oklch(0.290 0.010 240);
+
+  --color-line: oklch(0.320 0.010 240 / 0.55);
+  --color-line-soft: oklch(0.320 0.010 240 / 0.30);
+  --color-line-hi: oklch(1 0 0 / 0.06);
+
+  /* --- text ---------------------------------------------------- */
+  --color-hi: oklch(0.945 0.005 240);
+  --color-mid: oklch(0.720 0.008 240);
+  --color-lo: oklch(0.545 0.010 240);
+
+  /* --- signal (state only) ------------------------------------- */
+  --color-phos: oklch(0.82 0.17 152);
+  --color-phos-dim: oklch(0.62 0.13 152);
+  --color-warn: oklch(0.80 0.15 78);
+  --color-bad: oklch(0.68 0.19 25);
+  --color-info: oklch(0.78 0.11 220);
+
+  /* --- type ---------------------------------------------------- */
+  --font-mono: var(--font-plex-mono), ui-monospace, "SF Mono", Menlo, monospace;
+  --font-sans: var(--font-plex-sans), ui-sans-serif, system-ui, sans-serif;
+
+  --text-2xs: 0.6875rem;   /* 11 — legends */
+  --text-xs: 0.75rem;      /* 12 */
+  --text-sm: 0.8125rem;    /* 13 — data rows */
+  --text-base: 0.9375rem;  /* 15 — ui */
+  --text-lg: 1.0625rem;    /* 17 — prose */
+  --text-xl: 1.3125rem;    /* 21 */
+  --text-2xl: 1.75rem;     /* 28 */
+  --text-3xl: 2.375rem;    /* 38 */
+
+  --radius-panel: 4px;
+
+  /* --- motion -------------------------------------------------- */
+  --ease-instrument: cubic-bezier(0.32, 0.72, 0, 1);
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+  --duration-slow: 320ms;
+}
+
+/* ================================================================== *
+ *  base
+ * ================================================================== */
+
+:root {
+  color-scheme: dark;
+  --noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+}
+
+html {
+  background: var(--color-ink-900);
+}
+
+body {
+  background: var(--color-ink-900);
+  color: var(--color-hi);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "liga" 0, "calt" 0; /* no ligatures in an instrument */
+  -webkit-font-smoothing: antialiased;
+}
+
+/* the single texture layer — 2%, fixed, never scrolls */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image: var(--noise);
+  opacity: 0.02;
+  pointer-events: none;
+  z-index: 100;
+  mix-blend-mode: overlay;
+}
+
+/* prose is the one place a text face and normal numerals are allowed */
+.prose-cairn {
+  font-family: var(--font-sans);
+  font-size: var(--text-lg);
+  line-height: 1.65;
+  max-width: 68ch;
+  color: var(--color-mid);
+  font-variant-numeric: normal;
+}
+.prose-cairn strong { color: var(--color-hi); font-weight: 600; }
+.prose-cairn code {
+  font-family: var(--font-mono);
+  font-size: 0.875em;
+  color: var(--color-hi);
+  background: var(--color-ink-800);
+  padding: 0.1em 0.35em;
+  border-radius: 3px;
+}
+.prose-cairn a { color: var(--color-info); text-decoration: underline; text-underline-offset: 3px; }
+.prose-cairn > * + * { margin-top: 1em; }
+
+/* legend: 11px mono, uppercase, tracked — the instrument's voice */
+.legend {
+  font-size: var(--text-2xs);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-lo);
+  font-variant-numeric: tabular-nums;
+}
+
+::selection { background: var(--color-phos-dim); color: var(--color-ink-900); }
+
+:focus-visible {
+  outline: 1px solid var(--color-phos);
+  outline-offset: 2px;
+}
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--color-ink-700);
+  border: 3px solid var(--color-ink-900);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover { background: oklch(0.36 0.01 240); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 120ms !important;
+  }
+}
