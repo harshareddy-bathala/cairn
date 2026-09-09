@@ -9,7 +9,7 @@ compatibility_date = "2026-09-01"
 crons = ["*/5 * * * *"]
 
 [vars]
-APP_URL = "https://cairn.example.com"
+APP_URL = "https://cairndev.vercel.app"
 
 # CRON_SECRET is a secret, not a var:
 #   npx wrangler secret put CRON_SECRET
