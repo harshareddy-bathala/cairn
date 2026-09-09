@@ -65,3 +65,24 @@ export type Module = {
   units: Unit[];
   problems?: Problem[];
 };
+
+export type Deliverable = {
+  slug: string;
+  title: string;
+  /** written so that "I worked on it" cannot be mistaken for "it is finished" */
+  definitionOfDone: string;
+  estMinutes: number;
+};
+
+export type Project = {
+  slug: string;
+  name: string;
+  phaseSlug: string;
+  order: number;
+  summary: string;
+  /** the one line this project earns on the resume, written before it is built */
+  resumeLine: string;
+  /** hand-typed, zero AI codegen — the rule that makes the project count */
+  pledgeNoAi?: boolean;
+  deliverables: Deliverable[];
+};

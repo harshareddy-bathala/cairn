@@ -4,7 +4,8 @@ import { db } from "@/db";
 import { journeyDays, unitProgress, units, modules } from "@/db/schema";
 
 /** 13 weeks of curriculum, paced against ~90 active days. No calendar anywhere. */
-export const TARGET_ACTIVE_DAYS = 90;
+export { TARGET_ACTIVE_DAYS } from "@/content/cadence";
+import { TARGET_ACTIVE_DAYS } from "@/content/cadence";
 
 /** how far behind you may fall before the pace budget is spent — one journey week */
 export const SLACK_DAYS = 7;

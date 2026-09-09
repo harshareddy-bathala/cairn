@@ -1,7 +1,7 @@
 import { eq, notInArray } from "drizzle-orm";
 import { db } from "@/db";
 import * as s from "@/db/schema";
-import { modules, phases, tracks, validateContent } from "@/content";
+import { modules, phases, projects, tracks, validateContent } from "@/content";
 
 /**
  * Idempotent: upserts by slug and prunes rows that content no longer defines.
@@ -93,6 +93,36 @@ async function main() {
     }
   }
 
+  let deliverableCount = 0;
+  for (const pr of projects) {
+    const row = {
+      slug: pr.slug,
+      name: pr.name,
+      phaseSlug: pr.phaseSlug,
+      order: pr.order,
+      summary: pr.summary,
+      resumeLine: pr.resumeLine,
+      pledgeNoAi: pr.pledgeNoAi ?? true,
+    };
+    await db.insert(s.projects).values(row).onConflictDoUpdate({ target: s.projects.slug, set: row });
+
+    for (const [i, d] of pr.deliverables.entries()) {
+      const del = {
+        slug: d.slug,
+        projectSlug: pr.slug,
+        order: i + 1,
+        title: d.title,
+        definitionOfDone: d.definitionOfDone,
+        estMinutes: d.estMinutes,
+      };
+      await db
+        .insert(s.deliverables)
+        .values(del)
+        .onConflictDoUpdate({ target: s.deliverables.slug, set: del });
+      deliverableCount++;
+    }
+  }
+
   // prune content that was removed from the registry
   const liveModules = modules.map((m) => m.slug);
   const liveUnits = modules.flatMap((m) => m.units.map((u) => u.slug));
@@ -100,11 +130,17 @@ async function main() {
   if (liveProblems.length) await db.delete(s.problems).where(notInArray(s.problems.slug, liveProblems));
   if (liveUnits.length) await db.delete(s.units).where(notInArray(s.units.slug, liveUnits));
   if (liveModules.length) await db.delete(s.modules).where(notInArray(s.modules.slug, liveModules));
+  const liveDeliverables = projects.flatMap((pr) => pr.deliverables.map((d) => d.slug));
+  const liveProjects = projects.map((pr) => pr.slug);
+  if (liveDeliverables.length)
+    await db.delete(s.deliverables).where(notInArray(s.deliverables.slug, liveDeliverables));
+  if (liveProjects.length) await db.delete(s.projects).where(notInArray(s.projects.slug, liveProjects));
 
   console.log(`modules   ${modules.length}`);
   console.log(`units     ${unitCount}`);
   console.log(`resources ${resourceCount}`);
   console.log(`problems  ${problemCount}`);
+  console.log(`projects  ${projects.length} (${deliverableCount} deliverables)`);
   console.log("seed ok");
   process.exit(0);
 }

@@ -9,8 +9,11 @@ const NAV = [
   { href: "/today", glyph: "▣", label: "Today" },
   { href: "/roadmap", glyph: "◇", label: "Trail" },
   { href: "/metrics", glyph: "◎", label: "Metrics" },
+  { href: "/projects", glyph: "✦", label: "Projects" },
+  { href: "/career", glyph: "▧", label: "Career" },
   { href: "/review", glyph: "▤", label: "Review" },
   { href: "/cohort", glyph: "◰", label: "Cohort" },
+  { href: "/settings", glyph: "⌗", label: "Settings" },
 ];
 
 export function Rail({ stones, dayIndex }: { stones: Stone[]; dayIndex: number }) {

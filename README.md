@@ -78,6 +78,7 @@ enforces the allowlist.
 | `npm run verify` | 22 invariants: journey days, redo queue, planner, streak |
 | `npm run e2e` | drive the problem/unit loop in a real browser (needs `npm run dev`) |
 | `npm run e2e:day` | drive the plan, catch-up, bad day and day close in a browser |
+| `npm run e2e:tracks` | drive aptitude, projects, applications and the STAR bank |
 | `npm run latency` | measure database round-trip cost |
 | `npm run reset-me` | wipe your own progress rows, keeping the curriculum |
 | `npm run reminders` | 19 invariants: the schedule, the copy, the due window |
@@ -87,13 +88,14 @@ enforces the allowlist.
 ## Layout
 
 ```
-content/     curriculum source of truth — modules, units, resources, problems
+content/     curriculum source of truth — modules, units, resources, problems,
+             projects and their deliverables, the weekly cadence, the DSA curve
 db/          drizzle schema + client
 lib/         planner.ts (the daily plan), journey.ts (day math + streak),
              reminders.ts (what a nudge says), reminder-slots.ts (the schedule),
              telegram.ts, motion.ts (the motion budget), format.ts, cn.ts
 components/instrument/   Panel, Readout, Sparkline, Cairn, BurnGauge, Rail, Boot
-app/(app)/   authenticated surfaces: today, roadmap, settings
+app/(app)/   authenticated surfaces: today, roadmap, metrics, projects, career, settings
 app/api/     cron (the reminder tick), telegram (the bot webhook)
 workers/reminders/   the Cloudflare Worker cron trigger — a clock, no logic
 docs/roadmap/  personal source material (git-ignored, local only)
@@ -101,39 +103,30 @@ docs/roadmap/  personal source material (git-ignored, local only)
 
 ## Status
 
-Day 5 of 7. Phase 1 is authored in full (17 modules, 75 units, 108 curated
+Day 6 of 7. Phase 1 is authored in full (17 modules, 75 units, 108 curated
 resources, 98 problems), the progress loop is live (problem outcomes, the
 self-scheduling redo queue, unit completion), the engine runs the day
-(`lib/planner.ts` sizes 4–6 blocks against your budget, catch-up at 1.5× / 2×,
-the bad-day collapse, closing the day drops a stone), and the reminders that
-the original roadmap never had now arrive in Telegram. Certificates land day 7.
+(`lib/planner.ts`, catch-up, bad-day, day close), and the side tracks are in:
+the aptitude log, the three projects with their deliverables, the mock cadence,
+the STAR bank and the applications counter. Certificates land day 7.
 
 **How a day is built.** Redo first — problems you already believed were done.
-Then DSA, then the timed aptitude drill, then the domain lane (DevOps four days
-in five, SDE the fifth), then rotating Core CS. If that overruns the budget the
-generator sheds DSA *problems* before it drops a whole block, and it will never
-drop DSA, aptitude or the close — that is the roadmap's own "never cut" list,
-encoded. The plan is written into `journey_days.plan` the first time you open
-the app, so finishing a unit does not reshuffle the rest of your morning.
+Then DSA, the timed aptitude drill, the domain lane (DevOps four days in five,
+SDE the fifth), rotating Core CS, the project block on weekends, and any of the
+journey week's quotas that are running out of week. If that overruns the budget
+the generator sheds DSA *problems* before it drops a whole block, and it will
+never drop DSA, aptitude or the close — that is the roadmap's own "never cut"
+list, encoded. The plan is written into `journey_days.plan` the first time you
+open the app, so finishing a unit does not reshuffle the rest of your morning.
 
-**How a reminder works.** Five slots — morning plan, aptitude, evening block,
-close, streak risk — each at a local time you choose, stored per user. A
-Cloudflare Worker POSTs `/api/cron` every five minutes with a shared secret;
-the app resolves every user's local clock *in Postgres*, picks the slots inside
-a 20-minute grace window, and composes each message from the real state of that
-day. A `(user, kind, local date)` key makes the whole thing idempotent, so an
-overlapping tick, a worker retry and a manual curl all collapse to one message.
-
-The tick is **read-only against `journey_days`**, and that is the load-bearing
-rule: `day_index` advances on showing up, so a cron firing at 07:00 must never
-be the thing that opens your day. A reminder reports the trail; it does not walk
-it. The same rule shapes the copy — nothing a message says can mark you late,
-because nothing here is late. The one exception is the streak-risk slot, which
-is the only thing you can actually lose, and it stays silent when there is no
-streak to lose.
+**Why the side tracks are counted.** Aptitude has no repo and five applications
+leave no commit, so they are the lanes that vanish first and are only missed in
+November. `/metrics` exists to make them visible: the DSA count against the
+95/165/230 curve, the redo queue's size, the aptitude trend, minutes logged, and
+applications flagged red at zero once that lane opens.
 
 **A note on latency.** The database (Neon, `aws-ap-southeast-1`) is ~90ms away, so
 every server action is written to resolve in exactly **one** round trip — `openToday`
-is inlined as a CTE rather than called separately. Running two queries in parallel is worse than
-running them in sequence here, because the second one pays for its own TLS
+is inlined as a CTE rather than called separately. Running two queries in parallel is
+worse than running them in sequence here, because the second one pays for its own TLS
 handshake. `npm run latency` measures it.

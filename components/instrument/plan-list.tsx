@@ -17,6 +17,8 @@ const GLYPH: Record<string, string> = {
   devops: "◈",
   sde: "▲",
   corecs: "◎",
+  project: "✦",
+  cadence: "▧",
   close: "▣",
 };
 
@@ -96,7 +98,11 @@ function Block({
         <span
           className={cn(
             "w-4 shrink-0 text-center text-sm leading-none",
-            b.done ? "text-phos" : b.kind === "redo" ? "text-info" : "text-lo",
+            b.done
+              ? "text-phos"
+              : b.kind === "redo" || b.kind === "cadence"
+                ? "text-info"
+                : "text-lo",
           )}
           aria-hidden
         >

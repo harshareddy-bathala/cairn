@@ -2,12 +2,14 @@ import { sql } from "drizzle-orm";
 import { db } from "@/db";
 import type { DayMode, Difficulty, Outcome } from "@/db/schema";
 import { aptitudeTopicFor } from "@/content/aptitude";
+import { CADENCE } from "@/content/cadence";
 
 /* ------------------------------------------------------------------ *
  * the shape of a day
  * ------------------------------------------------------------------ */
 
-export type BlockKind = "redo" | "dsa" | "aptitude" | "domain" | "corecs" | "close";
+export type BlockKind =
+  | "redo" | "dsa" | "aptitude" | "domain" | "corecs" | "project" | "cadence" | "close";
 
 export type PlanProblem = {
   slug: string;
@@ -75,14 +77,29 @@ export type CandidateUnit = {
   rnModule: number;
 };
 
+export type OpenDeliverable = {
+  slug: string;
+  title: string;
+  projectSlug: string;
+  projectName: string;
+  estMinutes: number;
+};
+
+/** a weekly quota that has not been met and is running out of week */
+export type CadenceDue = { kind: string; label: string; minutes: number; short: number };
+
 export type PlanInput = {
   dayIndex: number;
   mode: DayMode;
   multiplier: number;
   budgetMin: number;
+  /** weekends get the bigger budget and the project block */
+  isWeekend: boolean;
   units: CandidateUnit[];
   problems: (PlanProblem & { moduleSlug: string; unitSlug: string | null })[];
   redo: PlanProblem[];
+  deliverable?: OpenDeliverable | null;
+  cadenceDue?: CadenceDue[];
 };
 
 /** DevOps four days out of five, SDE on the fifth. The roadmap's Wed fork, generalised. */
@@ -241,7 +258,7 @@ export function generatePlan(input: PlanInput): DayPlan {
     track: "aptitude",
     title: `25 questions — ${apt.topic}`,
     detail: `${apt.pool}, timed`,
-    href: "/aptitude",
+    href: "/metrics",
     minutes: APTITUDE_MIN,
     unitSlug: null,
     problems: [],
@@ -264,6 +281,44 @@ export function generatePlan(input: PlanInput): DayPlan {
     if (second) blocks.push(unitBlock("corecs", second, [], true));
   }
 
+  // 6. The project. Weekends have the budget for it; on a weekday it only earns
+  //    a place when you are deliberately running hot.
+  const d = input.deliverable;
+  if (d && (input.isWeekend || input.multiplier >= 1.5)) {
+    blocks.push({
+      id: `project:${d.slug}`,
+      kind: "project",
+      track: "project",
+      title: d.title,
+      detail: d.projectName,
+      href: "/projects",
+      minutes: d.estMinutes,
+      unitSlug: null,
+      problems: [],
+      stretch: !input.isWeekend,
+    });
+  }
+
+  // 7. Obligations whose journey week is running out. A quota that surfaces on
+  //    day 5 is still recoverable; one that surfaces on day 7 is a lecture.
+  const dayOfWeek = ((input.dayIndex - 1) % 7) + 1;
+  if (dayOfWeek >= 5) {
+    for (const q of input.cadenceDue ?? []) {
+      blocks.push({
+        id: `cadence:${q.kind}`,
+        kind: "cadence",
+        track: "aptitude",
+        title: q.label,
+        detail: `${q.short} short — journey week ends in ${8 - dayOfWeek} day${8 - dayOfWeek === 1 ? "" : "s"}`,
+        href: "/career",
+        minutes: q.minutes,
+        unitSlug: null,
+        problems: [],
+        stretch: false,
+      });
+    }
+  }
+
   // 6. Trim to the budget. Redo, the first DSA block, aptitude and the close are
   //    load-bearing — the roadmap's own "never cut" list. Everything else goes,
   //    stretch blocks first.
@@ -271,8 +326,10 @@ export function generatePlan(input: PlanInput): DayPlan {
   const firstDsa = blocks.find((b) => b.kind === "dsa");
   if (firstDsa) protectedIds.add(firstDsa.id);
 
-  const trimOrder = (b: PlanBlock) =>
-    (b.stretch ? 0 : 10) + (b.kind === "corecs" ? 0 : b.kind === "domain" ? 1 : 2);
+  // trimmed first to last: stretch blocks, then Core CS, the project, the
+  // domain lane, and finally the week's outstanding obligations
+  const RANK: Record<string, number> = { corecs: 0, project: 1, domain: 2, cadence: 3 };
+  const trimOrder = (b: PlanBlock) => (b.stretch ? 0 : 10) + (RANK[b.kind] ?? 4);
 
   const total = () => blocks.reduce((n, b) => n + b.minutes, 0);
   const ceiling = input.budgetMin - 10; // the close costs 10
@@ -322,6 +379,10 @@ export type DayContext = {
   mode: DayMode;
   multiplier: number;
   closed: boolean;
+  isWeekend: boolean;
+  journeyWeek: number;
+  deliverable: OpenDeliverable | null;
+  mocksThisWeek: { kind: string; n: number }[];
   learned: string | null;
   tomorrowFirstTask: string | null;
   minutesTotal: number;
@@ -419,6 +480,31 @@ export async function getDayContext(userId: string): Promise<DayContext> {
       'mode', (select mode from day),
       'multiplier', (select multiplier from day),
       'closed', (select closed_at is not null from day),
+      'isWeekend', (select dow from today) >= 6,
+      'journeyWeek', (select ceil(day_index / 7.0)::int from day),
+      'deliverable', (
+        -- the next unfinished deliverable, earliest project first
+        select json_build_object(
+          'slug', d.slug, 'title', d.title, 'projectSlug', p.slug,
+          'projectName', p.name, 'estMinutes', d.est_minutes
+        )
+        from deliverables d
+        join projects p on p.slug = d.project_slug
+        where not exists (
+          select 1 from deliverable_done dd
+          where dd.user_id = ${userId} and dd.deliverable_slug = d.slug
+        )
+        order by p."order", d."order"
+        limit 1
+      ),
+      'mocksThisWeek', coalesce((
+        select json_agg(json_build_object('kind', kind, 'n', n))
+        from (
+          select kind, count(*)::int as n from mock_sessions, day d
+          where user_id = ${userId} and journey_week = ceil(d.day_index / 7.0)::int
+          group by kind
+        ) mk
+      ), '[]'::json),
       'learned', (select learned_md from day),
       'tomorrowFirstTask', (select tomorrow_first_task from day),
       'minutesTotal', (select minutes_total from day),
@@ -477,6 +563,10 @@ export function budgetWith(budgetMin: number, multiplier: number) {
 export type Today = {
   plan: HydratedPlan;
   closed: boolean;
+  isWeekend: boolean;
+  journeyWeek: number;
+  deliverable: OpenDeliverable | null;
+  mocksThisWeek: { kind: string; n: number }[];
   learned: string | null;
   tomorrowFirstTask: string | null;
   minutesTotal: number;
@@ -490,21 +580,17 @@ export async function getTodayPlan(userId: string): Promise<Today> {
   const ticked = new Set(plan?.ticked ?? []);
 
   if (!plan) {
-    plan = generatePlan({
-      dayIndex: ctx.dayIndex,
-      mode: ctx.mode,
-      multiplier: ctx.multiplier,
-      budgetMin: budgetWith(ctx.budgetMin, ctx.multiplier),
-      units: ctx.units,
-      problems: ctx.problems,
-      redo: ctx.redo,
-    });
+    plan = generatePlan(planInputFrom(ctx));
     await savePlan(userId, ctx.dayIndex, plan);
   }
 
   return {
     plan: hydrate(plan, ctx, ticked),
     closed: ctx.closed,
+    isWeekend: ctx.isWeekend,
+    journeyWeek: ctx.journeyWeek,
+    deliverable: ctx.deliverable,
+    mocksThisWeek: ctx.mocksThisWeek,
     learned: ctx.learned,
     tomorrowFirstTask: ctx.tomorrowFirstTask,
     minutesTotal: ctx.minutesTotal,
@@ -537,9 +623,40 @@ function hydrate(
   };
 }
 
+/** the generator's inputs, assembled from a day context */
+export function planInputFrom(
+  ctx: DayContext,
+  over: { mode?: DayMode; multiplier?: number } = {},
+) {
+  const multiplier = over.multiplier ?? ctx.multiplier;
+  return {
+    dayIndex: ctx.dayIndex,
+    mode: over.mode ?? ctx.mode,
+    multiplier,
+    budgetMin: budgetWith(ctx.budgetMin, multiplier),
+    isWeekend: ctx.isWeekend,
+    units: ctx.units,
+    problems: ctx.problems,
+    redo: ctx.redo,
+    deliverable: ctx.deliverable,
+    cadenceDue: cadenceDueFor(ctx.journeyWeek, ctx.mocksThisWeek),
+  };
+}
+
 export async function savePlan(userId: string, dayIndex: number, plan: DayPlan & { ticked?: string[] }) {
   await db.execute(sql`
     update journey_days set plan = ${JSON.stringify(plan)}::jsonb
     where user_id = ${userId} and day_index = ${dayIndex}
   `);
+}
+
+
+/** which of this journey week's quotas are still short */
+export function cadenceDueFor(journeyWeek: number, logged: { kind: string; n: number }[]) {
+  return CADENCE.filter((q) => journeyWeek >= q.fromWeek)
+    .map((q) => {
+      const done = logged.find((x) => x.kind === q.kind)?.n ?? 0;
+      return { kind: q.kind, label: q.label, minutes: q.minutes, short: Math.ceil(q.perWeek) - done };
+    })
+    .filter((q) => q.short > 0);
 }

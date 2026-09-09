@@ -5,7 +5,7 @@ import { sql } from "drizzle-orm";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { db } from "@/db";
-import { budgetWith, generatePlan, getDayContext, savePlan } from "@/lib/planner";
+import { generatePlan, getDayContext, planInputFrom } from "@/lib/planner";
 
 async function requireUser() {
   const session = await auth();
@@ -23,15 +23,9 @@ async function regenerate(userId: string, over: { mode?: "normal" | "bad_day"; m
   // a day past 1x is a catch-up day; the stone is coloured differently for it
   const resolvedMode = nextMode !== "bad_day" && nextMultiplier > 1 ? "catchup" : nextMode;
 
-  const plan = generatePlan({
-    dayIndex: ctx.dayIndex,
-    mode: resolvedMode,
-    multiplier: nextMultiplier,
-    budgetMin: budgetWith(ctx.budgetMin, nextMultiplier),
-    units: ctx.units,
-    problems: ctx.problems,
-    redo: ctx.redo,
-  });
+  const plan = generatePlan(
+    planInputFrom(ctx, { mode: resolvedMode, multiplier: nextMultiplier }),
+  );
 
   await db.execute(sql`
     update journey_days

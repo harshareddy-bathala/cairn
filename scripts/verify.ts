@@ -3,8 +3,11 @@ import { db } from "@/db";
 import { journeyDays, problemAttempts, unitProgress, users } from "@/db/schema";
 import { openToday, getJourneyState, streaksOf } from "@/lib/journey";
 import { getRedoQueue } from "@/lib/progress";
-import { generatePlan, getDayContext, getTodayPlan, budgetWith } from "@/lib/planner";
+import { generatePlan, getDayContext, getTodayPlan, budgetWith, cadenceDueFor } from "@/lib/planner";
 import { aptitudeTopicFor } from "@/content/aptitude";
+import { CADENCE, DSA_CURVE, dsaTargetAt } from "@/content/cadence";
+import { getMetrics } from "@/lib/sidetracks";
+import { validateContent } from "@/content";
 
 function ok(label: string, pass: boolean, detail = "") {
   console.log(`${label.padEnd(23)}-> ${detail.padEnd(28)} ${pass ? "PASS" : "FAIL"}`);
@@ -74,7 +77,7 @@ async function main() {
   const ctx = await getDayContext(u.id);
 
   const p1 = generatePlan({
-    dayIndex: 4, mode: "normal", multiplier: 1,
+    dayIndex: 4, mode: "normal", multiplier: 1, isWeekend: false,
     budgetMin: budgetWith(ctx.budgetMin, 1),
     units: ctx.units, problems: ctx.problems, redo: ctx.redo,
   });
@@ -87,7 +90,7 @@ async function main() {
     "problems shed before blocks");
 
   const p2 = generatePlan({
-    dayIndex: 4, mode: "catchup", multiplier: 2,
+    dayIndex: 4, mode: "catchup", multiplier: 2, isWeekend: false,
     budgetMin: budgetWith(ctx.budgetMin, 2),
     units: ctx.units, problems: ctx.problems, redo: ctx.redo,
   });
@@ -96,7 +99,7 @@ async function main() {
     `${stretch} stretch, ${p2.plannedMin}m`);
 
   const bad = generatePlan({
-    dayIndex: 4, mode: "bad_day", multiplier: 1, budgetMin: 999,
+    dayIndex: 4, mode: "bad_day", multiplier: 1, budgetMin: 999, isWeekend: false,
     units: ctx.units, problems: ctx.problems, redo: ctx.redo,
   });
   ok("bad day = problem + log",
@@ -104,7 +107,7 @@ async function main() {
     `${bad.blocks.length} blocks`);
 
   const tiny = generatePlan({
-    dayIndex: 4, mode: "normal", multiplier: 1, budgetMin: 30,
+    dayIndex: 4, mode: "normal", multiplier: 1, budgetMin: 30, isWeekend: false,
     units: ctx.units, problems: ctx.problems, redo: ctx.redo,
   });
   ok("aptitude never trimmed", tiny.blocks.some((b) => b.kind === "aptitude"),
@@ -112,7 +115,7 @@ async function main() {
   ok("dsa never trimmed", tiny.blocks.some((b) => b.kind === "dsa"));
 
   const withRedo = generatePlan({
-    dayIndex: 4, mode: "normal", multiplier: 1, budgetMin: 240,
+    dayIndex: 4, mode: "normal", multiplier: 1, budgetMin: 240, isWeekend: false,
     units: ctx.units, problems: ctx.problems,
     redo: [{ ...ctx.problems[0], outcome: "editorial", redoDueDay: 4 }],
   });
@@ -128,6 +131,65 @@ async function main() {
   const t2 = await getTodayPlan(u.id);
   ok("plan is frozen", t1.plan.generatedAt === t2.plan.generatedAt,
     "no reshuffle on refresh");
+
+  /* ---------------- side tracks ---------------- */
+  console.log("");
+
+  // the project block is a weekend affair unless you are running hot
+  const weekday = generatePlan({
+    dayIndex: 4, mode: "normal", multiplier: 1, isWeekend: false,
+    budgetMin: 240, units: ctx.units, problems: ctx.problems, redo: ctx.redo,
+    deliverable: ctx.deliverable,
+  });
+  const weekend = generatePlan({
+    dayIndex: 4, mode: "normal", multiplier: 1, isWeekend: true,
+    budgetMin: 360, units: ctx.units, problems: ctx.problems, redo: ctx.redo,
+    deliverable: ctx.deliverable,
+  });
+  ok("deliverable is queued", Boolean(ctx.deliverable), ctx.deliverable?.slug ?? "none");
+  ok("project block on weekends",
+    weekend.blocks.some((b) => b.kind === "project") &&
+      !weekday.blocks.some((b) => b.kind === "project"),
+    "not on a 4h weekday");
+
+  // an obligation surfaces with time left to act on it, not on the last day
+  const cad = [{ kind: "dsa_pair", label: "Timed DSA pair", minutes: 45, short: 2 }];
+  const early = generatePlan({
+    dayIndex: 2, mode: "normal", multiplier: 1, isWeekend: false, budgetMin: 240,
+    units: ctx.units, problems: ctx.problems, redo: ctx.redo, cadenceDue: cad,
+  });
+  const late = generatePlan({
+    dayIndex: 5, mode: "normal", multiplier: 1, isWeekend: false, budgetMin: 240,
+    units: ctx.units, problems: ctx.problems, redo: ctx.redo, cadenceDue: cad,
+  });
+  ok("cadence surfaces late",
+    !early.blocks.some((b) => b.kind === "cadence") &&
+      late.blocks.some((b) => b.kind === "cadence"),
+    "day 5 of the journey week");
+
+  // quotas that have not started yet must not be reported as short
+  const wk1 = cadenceDueFor(1, []);
+  const wk9 = cadenceDueFor(9, []);
+  ok("quotas respect fromWeek",
+    wk1.length < wk9.length && !wk1.some((q) => q.kind === "full_mock"),
+    `${wk1.length} at week 1, ${wk9.length} at week 9`);
+  ok("logging clears a quota",
+    cadenceDueFor(1, [{ kind: "tech_mcq", n: 1 }]).every((q) => q.kind !== "tech_mcq"), "");
+
+  // the DSA curve is measured in active days, so it never runs away from you
+  const curveOk = DSA_CURVE.every((c) => dsaTargetAt(c.atDay) === c.target);
+  let monotonic = true;
+  for (let d = 1; d <= 95; d++) if (dsaTargetAt(d) < dsaTargetAt(d - 1)) monotonic = false;
+  ok("dsa curve hits its marks", curveOk, DSA_CURVE.map((c) => `${c.target}@${c.atDay}`).join(" "));
+  ok("dsa curve is monotonic", monotonic && dsaTargetAt(0) === 0, `day 30 -> ${dsaTargetAt(30)}`);
+
+  // a deliverable without a definition of done is a to-do, and to-dos rot
+  ok("content validates", validateContent().length === 0, `${CADENCE.length} quotas defined`);
+
+  const metrics = await getMetrics(u.id, 1);
+  ok("metrics read in one trip",
+    metrics.deliverablesTotal > 0 && Array.isArray(metrics.aptitude),
+    `${metrics.deliverablesTotal} deliverables, ${metrics.dsaSolved} dsa`);
 
   /* ---------------- the streak ---------------- */
   console.log("");

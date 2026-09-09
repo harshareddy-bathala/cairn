@@ -18,7 +18,8 @@
     "telegram": "tsx --env-file=.env.local scripts/telegram.ts",
     "reminders": "tsx --env-file=.env.local scripts/reminders.ts",
     "e2e": "node scripts/interact.mjs",
-    "e2e:day": "node scripts/day.mjs"
+    "e2e:day": "node scripts/day.mjs",
+    "e2e:tracks": "node scripts/sidetracks.mjs"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.3",

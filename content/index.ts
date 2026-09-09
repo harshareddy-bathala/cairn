@@ -18,6 +18,7 @@ import { restFastapi } from "./modules/sde/03-rest-fastapi";
 import { os } from "./modules/corecs/01-os";
 import { dbms } from "./modules/corecs/02-dbms";
 import { cn } from "./modules/corecs/03-cn";
+import { projects } from "./projects";
 
 /**
  * The curriculum registry. Content is authored here in git and pushed into
@@ -34,7 +35,7 @@ export const modules: Module[] = [
   os, dbms, cn,
 ];
 
-export { phases, tracks };
+export { phases, tracks, projects };
 
 /** fail the seed loudly rather than writing a broken curriculum */
 export function validateContent() {
@@ -75,6 +76,24 @@ export function validateContent() {
   for (const m of modules)
     for (const pre of m.prereqSlugs ?? [])
       if (!moduleSlugs.has(pre)) errors.push(`${m.slug}: unknown prereq ${pre}`);
+
+  // projects
+  const projectSlugs = new Set<string>();
+  const deliverableSlugs = new Set<string>();
+  for (const pr of projects) {
+    if (projectSlugs.has(pr.slug)) errors.push(`duplicate project slug: ${pr.slug}`);
+    projectSlugs.add(pr.slug);
+    if (!phaseSlugs.has(pr.phaseSlug)) errors.push(`${pr.slug}: unknown phase ${pr.phaseSlug}`);
+    if (!pr.deliverables.length) errors.push(`${pr.slug}: has no deliverables`);
+    if (!pr.resumeLine.trim())
+      errors.push(`${pr.slug}: no resumeLine — write the line before you build the thing`);
+    for (const d of pr.deliverables) {
+      if (deliverableSlugs.has(d.slug)) errors.push(`duplicate deliverable slug: ${d.slug}`);
+      deliverableSlugs.add(d.slug);
+      // a deliverable without a definition of done is a to-do, and to-dos rot
+      if (!d.definitionOfDone.trim()) errors.push(`${d.slug}: no definitionOfDone`);
+    }
+  }
 
   return errors;
 }
