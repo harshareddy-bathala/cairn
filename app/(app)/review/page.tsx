@@ -2,7 +2,6 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { auth } from "@/auth";
 import { Panel } from "@/components/instrument/panel";
-import { Readout } from "@/components/instrument/readout";
 import { Boot, BootItem } from "@/components/instrument/boot";
 import { RecallDeck } from "@/components/instrument/recall-deck";
 import { PastReviews, WeekReviewForm } from "@/components/instrument/week-review";
@@ -95,21 +94,27 @@ export default async function ReviewPage() {
             <RecallDeck cards={deck.due} dayIndex={deck.dayIndex} />
 
             {deck.buckets.total > 0 && (
-              <div className="mt-4 grid gap-2 border-t border-line-soft pt-3.5 sm:grid-cols-3">
-                <Readout
-                  label="new"
-                  value={deck.buckets.fresh}
-                  note="never graded"
-                  tone={deck.buckets.fresh > 40 ? "warn" : "neutral"}
-                />
-                <Readout label="learning" value={deck.buckets.learning} note="under 7d" />
-                <Readout
+              /*
+               * A stat strip rather than three Readouts. Readout is a
+               * label-left / value-right row, which is right in a narrow panel
+               * and wrong in a three-column grid — at full width the label and
+               * its number end up 300px apart and the three columns read as
+               * one run-on sentence. Here the label sits above its number.
+               *
+               * The three buckets exist because "cards due" alone hides the
+               * thing worth knowing: a deck of 200 cards all sitting at
+               * interval 1 is not progress.
+               */
+              <dl className="mt-4 grid grid-cols-3 gap-3 border-t border-line-soft pt-3.5">
+                <Bucket label="new" value={deck.buckets.fresh} note="never graded" />
+                <Bucket label="learning" value={deck.buckets.learning} note="under 7d" />
+                <Bucket
                   label="held"
                   value={deck.buckets.held}
                   note="7d+"
-                  tone={deck.buckets.held > 0 ? "ok" : "neutral"}
+                  tone={deck.buckets.held > 0 ? "text-phos" : undefined}
                 />
-              </div>
+              </dl>
             )}
           </Panel>
         </BootItem>
@@ -259,5 +264,25 @@ export default async function ReviewPage() {
         </BootItem>
       )}
     </Boot>
+  );
+}
+
+function Bucket({
+  label,
+  value,
+  note,
+  tone,
+}: {
+  label: string;
+  value: number;
+  note: string;
+  tone?: string;
+}) {
+  return (
+    <div>
+      <dt className="legend">{label}</dt>
+      <dd className={cn("mt-0.5 text-xl tabular-nums", tone ?? "text-hi")}>{value}</dd>
+      <dd className="text-2xs text-lo">{note}</dd>
+    </div>
   );
 }

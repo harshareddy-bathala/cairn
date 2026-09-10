@@ -3,34 +3,32 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Cairn, type Stone } from "./cairn";
+import { Mark } from "./mark";
+import { NAV, activeHref } from "@/lib/nav";
 import { cn } from "@/lib/cn";
 
-const NAV = [
-  { href: "/today", glyph: "▣", label: "Today" },
-  { href: "/roadmap", glyph: "◇", label: "Trail" },
-  { href: "/metrics", glyph: "◎", label: "Metrics" },
-  { href: "/projects", glyph: "✦", label: "Projects" },
-  { href: "/career", glyph: "▧", label: "Career" },
-  { href: "/certification", glyph: "◈", label: "Certification" },
-  { href: "/review", glyph: "▤", label: "Review" },
-  { href: "/cohort", glyph: "◰", label: "Cohort" },
-  { href: "/settings", glyph: "⌗", label: "Settings" },
-];
-
+/**
+ * The desktop rail. Hidden below `sm` — see `tab-bar.tsx` for the phone.
+ *
+ * A 48px fixed rail costs 12% of a 390px screen and gives back nine unlabelled
+ * glyphs, so on a phone it is replaced rather than shrunk.
+ */
 export function Rail({ stones, dayIndex }: { stones: Stone[]; dayIndex: number }) {
   const pathname = usePathname();
+  const current = activeHref(pathname);
 
   return (
-    <nav className="fixed inset-y-0 left-0 z-20 flex w-12 flex-col items-center border-r border-line bg-ink-900 py-3">
-      <Link href="/today" aria-label="Cairn" className="tap mb-4 flex flex-col items-center gap-[2px]">
-        <span className="h-[3px] w-3 rounded-[1px] bg-phos" />
-        <span className="h-[3px] w-4 rounded-[1px] bg-phos-dim" />
-        <span className="h-[3px] w-5 rounded-[1px] bg-phos-dim" />
+    <nav
+      aria-label="Sections"
+      className="fixed inset-y-0 left-0 z-20 hidden w-12 flex-col items-center border-r border-line bg-ink-900 py-3 sm:flex"
+    >
+      <Link href="/today" aria-label="Cairn — today" className="tap mb-4">
+        <Mark />
       </Link>
 
       <ul className="flex min-h-0 flex-col items-center gap-1 overflow-y-auto">
         {NAV.map((n) => {
-          const active = pathname === n.href || pathname.startsWith(n.href + "/");
+          const active = current === n.href;
           return (
             <li key={n.href}>
               <Link

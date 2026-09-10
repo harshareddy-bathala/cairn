@@ -191,23 +191,24 @@ export function RecallDeck({ cards, dayIndex }: { cards: DueCard[]; dayIndex: nu
         </motion.div>
       )}
 
-      <div className="flex flex-wrap items-center justify-between gap-2">
+      {/* one line, always: the unit link gives up width so `bury` stays put */}
+      <div className="flex items-baseline gap-3">
         {card.unitSlug ? (
           <Link
             href={`/unit/${card.unitSlug}`}
-            className="tap legend truncate transition-colors duration-[120ms] hover:text-mid"
+            className="tap legend min-w-0 flex-1 truncate transition-colors duration-[120ms] hover:text-mid"
           >
             {card.moduleTitle ? `${card.moduleTitle} · ` : ""}
             {card.unitTitle}
           </Link>
         ) : (
-          <span />
+          <span className="flex-1" />
         )}
         <button
           type="button"
           onClick={bury}
           title="hide this card until next journey week"
-          className="tap legend transition-colors duration-[120ms] hover:text-mid"
+          className="tap legend shrink-0 transition-colors duration-[120ms] hover:text-mid"
         >
           bury
         </button>
