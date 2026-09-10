@@ -1,5 +1,8 @@
 /**
  * The entire motion budget. Nine named moments, nothing else animates.
+ *
+ * The count is the point, not the list — a tenth moment means one of these
+ * was not carrying its weight.
  * Anything over 320ms needs a reason; only the certificate has one.
  */
 import type { Transition, Variants } from "motion/react";
@@ -17,16 +20,13 @@ export const ease = (duration: number = DUR.base): Transition => ({
 /** physical objects only: stones landing, cards being tossed */
 export const spring: Transition = { type: "spring", stiffness: 420, damping: 34 };
 
-/** 1 — boot: panels power on, rows stagger 40ms. Once per session, <=450ms. */
-export const boot: Variants = {
-  hidden: { opacity: 0 },
-  shown: { opacity: 1, transition: { staggerChildren: 0.04, delayChildren: 0.04 } },
-};
-
-export const bootItem: Variants = {
-  hidden: { opacity: 0, y: 6 },
-  shown: { opacity: 1, y: 0, transition: ease(DUR.slow) },
-};
+/**
+ * 1 — boot lives in CSS, not here.
+ *
+ * `.boot` in globals.css. It was a motion variant with `initial: opacity 0`,
+ * which meant JavaScript was load-bearing for the page being visible at all.
+ * See components/instrument/boot.tsx for why that is the wrong trade.
+ */
 
 /** 2 — a row completing */
 export const rowComplete: Variants = {
@@ -44,4 +44,33 @@ export const stoneDrop: Variants = {
 export const hintReveal: Variants = {
   masked: { clipPath: "inset(0 0 0 0)" },
   revealed: { clipPath: "inset(0 0 0 100%)", transition: { duration: 0.24, ease: EASE } },
+};
+
+/**
+ * 7 — a recall card being replaced.
+ *
+ * Deliberately not a flip. A 3D card flip is the obvious choice and the wrong
+ * one: it is 400ms of ceremony repeated twenty times a sitting, and by the
+ * fifth card it is friction. The card is *replaced*, quickly, and the answer
+ * unfolds beneath the question rather than turning over — so the question
+ * stays on screen next to its answer, which is the pairing you want to read.
+ */
+export const cardFace: Variants = {
+  enter: { opacity: 0, y: 8 },
+  shown: { opacity: 1, y: 0, transition: ease(DUR.base) },
+  exit: { opacity: 0, y: -6, transition: ease(DUR.fast) },
+};
+
+/** 8 — the mobile navigation sheet rising from the tab bar */
+export const sheet: Variants = {
+  hidden: { opacity: 0, y: 12 },
+  shown: { opacity: 1, y: 0, transition: ease(DUR.base) },
+  exit: { opacity: 0, y: 12, transition: ease(DUR.fast) },
+};
+
+/** 9 — the scrim behind it */
+export const scrim: Variants = {
+  hidden: { opacity: 0 },
+  shown: { opacity: 1, transition: ease(DUR.fast) },
+  exit: { opacity: 0, transition: ease(DUR.fast) },
 };

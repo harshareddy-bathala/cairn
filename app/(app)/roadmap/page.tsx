@@ -41,7 +41,7 @@ export default async function RoadmapPage() {
   ]);
 
   return (
-    <Boot className="mx-auto max-w-5xl space-y-8 px-6 py-10">
+    <Boot className="mx-auto max-w-5xl space-y-8 px-4 py-8 sm:px-6 sm:py-10">
       <BootItem>
         <header>
           <p className="legend">the trail</p>

@@ -26,6 +26,47 @@ export const dbms: Module = {
 The anomalies are the *reason*: without normalisation, updating a supplier's address means updating many rows (update anomaly), you cannot record a supplier with no products (insert anomaly), and deleting the last product loses the supplier (delete anomaly).
 
 Then the answer that shows judgement: **denormalisation is a legitimate performance decision.** Duplicating a column to avoid a join on a hot read path is fine *if* you know you are trading write complexity for read speed and you say so. Normalise by default, denormalise deliberately.`,
+      interviewAngle:
+        "Normalising a small schema on the spot is common. The judgement marks come from being " +
+        "able to say when you would deliberately *not* normalise.",
+      pitfalls: [
+        "Reciting the normal forms without the anomalies. The anomalies are the reason the " +
+          "forms exist.",
+        "Treating denormalisation as a mistake. It is a legitimate trade of write complexity " +
+          "for read speed — as long as you say that is what you are doing.",
+        "Confusing candidate key with primary key. The primary key is the candidate you " +
+          "chose; the others remain candidates.",
+      ],
+      recall: [
+        {
+          front: "Name the three anomalies normalisation exists to fix.",
+          back:
+            "Update: changing one fact means changing many rows. Insert: you cannot record a " +
+            "supplier that has no products yet. Delete: removing the last product loses the " +
+            "supplier entirely.",
+        },
+        {
+          front: "1NF, 2NF, 3NF — one clause each.",
+          back:
+            "1NF: atomic values, no repeating groups. 2NF: 1NF plus no partial dependency on " +
+            "part of a composite key. 3NF: 2NF plus no transitive dependency, where a non-key " +
+            "column determines another non-key column.",
+        },
+        {
+          front: "When is denormalisation the right call, and how do you justify it?",
+          back:
+            "When a hot read path is dominated by a join you can eliminate by duplicating a " +
+            "column. Justify it by naming the trade explicitly: you are buying read speed with " +
+            "write complexity and a consistency obligation. Normalise by default, denormalise " +
+            "deliberately.",
+        },
+        {
+          front: "Super key, candidate key, primary key — how do they relate?",
+          back:
+            "A super key identifies a row uniquely. A candidate key is a *minimal* super key. " +
+            "The primary key is the candidate key you chose; the rest stay candidates.",
+        },
+      ],
       resources: [
         {
           title: "GeeksforGeeks — normalisation with examples",
@@ -59,6 +100,47 @@ ORDER BY avg_salary DESC;
 **NULL handling** is where interview queries hide their trap: \`NULL = NULL\` is not true, you need \`IS NULL\`; \`COUNT(*)\` counts rows but \`COUNT(col)\` skips NULLs; and \`NOT IN\` with a NULL in the subquery returns no rows at all, which surprises almost everyone.
 
 **Window functions** are worth two hours for a large payoff. \`ROW_NUMBER() OVER (PARTITION BY dept ORDER BY salary DESC)\` ranks within groups without a self-join — that is the standard "second highest salary per department" question, and the elegant answer is noticed.`,
+      interviewAngle:
+        "SQL rounds are written from scratch, not recognised. `Second highest salary per " +
+        "department` is the standard window-function question, and the elegant answer gets " +
+        "noticed.",
+      pitfalls: [
+        "Putting an aggregate in WHERE. WHERE filters rows before grouping; aggregates only " +
+          "exist after, which is what HAVING is for.",
+        "Comparing with `= NULL`. Nothing equals NULL, not even NULL — use `IS NULL`.",
+        "Using `NOT IN` against a subquery that can yield NULL. The whole result becomes " +
+          "empty, which surprises almost everyone. Use `NOT EXISTS`.",
+        "Reaching for `COUNT(col)` when you meant every row. It skips NULLs; `COUNT(*)` does " +
+          "not.",
+      ],
+      recall: [
+        {
+          front: "WHERE versus HAVING — state the rule.",
+          back:
+            "WHERE filters rows *before* grouping; HAVING filters groups *after*. So an " +
+            "aggregate can appear in HAVING and never in WHERE.",
+        },
+        {
+          front:
+            "Why does `NOT IN (SELECT ...)` return nothing when the subquery contains a NULL?",
+          back:
+            "The comparison becomes `x <> NULL` for that element, which is unknown rather than " +
+            "true — so the overall condition can never be true for any row. `NOT EXISTS` does " +
+            "not have this problem.",
+        },
+        {
+          front: "Write the window function for `rank salaries within each department`.",
+          back:
+            "`ROW_NUMBER() OVER (PARTITION BY department ORDER BY salary DESC)` — it ranks " +
+            "within groups without a self-join, which is the clean answer to " +
+            "nth-highest-per-group questions.",
+        },
+        {
+          front: "`COUNT(*)` versus `COUNT(col)` — what is the difference?",
+          back:
+            "`COUNT(*)` counts rows. `COUNT(col)` counts rows where that column is not NULL.",
+        },
+      ],
       resources: [
         {
           title: "PostgreSQL tutorial — joins, grouping, window functions",
@@ -94,6 +176,47 @@ ORDER BY avg_salary DESC;
 **\`EXPLAIN ANALYZE\`** is the tool. Learn to spot a \`Seq Scan\` on a large table where you expected an \`Index Scan\`, and to compare the planner's estimated rows against the actual — a large discrepancy means stale statistics, and \`ANALYZE\` fixes it.
 
 The classic index-defeating mistake: wrapping the column in a function. \`WHERE LOWER(email) = '...'\` cannot use a plain index on \`email\`; you need an expression index on \`LOWER(email)\`.`,
+      interviewAngle:
+        "`Why is this query slow?` is the practical question, and reading EXPLAIN out loud — a " +
+        "Seq Scan where you expected an Index Scan — is the practical answer.",
+      pitfalls: [
+        "Wrapping the indexed column in a function. `WHERE LOWER(email) = ...` cannot use a " +
+          "plain index on `email`; you need an expression index.",
+        "Indexing a low-cardinality column. The planner will scan anyway, because random " +
+          "index lookups over most of the table are slower than a sequential scan.",
+        "Treating composite-index column order as arbitrary. An index on `(a, b, c)` does not " +
+          "serve a query filtering on `b` alone.",
+        "Adding indexes without counting the write cost. Every INSERT, UPDATE and DELETE has " +
+          "to maintain each one.",
+      ],
+      recall: [
+        {
+          front: "State the leftmost-prefix rule for composite indexes.",
+          back:
+            "An index on `(a, b, c)` serves queries filtering on `a`, on `a, b`, or on `a, b, " +
+            "c` — but not on `b` alone or `c` alone. Column order is a design decision.",
+        },
+        {
+          front: "Name two situations where an index makes things worse.",
+          back:
+            "Write-heavy tables, where every insert, update and delete must maintain the index; " +
+            "and low-cardinality columns like a boolean, where the planner correctly ignores it " +
+            "because a sequential scan beats scattered random lookups.",
+        },
+        {
+          front: "What is the classic index-defeating mistake?",
+          back:
+            "Wrapping the column in a function in the predicate — `WHERE LOWER(email) = '...'`. " +
+            "The index is on `email`, not on `LOWER(email)`, so it cannot be used. Create an " +
+            "expression index or normalise the stored value.",
+        },
+        {
+          front: "Reading `EXPLAIN ANALYZE`, what discrepancy points at stale statistics?",
+          back:
+            "A large gap between the planner's estimated row count and the actual row count. " +
+            "`ANALYZE` refreshes the statistics the planner uses.",
+        },
+      ],
       resources: [
         {
           title: "Use The Index, Luke",
@@ -137,6 +260,46 @@ The levels map onto them exactly, and this table is the interview answer:
 Higher isolation costs concurrency — that is the trade-off, and naming it is the point. Postgres defaults to Read Committed.
 
 **Database deadlocks** happen when two transactions lock rows in opposite orders. The database detects the cycle and aborts one with a serialization failure. Your application must be prepared to **retry** — which is the same reliability thinking as the retry-with-backoff pattern in the SRE track.`,
+      interviewAngle:
+        "The isolation-level table is the answer, and being able to draw it beats describing " +
+        "it. The deadlock-retry point connects it to real production work.",
+      pitfalls: [
+        "Confusing non-repeatable read with phantom read. One is the same *row* changing " +
+          "value; the other is the same *query* returning different *rows*.",
+        "Assuming Serializable is free. Higher isolation costs concurrency — naming that " +
+          "trade is the point of the question.",
+        "Not retrying on a serialization failure. The database aborts one of the deadlocked " +
+          "transactions and expects the application to try again.",
+      ],
+      recall: [
+        {
+          front: "Define the three read anomalies, in increasing subtlety.",
+          back:
+            "Dirty read: you see another transaction's uncommitted data. Non-repeatable read: " +
+            "you read the same row twice and get different values, because someone committed an " +
+            "update between. Phantom read: you run the same query twice and get different rows, " +
+            "because someone inserted matching ones.",
+        },
+        {
+          front: "Which anomaly does Read Committed still allow?",
+          back:
+            "Both non-repeatable reads and phantom reads. It only prevents dirty reads — and it " +
+            "is Postgres's default.",
+        },
+        {
+          front: "Which anomaly survives Repeatable Read?",
+          back:
+            "Phantom reads. The rows you already read are stable, but new matching rows can " +
+            "appear.",
+        },
+        {
+          front: "A database deadlock — what causes it and whose job is the fix?",
+          back:
+            "Two transactions locking rows in opposite orders. The database detects the cycle " +
+            "and aborts one with a serialization failure; the application is responsible for " +
+            "catching that and retrying.",
+        },
+      ],
       resources: [
         {
           title: "PostgreSQL — transaction isolation",

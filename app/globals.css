@@ -61,6 +61,53 @@
 :root {
   color-scheme: dark;
   --noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+  /* the texture is a dark-room effect; daylight turns it off entirely */
+  --noise-opacity: 0.02;
+}
+
+/* ================================================================== *
+ *  daylight
+ *
+ *  The dark instrument is the identity and stays the default. This exists
+ *  because the app is used on a phone, and a phone gets used outdoors — at
+ *  which point an all-black surface is not a design choice, it is a mirror.
+ *
+ *  It is a re-grounding, not an inversion. The three rules survive intact:
+ *  hairline panels, tabular mono numerals, and phosphor still reserved for
+ *  state. That last one is what makes this non-trivial — the dark theme's
+ *  phosphor (L 0.82) reads about 1.5:1 on paper and is illegible, so every
+ *  signal colour is re-derived at a lightness that carries the same meaning
+ *  against a light ground rather than being reused and hoped for.
+ *
+ *  Ground is a warm off-white rather than #fff: this is paper in a workshop,
+ *  and pure white at full phone brightness is its own kind of glare.
+ * ================================================================== */
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --noise-opacity: 0;
+
+  --color-ink-900: oklch(0.982 0.003 90);   /* the page */
+  --color-ink-850: oklch(0.962 0.004 90);   /* panels */
+  --color-ink-800: oklch(0.928 0.005 90);   /* wells, code chips */
+  --color-ink-700: oklch(0.870 0.006 90);   /* filled bars */
+
+  --color-line: oklch(0.44 0.01 90 / 0.30);
+  --color-line-soft: oklch(0.44 0.01 90 / 0.16);
+  /* the dark theme's top highlight is a light source from above; on paper the
+     same edge reads as a shadow */
+  --color-line-hi: oklch(0.2 0 0 / 0.05);
+
+  --color-hi: oklch(0.235 0.008 260);
+  --color-mid: oklch(0.430 0.010 260);
+  /* 4.61:1 on ink-900 — the legend is 11px and small text needs 4.5 for AA */
+  --color-lo: oklch(0.545 0.012 260);
+
+  --color-phos: oklch(0.505 0.145 152);     /* 4.6:1 — state, still never prose */
+  --color-phos-dim: oklch(0.605 0.115 152);
+  --color-warn: oklch(0.545 0.135 62);
+  --color-bad: oklch(0.505 0.185 25);
+  --color-info: oklch(0.500 0.115 245);
 }
 
 html {
@@ -83,7 +130,7 @@ body::before {
   position: fixed;
   inset: 0;
   background-image: var(--noise);
-  opacity: 0.02;
+  opacity: var(--noise-opacity);
   pointer-events: none;
   z-index: 100;
   mix-blend-mode: overlay;
@@ -127,6 +174,36 @@ body::before {
   font-variant-numeric: tabular-nums;
 }
 
+/* ================================================================== *
+ *  moment 1 — boot
+ *
+ *  The panels power on, staggered 40ms, once per navigation. In CSS rather
+ *  than JS so that a page whose scripts never arrive renders its content
+ *  instead of rendering nothing — see components/instrument/boot.tsx.
+ * ================================================================== */
+
+@keyframes boot-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.boot > * {
+  animation: boot-in var(--duration-slow) var(--ease-instrument) both;
+}
+
+/* 40ms apart, and flat after the tenth — past that the stagger is no longer
+   perceived as one motion, it is just a slow page. */
+.boot > *:nth-child(1) { animation-delay: 0ms; }
+.boot > *:nth-child(2) { animation-delay: 40ms; }
+.boot > *:nth-child(3) { animation-delay: 80ms; }
+.boot > *:nth-child(4) { animation-delay: 120ms; }
+.boot > *:nth-child(5) { animation-delay: 160ms; }
+.boot > *:nth-child(6) { animation-delay: 200ms; }
+.boot > *:nth-child(7) { animation-delay: 240ms; }
+.boot > *:nth-child(8) { animation-delay: 280ms; }
+.boot > *:nth-child(9) { animation-delay: 320ms; }
+.boot > *:nth-child(n + 10) { animation-delay: 360ms; }
+
 /**
  * WCAG 2.2 target size (24x24 minimum) without inflating the design.
  *
@@ -147,6 +224,7 @@ body::before {
 }
 
 ::selection { background: var(--color-phos-dim); color: var(--color-ink-900); }
+:root[data-theme="light"] ::selection { color: oklch(0.99 0 0); }
 
 :focus-visible {
   outline: 1px solid var(--color-phos);
@@ -160,12 +238,15 @@ body::before {
   border: 3px solid var(--color-ink-900);
   border-radius: 999px;
 }
-::-webkit-scrollbar-thumb:hover { background: oklch(0.36 0.01 240); }
+::-webkit-scrollbar-thumb:hover { background: var(--color-lo); }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 120ms !important;
   }
+  /* `both` fill mode means the near-zero duration settles on the last
+     keyframe, so the content is simply there rather than briefly invisible */
 }

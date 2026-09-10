@@ -78,25 +78,36 @@ export function ProblemRow({
           {mark ? mark.glyph : "▸"}
         </span>
 
-        <a
-          href={p.url}
-          target="_blank"
-          rel="noreferrer noopener"
-          className="tap min-w-0 flex-1 truncate text-sm text-hi underline-offset-4 hover:underline"
-        >
-          {p.title}
-        </a>
-
-        <span className="legend shrink-0">{p.patternTag}</span>
-        <span className={cn("w-9 shrink-0 text-2xs uppercase", DIFF[p.difficulty].cls)}>
-          {DIFF[p.difficulty].label}
-        </span>
-        <span className="legend w-10 shrink-0 text-right tabular-nums">~{p.estMinutes}m</span>
+        {/*
+         * The title wins the width.
+         *
+         * On one line the pattern tag, difficulty and estimate are fixed-width
+         * and the title is what gives — which on a 390px screen truncated
+         * "Count Primes" to "Count…". Below `sm` the metadata drops to its own
+         * line instead, where it costs a row of 11px text and the title is
+         * readable. It is rendered twice and one copy is always hidden; the
+         * alternative is CSS ordering gymnastics for the same result.
+         */}
+        <div className="min-w-0 flex-1">
+          <div className="flex items-baseline gap-2">
+            <a
+              href={p.url}
+              target="_blank"
+              rel="noreferrer noopener"
+              className="tap min-w-0 flex-1 truncate text-sm text-hi underline-offset-4 hover:underline"
+            >
+              {p.title}
+            </a>
+            <Meta p={p} className="hidden shrink-0 items-baseline gap-2 sm:flex" />
+          </div>
+          <Meta p={p} className="mt-0.5 flex items-baseline gap-2 sm:hidden" />
+        </div>
 
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
           aria-expanded={open}
+          aria-label={open ? `Hide hints for ${p.title}` : `Show hints for ${p.title}`}
           className="tap shrink-0 rounded-[2px] px-1 text-2xs text-lo transition-colors duration-[120ms] hover:text-mid"
         >
           {open ? "−" : "+"}
@@ -176,5 +187,18 @@ export function ProblemRow({
         </div>
       )}
     </li>
+  );
+}
+
+/** pattern, difficulty and estimate — inline on a wide row, its own line on a narrow one */
+function Meta({ p, className }: { p: ProblemRowData; className?: string }) {
+  return (
+    <span className={className}>
+      <span className="legend truncate">{p.patternTag}</span>
+      <span className={cn("shrink-0 text-2xs uppercase sm:w-9", DIFF[p.difficulty].cls)}>
+        {DIFF[p.difficulty].label}
+      </span>
+      <span className="legend shrink-0 tabular-nums sm:w-10 sm:text-right">~{p.estMinutes}m</span>
+    </span>
   );
 }

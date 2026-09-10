@@ -43,6 +43,51 @@ long long good = 1LL * a * b;        // widen first: 10000000000
 The rule: the moment a product, sum, or prefix sum can pass ~2·10⁹, make one operand \`long long\`. Constraints like *n ≤ 10⁵, a[i] ≤ 10⁹* are the tell — their product does not fit.
 
 **Integer division truncates toward zero**, so \`-7 / 2 == -3\` and \`-7 % 2 == -1\`. For a ceiling on non-negative numbers use \`(a + b - 1) / b\`, not \`ceil(a / b)\` — the division has already truncated before \`ceil\` ever sees it.`,
+      interviewAngle:
+        "Nobody asks you to recite compiler flags, but an overflow you did not see coming ends " +
+        "the round. Saying `n is 1e5 and a[i] is 1e9, so the product needs long long` before " +
+        "you type is the signal this unit buys you.",
+      pitfalls: [
+        "Writing `long long x = a * b` with two ints — the multiply overflows first and the " +
+          "widening happens afterwards. Widen an operand: `1LL * a * b`.",
+        "Mixing `sync_with_stdio(false)` with `scanf`/`printf` in the same program. Pick one " +
+          "I/O family.",
+        "Reaching for `ceil(a / b)` on integers. The division truncated before `ceil` ever " +
+          "ran; use `(a + b - 1) / b`.",
+      ],
+      recall: [
+        {
+          front:
+            "Why does `long long x = 100000 * 100000;` give the wrong answer, and what is the " +
+            "fix?",
+          back:
+            "Both operands are `int`, so the multiply happens in `int` and overflows before the " +
+            "result is widened. Force the width first: `1LL * a * b`.",
+        },
+        {
+          front:
+            "What does `sync_with_stdio(false)` actually turn off, and what does it cost you?",
+          back:
+            "It unties the C++ streams from C's stdio buffers, so `cout` no longer flushes " +
+            "before every `cin` read — roughly an order of magnitude on large inputs. The cost " +
+            "is that you can no longer mix `scanf`/`printf` with `cin`/`cout`.",
+        },
+        {
+          front:
+            "A constraint reads n <= 1e5, a[i] <= 1e9. What does that tell you before you write " +
+            "a line?",
+          back:
+            "A sum or product over the array can reach 1e14, which does not fit in `int` — the " +
+            "accumulator has to be `long long`. It also rules out O(n^2).",
+        },
+        {
+          front: "What is `-7 / 2` in C++, and why does that break a naive ceiling?",
+          back:
+            "-3: integer division truncates toward zero, not toward negative infinity. `ceil(a " +
+            "/ b)` sees an already-truncated integer, so use `(a + b - 1) / b` for non-negative " +
+            "operands.",
+        },
+      ],
       resources: [
         {
           title: "Striver A2Z — Step 1: Learn the basics",
@@ -92,6 +137,49 @@ first = 5;           // undefined behaviour
 **2D vectors** are built by nesting the fill constructor — \`vector<vector<int>> g(rows, vector<int>(cols, 0));\`. Read it inside out: the inner vector is the row that gets copied \`rows\` times.
 
 **string** is a vector of \`char\` with extra methods. \`s.substr(i, len)\` takes a *length*, not an end index, and \`s.find(t)\` returns \`string::npos\` — not \`-1\` — when it fails. Compare against \`string::npos\` explicitly. Building a string with \`+=\` in a loop is fine; building it with \`s = s + c\` is quadratic.`,
+      interviewAngle:
+        "`Why is push_back amortised O(1)?` is a standard probe, and the answer they want is " +
+        "the geometric series, not the phrase `it doubles`. Iterator invalidation is the " +
+        "follow-up.",
+      pitfalls: [
+        "Calling `reserve(n)` and then indexing `v[0]`. Reserve gives you capacity, not " +
+          "elements — that is undefined behaviour. `resize` gives you elements.",
+        "Holding a reference or iterator into a vector across a `push_back`. A reallocation " +
+          "kills it, and the read that follows is undefined.",
+        "Writing `for (auto x : v)` over a `vector<string>` — that copies every string. Use " +
+          "`const auto &`.",
+        "Comparing `s.find(t)` against -1. It returns `string::npos`, which is an unsigned " +
+          "maximum, so the comparison is false even when the search failed.",
+      ],
+      recall: [
+        {
+          front: "Give the actual argument for why n `push_back` calls cost O(1) each.",
+          back:
+            "Capacity doubles, so the copies across n pushes total n + n/2 + n/4 + ... < 2n. " +
+            "That is O(1) per push on average, with one O(n) spike at each reallocation.",
+        },
+        {
+          front: "What is the difference between `resize(n)` and `reserve(n)`?",
+          back:
+            "`resize` changes `size()` and value-initialises real elements you may index. " +
+            "`reserve` changes only `capacity()` — `size()` is unchanged, so indexing into " +
+            "reserved space is undefined behaviour.",
+        },
+        {
+          front: "When does a reference into a vector become dangling?",
+          back:
+            "On any operation that reallocates — typically a `push_back` past capacity. " +
+            "Pointers, references and iterators into the vector are all invalidated.",
+        },
+        {
+          front:
+            "Why is building a string with `s = s + c` in a loop quadratic, while `s += c` is " +
+            "not?",
+          back:
+            "`s + c` allocates and copies a whole new string each iteration; `+=` appends into " +
+            "the existing buffer with amortised growth.",
+        },
+      ],
       resources: [
         {
           title: "Striver A2Z — C++ STL playlist",
@@ -139,6 +227,50 @@ Read the constraints backwards: *n ≤ 10⁵* rules out O(n²) and points at O(n
 **Space counts the recursion stack.** A recursion of depth n costs O(n) space even with no allocations — which is why the iterative version of a linked-list reversal is O(1) and the recursive one is O(n).
 
 **Amortised is not average.** Amortised means *worst case, spread across a sequence of operations* — \`push_back\` is genuinely O(1) amortised. Average means *over a distribution of inputs* — \`unordered_map\` lookup is O(1) average but O(n) worst case, because every key can collide into one bucket. Interviewers do probe that difference, and the honest answer to "is unordered_map O(1)?" is "on average, yes; adversarial keys make it O(n)".`,
+      interviewAngle:
+        "You will be asked to state the complexity of code you just wrote, then to improve it. " +
+        "Deriving it out loud — `the inner loop runs n-i times, so the sum is n^2/2` — is worth " +
+        "more than the right letter with no reasoning.",
+      pitfalls: [
+        "Reciting a memorised complexity for a shape you did not actually write. Count the " +
+          "innermost statement instead.",
+        "Forgetting that recursion depth is space. A recursive linked-list reversal is O(n) " +
+          "space; the iterative one is O(1).",
+        "Treating amortised and average as the same word. `push_back` is amortised O(1) — a " +
+          "worst-case guarantee across a sequence. `unordered_map` lookup is average O(1) and " +
+          "worst-case O(n).",
+      ],
+      recall: [
+        {
+          front: "What in a loop tells you it is logarithmic rather than linear?",
+          back:
+            "The loop variable is multiplied or divided rather than incremented — `for (i = 1; " +
+            "i < n; i *= 2)` runs log2(n) times.",
+        },
+        {
+          front:
+            "Amortised O(1) versus average O(1) — what is the difference, and one example of " +
+            "each?",
+          back:
+            "Amortised is a worst-case guarantee spread over a sequence of operations " +
+            "(`push_back`). Average is over a distribution of inputs, so an adversary can " +
+            "defeat it (`unordered_map` lookup, O(n) when every key collides).",
+        },
+        {
+          front: "The constraints say n <= 1e5. What does that rule in and out?",
+          back:
+            "It rules out O(n^2) (about 1e10 operations) and points at O(n log n) or better. " +
+            "Saying that before you code is part of the answer.",
+        },
+        {
+          front:
+            "Two solutions allocate nothing. One recurses to depth n, one loops. Do they have " +
+            "the same space complexity?",
+          back:
+            "No. Each call holds a stack frame, so the recursive one is O(n) space and the " +
+            "iterative one is O(1).",
+        },
+      ],
       resources: [
         {
           title: "Striver — Time and space complexity",
@@ -183,6 +315,46 @@ ms.erase(ms.find(value));   // removes exactly one
 \`\`\`
 
 **When the key is not a built-in type**, \`unordered_map\` needs a hash and has none for \`pair\` — either write one, or use \`map<pair<int,int>, T>\`, which only needs \`<\` and already has it.`,
+      interviewAngle:
+        "Choosing `map` when you never iterate in order is a small tell. Name the reason for " +
+        "the container you pick — `I need lower_bound here, so ordered` — and the follow-up " +
+        "about hash collisions becomes easy.",
+      pitfalls: [
+        "Probing a map with `operator[]`. `if (freq[c] > 0)` inserts `c` with value 0 and " +
+          "silently changes the size. Use `count` or `find` to ask.",
+        "Calling `ms.erase(value)` on a multiset expecting one removal — that erases every " +
+          "copy. Erase an iterator: `ms.erase(ms.find(value))`.",
+        "Reaching for `unordered_map<pair<int,int>, T>`. There is no standard hash for " +
+          "`pair`; use `map`, which only needs `<`.",
+      ],
+      recall: [
+        {
+          front:
+            "You need the smallest key greater than or equal to x. Which container, and why not " +
+            "the other one?",
+          back:
+            "`map` or `set` — they are balanced BSTs and support `lower_bound`. Hash containers " +
+            "have no order, so `unordered_map` cannot answer it at all.",
+        },
+        {
+          front: "What is wrong with `if (freq[c] > 0)` as a membership test on a map?",
+          back:
+            "`operator[]` default-constructs and inserts the key when it is missing, so the " +
+            "test itself mutates the map. Use `freq.count(c)` or `freq.find(c)`.",
+        },
+        {
+          front: "Why is `freq[c]++` the right idiom when `freq[c]` as a test is the wrong one?",
+          back:
+            "Both insert on a missing key — but for counting, inserting a zero and immediately " +
+            "incrementing it is exactly the behaviour you want.",
+        },
+        {
+          front: "What is the worst case of an `unordered_map` lookup, and what causes it?",
+          back:
+            "O(n), when every key hashes into the same bucket. Average is O(1); adversarial or " +
+            "badly distributed keys destroy it.",
+        },
+      ],
       resources: [
         {
           title: "Striver A2Z — Step 1.3: hashing",
@@ -231,6 +403,54 @@ The gap between them is the run of 2s, so \`upper_bound(..) - lower_bound(..)\` 
 **They are O(log n) only on random-access iterators.** On a \`set\`, the free function \`std::lower_bound\` degrades to O(n) because it has to walk; use the member \`s.lower_bound(x)\`, which uses the tree.
 
 Also worth having in hand: \`next_permutation\`, \`accumulate\` (pass \`0LL\` as the init value or the sum overflows at \`int\`), \`__gcd\`, \`max_element\`, and the erase-remove idiom \`v.erase(remove(v.begin(), v.end(), x), v.end())\` — \`remove\` alone only shuffles elements and returns the new logical end, it never shortens the vector.`,
+      interviewAngle:
+        "Custom comparators come up whenever the problem says `sort by X, break ties by Y`. " +
+        "Getting the strict-weak-ordering rule right is the difference between a clean solution " +
+        "and a segfault you cannot explain.",
+      pitfalls: [
+        "Writing `>=` or `<=` in a comparator. `cmp(a, a)` must be false — a non-strict " +
+          "comparator is undefined behaviour and really does crash.",
+        "Expecting `sort` to preserve the order of equal elements. That is `stable_sort`.",
+        "Calling free `std::lower_bound` on a `set`. Without random-access iterators it " +
+          "walks, degrading to O(n) — use the member `s.lower_bound(x)`.",
+        "`accumulate(v.begin(), v.end(), 0)` on values that sum past 2e9. The init value " +
+          "fixes the type — pass `0LL`.",
+        "Expecting `remove` to shorten a vector. It only shuffles and returns the new logical " +
+          "end; you still need `v.erase(remove(...), v.end())`.",
+      ],
+      recall: [
+        {
+          front:
+            "What exactly must `cmp(a, b)` return, and what is the one rule that makes it " +
+            "legal?",
+          back:
+            "True if and only if a must come strictly before b. It must be a strict weak " +
+            "ordering — in particular `cmp(a, a)` must be false, or sort is undefined " +
+            "behaviour.",
+        },
+        {
+          front:
+            "`v = {1, 2, 2, 2, 5}`. What do `lower_bound(v, 2)` and `upper_bound(v, 2)` return, " +
+            "and what does their difference mean?",
+          back:
+            "lower_bound gives index 1 (first not less than 2), upper_bound gives index 4 " +
+            "(first greater than 2). The difference, 3, is the number of occurrences — an O(log " +
+            "n) count.",
+        },
+        {
+          front: "`lower_bound` on a value that is absent — what have you actually computed?",
+          back:
+            "The index where the value would be inserted to keep the range sorted. That is the " +
+            "answer to `search insert position`.",
+        },
+        {
+          front: "Why is `std::lower_bound(s.begin(), s.end(), x)` on a `std::set` a mistake?",
+          back:
+            "Set iterators are bidirectional, not random-access, so the generic algorithm walks " +
+            "the range in O(n). The member function `s.lower_bound(x)` descends the tree in " +
+            "O(log n).",
+        },
+      ],
       resources: [
         {
           title: "Striver — sorting and comparators in STL",
@@ -279,6 +499,40 @@ Check the step really does shrink. \`sumTo(n - 1)\` terminates; \`sumTo(n / 2)\`
 \`fib(3)\` is computed twice, \`fib(2)\` three times. That repetition is the entire motivation for memoisation — and the reason the naive version is O(2ⁿ) while the memoised one is O(n). You want this picture in your head before you reach dynamic programming, because every DP problem is this observation applied to a bigger tree.
 
 **Depth is space.** Each call holds a frame, so a recursion of depth n costs O(n) stack. The default stack is around 1 MB — roughly 10⁴–10⁵ frames — so a recursion over n = 10⁶ will crash where the equivalent loop is fine. That trade, not elegance, is why some solutions are written iteratively.`,
+      interviewAngle:
+        "Every DP question starts as a recursion you are asked to draw. Being able to sketch " +
+        "the `fib(5)` tree and point at the repeated subtree is how you get to memoisation " +
+        "without being led there.",
+      pitfalls: [
+        "Writing the recursive step before the base case. A missing base case is not a wrong " +
+          "answer, it is a stack overflow.",
+        "Assuming any smaller argument terminates. `f(n / 2)` never reaches 1 by halving from " +
+          "1 unless the base case covers 0.",
+        "Recursing over n = 1e6. The default stack holds roughly 1e4 to 1e5 frames — the " +
+          "equivalent loop is fine, the recursion crashes.",
+      ],
+      recall: [
+        {
+          front: "What are the two questions every recursive function has to answer?",
+          back:
+            "What is the smallest case I can answer outright (the base case), and how do I " +
+            "reduce toward it with a strictly smaller argument (the step).",
+        },
+        {
+          front:
+            "In the `fib(5)` tree, how many times is `fib(2)` computed, and what does that " +
+            "motivate?",
+          back:
+            "Three times. The repeated subtrees are why the naive version is O(2^n), and " +
+            "memoising them is what makes it O(n) — the whole idea behind DP.",
+        },
+        {
+          front: "A recursion allocates nothing but descends n levels. What does it cost?",
+          back:
+            "O(n) space in stack frames. That is why an iterative linked-list reversal is O(1) " +
+            "space and the recursive one is not.",
+        },
+      ],
       resources: [
         {
           title: "Striver A2Z — Step 1.4: basic recursion",

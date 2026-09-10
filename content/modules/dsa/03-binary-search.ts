@@ -34,6 +34,46 @@ return -1;
 Three rules that make it reliable: the condition is \`<=\` because \`lo == hi\` is still an unexamined element; \`mid\` is computed as \`lo + (hi - lo) / 2\` to avoid integer overflow; and every branch **must** exclude \`mid\`, or the loop can spin forever.
 
 When the loop exits, \`lo\` is the insertion point — which is precisely \`lower_bound\`. That fact is worth internalising, because it is the answer to a whole family of problems.`,
+      interviewAngle:
+        "Writing binary search without an off-by-one, first try, under observation. Stating " +
+        "your boundary convention before the loop is what makes that possible.",
+      pitfalls: [
+        "Computing `mid` as `(lo + hi) / 2`. It overflows once `lo + hi` passes INT_MAX — the " +
+          "bug that sat in the JDK for nine years.",
+        "Writing `while (lo < hi)` with the closed-interval convention. When `lo == hi` there " +
+          "is still an unexamined element, so the condition is `<=`.",
+        "A branch that keeps `mid` in the range — `hi = mid` instead of `hi = mid - 1` in the " +
+          "closed convention. That is an infinite loop, not a wrong answer.",
+        "Mixing conventions between problems. Pick the closed interval and hold it.",
+      ],
+      recall: [
+        {
+          front:
+            "In the closed-interval `[lo, hi]` convention, why is the loop condition `<=` and " +
+            "not `<`?",
+          back:
+            "When `lo == hi` the range still holds exactly one unexamined element. Stopping at " +
+            "`<` skips it.",
+        },
+        {
+          front: "Why is `mid = lo + (hi - lo) / 2` rather than `(lo + hi) / 2`?",
+          back:
+            "`lo + hi` can exceed INT_MAX and overflow to a negative index. The subtraction " +
+            "form never leaves the valid range.",
+        },
+        {
+          front: "When the closed-interval loop exits without a match, what does `lo` hold?",
+          back:
+            "The insertion point — the index where the target would go to keep the array " +
+            "sorted. That is exactly `lower_bound`.",
+        },
+        {
+          front: "What must every branch do to `mid`, and what happens if one does not?",
+          back:
+            "Every branch must exclude `mid` from the next range. A branch that keeps it spins " +
+            "forever.",
+        },
+      ],
       resources: [
         {
           title: "Striver A2Z — Step 4: binary search",
@@ -83,6 +123,38 @@ int firstOccurrence(vector<int> &a, int x) {
 For the last occurrence, change exactly one line: \`lo = mid + 1\` in the match branch. Everything else is identical, which is the point — one template, one edit.
 
 \`mid = lo + (hi - lo) / 2\` rather than \`(lo + hi) / 2\` matters once \`lo + hi\` can exceed \`INT_MAX\`. It is a famous bug — it sat in the JDK's binary search for nine years — and mentioning why you wrote it that way costs you one sentence.`,
+      interviewAngle:
+        "The follow-up to plain binary search is almost always `now find the first one`. The " +
+        "record-and-keep-going move is the answer, and it generalises further than it looks.",
+      pitfalls: [
+        "Returning on the first match. For a first or last occurrence you must record the " +
+          "candidate and keep searching the side that could hold a better one.",
+        "Searching the wrong side. First occurrence keeps going left (`hi = mid - 1`); last " +
+          "occurrence keeps going right (`lo = mid + 1`).",
+        "Forgetting that `last - first + 1` is undefined when the value is absent — check the " +
+          "sentinel first.",
+      ],
+      recall: [
+        {
+          front:
+            "What is the one move that turns plain binary search into first-occurrence search?",
+          back:
+            "On a match, do not return: record `mid` as a candidate and keep searching the side " +
+            "that could hold a better answer — left for first, right for last.",
+        },
+        {
+          front: "Give two ways to count occurrences of x in a sorted array in O(log n).",
+          back:
+            "`last - first + 1` from two boundary searches, or `upper_bound(x) - " +
+            "lower_bound(x)`. Writing both once makes the equivalence obvious.",
+        },
+        {
+          front: "Which other problems use the same record-and-continue shape?",
+          back:
+            "Kth missing positive, and floor/ceil in a sorted array — which is why the template " +
+            "is worth drilling rather than memorising per problem.",
+        },
+      ],
       resources: [
         {
           title: "Striver — first and last occurrence in a sorted array",
@@ -112,6 +184,46 @@ else                        // right half sorted
 **With duplicates** the comparison \`a[lo] <= a[mid]\` stops being decisive — consider \`[3,1,3,3,3]\`, where you cannot tell which side is sorted. The standard patch is: when \`a[lo] == a[mid] == a[hi]\`, shrink both ends by one. That degrades the worst case to O(n), and being able to say so out loud is the point of the exercise.
 
 Finding the minimum is the same skill: the unsorted half always contains the pivot.`,
+      interviewAngle:
+        "The duplicates variant exists to see whether you will claim O(log n) when it is not " +
+        "true. Volunteering `this degrades to O(n) with duplicates` is the answer they are " +
+        "listening for.",
+      pitfalls: [
+        "Testing whether the target is greater than `a[mid]` instead of whether it lies " +
+          "inside the sorted half. The half's bounds are what you compare against.",
+        "Carrying the no-duplicates solution over to the duplicates variant. When `a[lo] == " +
+          "a[mid] == a[hi]` neither half is provably sorted.",
+        "Claiming the duplicates version is still O(log n). Shrinking both ends by one is " +
+          "O(n) in the worst case, and saying so is part of the answer.",
+      ],
+      recall: [
+        {
+          front: "In a rotated sorted array, what is always true about any split at `mid`?",
+          back:
+            "At least one of the two halves is properly sorted, because there is only one " +
+            "pivot. Identify which, test whether the target lies inside it, and discard the " +
+            "other half.",
+        },
+        {
+          front: "Why does `a[lo] <= a[mid]` stop being decisive when duplicates are allowed?",
+          back:
+            "On input like `[3, 1, 3, 3, 3]` the comparison holds while the left half is not " +
+            "sorted, so it no longer identifies the sorted side.",
+        },
+        {
+          front: "What is the standard patch for the duplicates case, and what does it cost?",
+          back:
+            "When `a[lo] == a[mid] == a[hi]`, shrink both ends by one. That degrades the worst " +
+            "case to O(n).",
+        },
+        {
+          front: "How do you find the minimum of a rotated sorted array?",
+          back:
+            "The pivot always lies in the unsorted half — compare `a[mid]` with `a[hi]`: if " +
+            "`a[mid] > a[hi]` the minimum is strictly right of mid, otherwise it is at mid or " +
+            "left.",
+        },
+      ],
       resources: [
         {
           title: "Striver — search in rotated sorted array I & II",
@@ -150,6 +262,50 @@ The whole job is writing \`feasible(mid)\` and choosing the bounds. For Koko: \`
 Getting \`lo\` wrong is the classic error. Ask yourself what the smallest answer that is even *possible* is, not the smallest number.
 
 Allocate books, split array, minimum days for bouquets, smallest divisor and painter's partition are all the same problem wearing different clothes. Solve two carefully and the rest become mechanical.`,
+      interviewAngle:
+        "This family is most of the medium binary-search questions, and they are never filed " +
+        "under the name. Recognising `minimum X such that a condition holds` out loud is most " +
+        "of the work.",
+      pitfalls: [
+        "Setting `lo` to 1 by reflex. Ask what the smallest answer that is even possible is — " +
+          "for ship-packages it is `max(weights)`, because the heaviest item has to fit.",
+        "Writing a `feasible` predicate that is not monotonic. If a larger value can be " +
+          "infeasible when a smaller one worked, binary search does not apply at all.",
+        "Overflowing inside `feasible`. Sums over the whole array usually need `long long`.",
+        "Forgetting the flipped update on maximise-the-minimum problems like aggressive cows " +
+          "— the feasible branch moves `lo`, not `hi`.",
+      ],
+      recall: [
+        {
+          front:
+            "What is the phrase in a problem statement that signals binary search on the " +
+            "answer?",
+          back:
+            "`Find the minimum (or maximum) X such that some condition holds` — where the " +
+            "condition is monotonic in X, so once it holds it keeps holding.",
+        },
+        {
+          front:
+            "Why does monotonicity of `feasible` matter, and not just that the answers are " +
+            "numbers?",
+          back:
+            "Binary search needs to discard half the space from one test. Only monotonicity " +
+            "guarantees that if `feasible(mid)` is true, everything above mid is feasible too.",
+        },
+        {
+          front:
+            "For `Capacity to Ship Packages Within D Days`, what are the search bounds and why?",
+          back:
+            "`lo = max(weights)`, because a capacity below the heaviest single package can " +
+            "never ship anything; `hi = sum(weights)`, which trivially ships in one day.",
+        },
+        {
+          front: "Name three problems that are this same template in different clothes.",
+          back:
+            "Koko eating bananas, split array largest sum, and allocate books / painter's " +
+            "partition — plus minimum days for bouquets and smallest divisor.",
+        },
+      ],
       resources: [
         {
           title: "Striver A2Z — Step 4.2: BS on answers",
@@ -195,6 +351,38 @@ return false;
 **Why the top-right corner.** At that cell the two directions disagree: moving left strictly decreases, moving down strictly increases. So whichever comparison you get, exactly one direction is eliminated — a whole row or a whole column at a time. The bottom-left corner works for the same reason. The top-left does not: both moves increase, so a mismatch tells you nothing about which way to go.
 
 Deciding which of the two problems you are looking at takes one question: *does every row start after the previous row ends?* If yes, flatten. If not, walk the staircase.`,
+      interviewAngle:
+        "Two matrix problems that look identical and are not. The question to ask before coding " +
+        "— `does every row start after the previous one ends?` — is the answer.",
+      pitfalls: [
+        "Flattening a staircase matrix. If rows do not chain end to end, the flat array is " +
+          "not sorted and binary search is simply wrong.",
+        "Starting the staircase walk at the top-left. Both moves increase from there, so a " +
+          "mismatch tells you nothing.",
+        "Mapping the flat index with the wrong dimension. It is `(idx / n, idx % n)` where n " +
+          "is the number of columns.",
+      ],
+      recall: [
+        {
+          front:
+            "What single question separates `Search a 2D Matrix` from `Search a 2D Matrix II`?",
+          back:
+            "Does every row start after the previous row ends? If yes, flatten and binary " +
+            "search in O(log mn). If only rows and columns are individually sorted, walk the " +
+            "staircase in O(m + n).",
+        },
+        {
+          front: "Why must the staircase walk start at the top-right (or bottom-left) corner?",
+          back:
+            "At that corner the two available moves disagree — left strictly decreases, down " +
+            "strictly increases — so any comparison eliminates a whole row or column. At the " +
+            "top-left both moves increase, so nothing is eliminated.",
+        },
+        {
+          front: "How do you map a flat index back to a cell in an m by n matrix?",
+          back: "Row is `idx / n`, column is `idx % n`, where n is the number of columns.",
+        },
+      ],
       resources: [
         {
           title: "Striver — search in a 2D matrix",

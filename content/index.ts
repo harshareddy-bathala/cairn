@@ -44,6 +44,8 @@ export function validateContent() {
   const moduleSlugs = new Set<string>();
   const unitSlugs = new Set<string>();
   const problemSlugs = new Set<string>();
+  /** every recall front in the curriculum -> the unit that owns it */
+  const recallFronts = new Map<string, string>();
   const trackSlugs = new Set(tracks.map((t) => t.slug));
   const phaseSlugs = new Set(phases.map((p) => p.slug));
 
@@ -64,6 +66,33 @@ export function validateContent() {
         errors.push(`${u.slug}: a resource is missing whyThisOne`);
       if (u.resources.filter((r) => r.isPrimary).length > 1)
         errors.push(`${u.slug}: more than one primary resource`);
+
+      // Retrieval practice is not optional decoration — it is the only part of
+      // a unit that survives to November. A unit that cannot be asked about is
+      // a unit that was only read.
+      const recall = u.recall ?? [];
+      if (recall.length < 2)
+        errors.push(`${u.slug}: ${recall.length} recall cards — write at least 2`);
+      if (recall.length > 4)
+        errors.push(`${u.slug}: ${recall.length} recall cards — the cap is 4, or the deck stops being reviewable`);
+      for (const c of recall) {
+        if (!c.front.trim() || !c.back.trim())
+          errors.push(`${u.slug}: a recall card has an empty side`);
+        // a prompt you can answer by reading it is a statement, not a question
+        if (c.front.trim().length < 12)
+          errors.push(`${u.slug}: recall front is too short to be a real question: "${c.front}"`);
+      }
+      // fronts are the deck's identity — a collision would merge two cards into one
+      const fronts = recall.map((c) => c.front.trim());
+      if (new Set(fronts).size !== fronts.length)
+        errors.push(`${u.slug}: two recall cards share a front`);
+      for (const f of fronts) {
+        if (recallFronts.has(f)) errors.push(`${u.slug}: recall front duplicated from ${recallFronts.get(f)}: "${f}"`);
+        else recallFronts.set(f, u.slug);
+      }
+
+      if ((u.pitfalls ?? []).some((x) => !x.trim()))
+        errors.push(`${u.slug}: an empty pitfall`);
     }
 
     for (const p of m.problems ?? []) {

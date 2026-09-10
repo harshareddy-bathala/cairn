@@ -26,7 +26,7 @@ export default async function TodayPage() {
     .reduce((n, b) => n + b.minutes, 0);
 
   return (
-    <Boot className="mx-auto max-w-3xl space-y-6 px-6 py-10">
+    <Boot className="mx-auto max-w-3xl space-y-6 px-4 py-8 sm:px-6 sm:py-10">
       <BootItem>
         <header className="flex flex-wrap items-end justify-between gap-4">
           <div>

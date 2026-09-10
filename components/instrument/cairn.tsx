@@ -9,10 +9,20 @@ export type Stone = {
   mode: "normal" | "catchup" | "bad_day";
 };
 
-/** deterministic per-day width so the stack looks like real stones, not a bar chart */
+/**
+ * Deterministic per-day width, so the stack looks like real stones rather than
+ * a bar chart.
+ *
+ * Rounded to two decimals on purpose. The raw value is a full-precision float,
+ * and React serialises it as `64.17429043556331%` on the server while motion
+ * writes back `64.1743%` on the client — a hydration mismatch logged on every
+ * page that shows the cairn, which is every page. Two decimals is well under a
+ * pixel at this size and both sides agree on the string.
+ */
 function widthFor(dayIndex: number) {
   const n = Math.sin(dayIndex * 12.9898) * 43758.5453;
-  return 0.62 + (n - Math.floor(n)) * 0.38; // 62%..100%
+  const pct = 62 + (n - Math.floor(n)) * 38; // 62%..100%
+  return `${pct.toFixed(2)}%`;
 }
 
 const MODE_CLASS = {
@@ -60,7 +70,7 @@ export function Cairn({
               bandEnd && "mb-[3px]",
               isLast && "shadow-[0_0_8px_-1px_var(--color-phos)]",
             )}
-            style={{ width: `${widthFor(s.dayIndex) * 100}%` }}
+            style={{ width: widthFor(s.dayIndex) }}
           />
         );
       })}

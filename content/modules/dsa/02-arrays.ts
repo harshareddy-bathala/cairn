@@ -23,6 +23,41 @@ export const arraysSorting: Module = {
 **Quick sort** — pick a pivot, partition, recurse on both sides. O(n log n) average but **O(n²) worst case** when the pivot is consistently bad (already-sorted input with a first-element pivot). In-place, not stable. Randomising the pivot is the standard fix, and "when does quicksort degrade?" is a common follow-up.
 
 Know why \`std::sort\` is introsort: quicksort until the recursion gets too deep, then heapsort to guarantee the bound.`,
+      interviewAngle:
+        "`Write merge sort on the board` is still asked, and `when does quicksort degrade?` is " +
+        "the follow-up that separates people who memorised it from people who understand the " +
+        "pivot.",
+      pitfalls: [
+        "Fumbling the merge step. Two indices walk two sorted runs into a third buffer, and " +
+          "the tail of whichever run is left over still has to be copied.",
+        "Claiming quicksort is O(n log n) full stop. It is O(n^2) on a bad pivot — " +
+          "already-sorted input with a first-element pivot is the standard example.",
+        "Calling quicksort stable. It is not; merge sort is.",
+      ],
+      recall: [
+        {
+          front:
+            "Merge sort and quick sort: which is stable, which is in place, and what is each " +
+            "one's worst case?",
+          back:
+            "Merge sort is stable, needs O(n) extra space, and is O(n log n) always. Quick sort " +
+            "is not stable, sorts in place, and is O(n log n) average but O(n^2) worst case.",
+        },
+        {
+          front: "What input makes quicksort degrade to O(n^2), and what is the standard fix?",
+          back:
+            "Input where the pivot is consistently extreme — classically an already-sorted " +
+            "array with a first-element pivot, giving partitions of size 0 and n-1. Randomise " +
+            "the pivot (or use median-of-three).",
+        },
+        {
+          front: "Why is `std::sort` called introsort?",
+          back:
+            "It runs quicksort until the recursion depth suggests a bad pivot sequence, then " +
+            "switches to heapsort — which guarantees the O(n log n) bound that quicksort alone " +
+            "cannot.",
+        },
+      ],
       resources: [
         {
           title: "Striver A2Z — Step 2: sorting techniques",
@@ -52,6 +87,36 @@ Know why \`std::sort\` is introsort: quicksort until the recursion gets too deep
 Second largest is the canonical trap. Sorting is O(n log n); a single pass with two variables is O(n). The edge case that catches people is duplicates — \`[5,5,4]\` should give 4, so update \`second\` only when the candidate is strictly less than \`first\`.
 
 Rotation by k has three approaches worth knowing: extra array O(n) space; one-by-one shifting O(n·k); and the **reversal trick** — reverse the whole array, reverse the first k, reverse the rest — which is O(n) time and O(1) space. That last one is what they want.`,
+      interviewAngle:
+        "Sorting to find a maximum is the beginner tell. The habit being tested is asking `can " +
+        "one pass and two variables do this?` before reaching for a sort.",
+      pitfalls: [
+        "Second largest on `[5, 5, 4]`. Update `second` only when the candidate is strictly " +
+          "less than `first`, or duplicates give you 5.",
+        "Rotating by k without `k %= n`. When k exceeds n the shift runs off the end.",
+        "Reaching for the sum formula on `missing number` when the range is large — it " +
+          "overflows. XOR does not.",
+      ],
+      recall: [
+        {
+          front: "Rotate an array by k in O(n) time and O(1) space. What is the trick?",
+          back:
+            "Reverse the whole array, then reverse the first k, then reverse the rest. Remember " +
+            "`k %= n` first.",
+        },
+        {
+          front: "Why does second-largest break on `[5, 5, 4]` if written carelessly?",
+          back:
+            "Because a candidate equal to the current largest gets promoted into `second`. The " +
+            "update has to be on strictly less than `first`.",
+        },
+        {
+          front: "Two ways to find the one missing number in 0..n, and why one is safer.",
+          back:
+            "Sum of 0..n minus the actual sum, or XOR of all indices with all values. XOR " +
+            "cannot overflow, so it is the safe answer for large n.",
+        },
+      ],
       resources: [
         {
           title: "Striver A2Z — Step 3.1: arrays easy",
@@ -79,6 +144,36 @@ for (int x : a) { cur += x; best = max(best, cur); if (cur < 0) cur = 0; }
 Two follow-ups you should be ready for. **All-negative input**: with \`best\` initialised to \`LLONG_MIN\` and the max taken *before* the reset, it correctly returns the least-negative element. **Return the subarray, not the sum**: track a start index that moves whenever you reset, and record start/end when \`best\` improves.
 
 The same running-state shape appears in the stock-buying problems — carry the minimum seen so far and maximise the difference.`,
+      interviewAngle:
+        "Expect `now return the subarray, not just the sum` and `what if every number is " +
+        "negative?` — the two follow-ups the one-liner does not answer on its own.",
+      pitfalls: [
+        "Initialising `best` to 0. On an all-negative array that returns 0, which is not a " +
+          "subarray of anything.",
+        "Resetting `cur` to 0 before taking the max. The max has to be taken first, or the " +
+          "least-negative element is never seen.",
+        "Summing into an `int` when the values and length allow the total to pass 2e9.",
+      ],
+      recall: [
+        {
+          front: "State Kadane's central insight in one sentence.",
+          back:
+            "A running sum that has gone negative can never help any future subarray, so drop " +
+            "it and start fresh from zero.",
+        },
+        {
+          front: "Why does Kadane's still work when every element is negative?",
+          back:
+            "Because `best` starts at negative infinity and the max is taken before the reset, " +
+            "so the least-negative single element is recorded as the answer.",
+        },
+        {
+          front: "How do you extend Kadane's to return the subarray itself?",
+          back:
+            "Keep a start index that moves to the next position whenever `cur` resets, and " +
+            "record start and end whenever `best` improves.",
+        },
+      ],
       resources: [
         {
           title: "Striver — Kadane's algorithm",
@@ -105,6 +200,38 @@ The same running-state shape appears in the stock-buying problems — carry the 
 Then: if \`a[mid] == 0\` swap with \`low\` and advance **both**; if \`== 1\` just advance \`mid\`; if \`== 2\` swap with \`high\` and decrement \`high\` **without advancing mid** — because the value swapped in from the back has not been examined yet. That last asymmetry is the whole problem, and it is where nearly everyone gets it wrong first time.
 
 This is also quicksort's partition step, so the two units reinforce each other.`,
+      interviewAngle:
+        "Sort Colors is asked precisely because the third branch is counter-intuitive. Being " +
+        "able to state the invariant before you code it is the whole answer.",
+      pitfalls: [
+        "Advancing `mid` after swapping with `high`. The value that came from the back has " +
+          "not been examined yet — this is the mistake nearly everyone makes first.",
+        "Not advancing both `low` and `mid` after a swap on category 0. The value swapped in " +
+          "from `low` is already known to be a 1.",
+        "Writing the loop as `mid < high` instead of `mid <= high`, which leaves the final " +
+          "element unexamined.",
+      ],
+      recall: [
+        {
+          front: "State the Dutch national flag invariant over `low`, `mid` and `high`.",
+          back:
+            "Everything before `low` is category 0, everything from `low` to `mid - 1` is " +
+            "category 1, and everything after `high` is category 2. The region from `mid` to " +
+            "`high` is unexamined.",
+        },
+        {
+          front:
+            "On `a[mid] == 2` you swap with `high` and decrement `high`. Why must `mid` stay " +
+            "put?",
+          back:
+            "The value swapped in from the back has never been examined, so advancing `mid` " +
+            "would skip it entirely.",
+        },
+        {
+          front: "What other algorithm is this the same code as?",
+          back: "Quicksort's partition step — which is why the two units reinforce each other.",
+        },
+      ],
       resources: [
         {
           title: "Striver — sort an array of 0s, 1s and 2s",
@@ -131,6 +258,46 @@ Two shapes to keep separate:
 - **Same direction**, one fast one slow — remove duplicates in place, move zeros, cycle detection later in linked lists.
 
 3Sum is the composition: sort, fix one element, then run a converging two-pointer on the rest. The fiddly part is skipping duplicates at all three levels, and interviewers do check.`,
+      interviewAngle:
+        "3Sum is the composition question, and the duplicate-skipping is what gets checked. Say " +
+        "`sorted input plus a pair condition` out loud — naming the trigger is half the signal.",
+      pitfalls: [
+        "Reaching for two pointers on unsorted input. Sortedness is what makes the move " +
+          "decision unambiguous; without it, moving a pointer proves nothing.",
+        "In 3Sum, skipping duplicates at only one of the three levels. The fixed element and " +
+          "both pointers all need it.",
+        "In container-with-most-water, moving the taller wall. The area is bounded by the " +
+          "shorter one, so only moving the shorter one can help.",
+      ],
+      recall: [
+        {
+          front: "What is the trigger that tells you to reach for converging two pointers?",
+          back:
+            "The array is sorted, or can be sorted, and you are looking for a pair or window " +
+            "satisfying a condition — which turns a nested loop into a single pass.",
+        },
+        {
+          front: "Name the two two-pointer shapes and one problem for each.",
+          back:
+            "Opposite ends converging (pair sums, container with most water, valid palindrome), " +
+            "and same direction fast/slow (remove duplicates in place, move zeros, cycle " +
+            "detection).",
+        },
+        {
+          front: "In container with most water, why do you always move the shorter wall?",
+          back:
+            "The area is limited by the shorter wall, so moving the taller one can only keep " +
+            "the same height with a narrower width — it can never improve the answer.",
+        },
+        {
+          front:
+            "Why do two pointers fail on `count subarrays with sum k` when negatives are " +
+            "allowed?",
+          back:
+            "A sliding window relies on the sum growing as the window grows. Negative values " +
+            "break that monotonicity, so you need the prefix-sum plus hashmap approach instead.",
+        },
+      ],
       resources: [
         {
           title: "Striver A2Z — Step 3.3: arrays medium",
@@ -162,6 +329,46 @@ The version that actually shows up: **count subarrays summing to k**. Walk once 
 Seed the map with \`{0: 1}\` before the loop — that accounts for subarrays starting at index 0, and forgetting it is the standard bug.
 
 The same trick with a map of remainders solves "subarrays divisible by k", and with a running +1/−1 it solves "longest subarray of equal 0s and 1s".`,
+      interviewAngle:
+        "Subarray Sum Equals K is the one that gets asked, and the `{0: 1}` seed is the line " +
+        "interviewers watch for. Being able to say why negatives rule out a sliding window is " +
+        "the framing they want.",
+      pitfalls: [
+        "Forgetting to seed the count map with `{0: 1}`. Subarrays starting at index 0 are " +
+          "then never counted — the standard bug.",
+        "Storing whether a running sum was seen instead of how many times. You are counting " +
+          "subarrays, so you need the count.",
+        "Using a sliding window when the array can contain negatives. The window's sum is no " +
+          "longer monotonic in its width.",
+      ],
+      recall: [
+        {
+          front:
+            "Given `prefix[i]` = sum of everything before index i, what is the sum of the range " +
+            "[l, r]?",
+          back: "`prefix[r + 1] - prefix[l]`, in O(1) after O(n) preprocessing.",
+        },
+        {
+          front:
+            "In `count subarrays summing to k`, what do you look up in the map at each step, " +
+            "and why?",
+          back:
+            "The count of `running - k`. Every earlier position with that running sum starts a " +
+            "subarray that ends here with sum exactly k.",
+        },
+        {
+          front: "Why must the count map be seeded with `{0: 1}`?",
+          back:
+            "It represents the empty prefix, so a subarray that starts at index 0 and sums to k " +
+            "is counted. Without it every such subarray is missed.",
+        },
+        {
+          front: "Name two other problems the same running-sum-plus-map trick solves.",
+          back:
+            "Subarrays divisible by k (map the remainder instead of the sum), and longest " +
+            "subarray with equal 0s and 1s (map a running +1/-1 total).",
+        },
+      ],
       resources: [
         {
           title: "Striver — longest subarray with sum k",

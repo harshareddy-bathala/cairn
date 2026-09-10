@@ -9,6 +9,7 @@ import { Readout } from "@/components/instrument/readout";
 import { ReminderSchedule } from "@/components/instrument/reminder-schedule";
 import { TelegramLink } from "@/components/instrument/telegram-link";
 import { TimezoneSync } from "@/components/instrument/timezone-sync";
+import { ThemeControl } from "@/components/instrument/theme-control";
 import { REMINDER_LABELS, normaliseSlots } from "@/lib/reminders";
 import { telegramConfigured } from "@/lib/telegram";
 
@@ -43,7 +44,7 @@ export default async function SettingsPage() {
   const timezone = row?.timezone ?? "Asia/Kolkata";
 
   return (
-    <Boot className="mx-auto max-w-3xl space-y-8 px-6 py-10">
+    <Boot className="mx-auto max-w-3xl space-y-8 px-4 py-8 sm:px-6 sm:py-10">
       <BootItem>
         <header>
           <p className="legend">settings</p>
@@ -54,6 +55,12 @@ export default async function SettingsPage() {
             late, because nothing here can be late.
           </p>
         </header>
+      </BootItem>
+
+      <BootItem>
+        <Panel legend="appearance">
+          <ThemeControl />
+        </Panel>
       </BootItem>
 
       <BootItem>

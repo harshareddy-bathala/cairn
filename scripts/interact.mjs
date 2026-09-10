@@ -1,6 +1,10 @@
 import { chromium } from "playwright";
-const EXE = process.env.HOME + "/.cache/ms-playwright/chromium_headless_shell-1234/chrome-headless-shell-linux64/chrome-headless-shell";
-const b = await chromium.launch({ executablePath: EXE });
+// CHROME_PATH overrides the browser binary, for images that ship Chromium
+// somewhere other than where Playwright expects it. Pinning a path here is
+// what silently broke every one of these scripts once the version moved.
+const b = await chromium.launch(
+  process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : {},
+);
 const ctx = await b.newContext({ viewport: { width: 1280, height: 900 }, deviceScaleFactor: 2 });
 const p = await ctx.newPage();
 p.setDefaultTimeout(60000);
@@ -16,8 +20,14 @@ await p.waitForLoadState("load"); await p.waitForTimeout(1200);
 // rather than reporting a stale run as a failure.
 const say = (l, r) => console.log(`${l.padEnd(26)} ${r}`);
 
-// expand the first problem
-await p.locator('button[aria-expanded]').first().click();
+// Expand the first problem.
+//
+// Scoped to `main`: the mobile tab bar's "more" button also carries
+// aria-expanded and is earlier in the DOM. It is `sm:hidden` rather than
+// unmounted — a JS viewport check would mean a hydration mismatch — so at a
+// desktop viewport it is present, invisible, and exactly what an unscoped
+// `.first()` picks up.
+await p.locator('main button[aria-expanded]').first().click();
 await p.waitForTimeout(400);
 const mask = p.getByText("reveal approach — recorded").first();
 const maskVisible = await mask.isVisible().catch(() => false);

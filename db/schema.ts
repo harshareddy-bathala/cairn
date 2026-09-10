@@ -129,9 +129,17 @@ export const units = pgTable(
     objective: text("objective").notNull(),
     estMinutes: integer("est_minutes").notNull(),
     conceptMd: text("concept_md").notNull().default(""),
+    /** retrieval prompts — the source the spaced-repetition deck is seeded from */
+    recall: jsonb("recall").$type<RecallCard[]>().notNull().default([]),
+    /** the mistakes that actually get made here, authored with the concept */
+    pitfalls: jsonb("pitfalls").$type<string[]>().notNull().default([]),
+    /** how the unit shows up in an interview */
+    interviewAngle: text("interview_angle"),
   },
   (t) => [index("units_module_idx").on(t.moduleSlug, t.order)],
 );
+
+export type RecallCard = { front: string; back: string };
 
 export const resources = pgTable(
   "resources",
@@ -267,8 +275,17 @@ export const flashcards = pgTable(
     intervalDays: integer("interval_days").notNull().default(1),
     dueDayIndex: integer("due_day_index").notNull(),
     lapses: integer("lapses").notNull().default(0),
+    /** how many times this card has been graded — 0 means it has never been seen */
+    reviews: integer("reviews").notNull().default(0),
+    /** the active day it was last graded on, so the deck can show what is fresh */
+    lastReviewedDay: integer("last_reviewed_day"),
+    createdAt: timestamp("created_at", { mode: "date" }).notNull().defaultNow(),
   },
-  (t) => [index("flashcards_due_idx").on(t.userId, t.dueDayIndex)],
+  (t) => [
+    index("flashcards_due_idx").on(t.userId, t.dueDayIndex),
+    // one card per prompt per user: seeding a unit twice must not double the deck
+    uniqueIndex("flashcards_user_front_idx").on(t.userId, t.front),
+  ],
 );
 
 /* ------------------------------------------------------------------ *

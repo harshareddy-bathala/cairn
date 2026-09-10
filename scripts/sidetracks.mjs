@@ -1,7 +1,11 @@
 // Day 6 end-to-end: aptitude log, project deliverables, applications, STAR bank.
 import { chromium } from "playwright";
-const EXE = process.env.HOME + "/.cache/ms-playwright/chromium_headless_shell-1234/chrome-headless-shell-linux64/chrome-headless-shell";
-const b = await chromium.launch({ executablePath: EXE });
+// CHROME_PATH overrides the browser binary, for images that ship Chromium
+// somewhere other than where Playwright expects it. Pinning a path here is
+// what silently broke every one of these scripts once the version moved.
+const b = await chromium.launch(
+  process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : {},
+);
 const ctx = await b.newContext({ viewport: { width: 1280, height: 1100 }, deviceScaleFactor: 2 });
 const p = await ctx.newPage();
 p.setDefaultTimeout(60000);

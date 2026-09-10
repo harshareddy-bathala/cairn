@@ -29,6 +29,41 @@ export const oop: Module = {
 **Composition over inheritance** is the trade-off worth volunteering. Inheritance couples you to a base class's implementation forever; composition (holding a member and delegating) is more flexible. The rule of thumb: use inheritance for "is-a", composition for "has-a", and when in doubt prefer composition.
 
 Your \`sentinel\` project has natural homes for all four — use it as your example bank.`,
+      interviewAngle:
+        "Everyone can recite the four. The band you land in is decided by whether each " +
+        "definition arrives attached to code you wrote and a trade-off you can defend.",
+      pitfalls: [
+        "Answering with textbook definitions. Have a one-sentence definition plus a real " +
+          "example from your own project for each.",
+        "Reaching for inheritance to reuse code. Inheritance is for `is-a`; reuse without " +
+          "that relationship is what composition is for.",
+        "Leaving out the composition-over-inheritance trade-off. Volunteering it is most of " +
+          "the value of the question.",
+      ],
+      recall: [
+        {
+          front: "Give the four pillars in one clause each.",
+          back:
+            "Encapsulation: state is private, access goes through methods that maintain " +
+            "invariants. Abstraction: expose what, hide how. Inheritance: an is-a relationship " +
+            "reusing a base implementation. Polymorphism: one interface, many implementations, " +
+            "resolved at runtime.",
+        },
+        {
+          front:
+            "State the composition-over-inheritance rule of thumb and the reason behind it.",
+          back:
+            "Inheritance for is-a, composition for has-a, and prefer composition when in doubt. " +
+            "Inheritance couples you to a base class's implementation permanently; composition " +
+            "holds a member and delegates, so it can be changed.",
+        },
+        {
+          front: "What makes an example of encapsulation actually good?",
+          back:
+            "That it names the invariant being protected — a threshold that validates on set so " +
+            "it can never hold a negative value — rather than just saying the field is private.",
+        },
+      ],
       resources: [
         {
           title: "Refactoring Guru — OOP basics",
@@ -59,6 +94,46 @@ Your \`sentinel\` project has natural homes for all four — use it as your exam
 **D — Dependency Inversion.** Depend on abstractions, not concretions. Violation: a service constructing its own \`PostgresClient\`. Fix: inject a \`Store\` interface — and note that this is also what makes the thing testable, since a test can pass in a fake.
 
 Do not over-apply these. "I would not split this yet, it is only one reason to change today" is a *better* answer than reflexive abstraction, and senior interviewers listen for exactly that judgement.`,
+      interviewAngle:
+        "Naming the five is the floor. A violation and a fix for each is the expected answer, " +
+        "and knowing when *not* to apply them is what senior interviewers listen for.",
+      pitfalls: [
+        "Applying them reflexively. `I would not split this yet, it is only one reason to " +
+          "change today` is a better answer than premature abstraction.",
+        "Explaining Liskov abstractly. The Square-inheriting-Rectangle example does the work " +
+          "in one sentence.",
+        "Treating Dependency Inversion as ceremony. It is what makes the thing testable — a " +
+          "test can pass in a fake.",
+      ],
+      recall: [
+        {
+          front: "Name all five SOLID principles.",
+          back:
+            "Single Responsibility, Open/Closed, Liskov Substitution, Interface Segregation, " +
+            "Dependency Inversion.",
+        },
+        {
+          front: "Give the classic Liskov violation and say precisely what breaks.",
+          back:
+            "`Square` inheriting `Rectangle`. Setting the width on a Square also changes its " +
+            "height, so any caller that assumed independent dimensions — and was written " +
+            "against Rectangle — now behaves wrongly.",
+        },
+        {
+          front: "What is the Open/Closed violation you will actually meet, and its fix?",
+          back:
+            "A `switch` on a type tag that has to be edited every time a new type is added. " +
+            "Replace it with an interface and one implementation per type, so extension adds a " +
+            "file instead of editing one.",
+        },
+        {
+          front: "Why is Dependency Inversion about testing as much as design?",
+          back:
+            "Depending on an abstraction rather than constructing a concrete `PostgresClient` " +
+            "means a test can inject a fake `Store`. The decoupling and the testability are the " +
+            "same property.",
+        },
+      ],
       resources: [
         {
           title: "DigitalOcean — SOLID, the first five principles",
@@ -87,6 +162,40 @@ Do not over-apply these. "I would not split this yet, it is only one reason to c
 **Strategy** — swap an algorithm at runtime through a common interface. A retry policy that can be fixed-delay or exponential-backoff is a clean example — and it is one you will actually implement in \`atlas\`.
 
 The meta-answer that impresses: patterns are a **vocabulary for describing designs**, not a checklist to apply. Reaching for a pattern before you have the problem is how codebases get complicated.`,
+      interviewAngle:
+        "The meta-answer is the one that impresses: patterns are a vocabulary for describing " +
+        "designs, not a checklist to apply. Volunteering a pattern's downsides is the same " +
+        "move.",
+      pitfalls: [
+        "Describing Singleton without its downsides. It is global state, it makes testing " +
+          "hard, and thread safety takes care — saying so is the point of the question.",
+        "Knowing twenty patterns superficially. Four with judgement beats twenty as trivia.",
+        "Reaching for a pattern before you have the problem. That is how codebases get " +
+          "complicated.",
+      ],
+      recall: [
+        {
+          front: "Singleton — what is it for, and what are the three downsides to volunteer?",
+          back:
+            "One instance, globally reachable; used for config and connection pools. The " +
+            "downsides: it is global state, it makes testing hard because you cannot substitute " +
+            "it, and it needs care to be thread-safe.",
+        },
+        {
+          front: "Strategy versus Factory — what does each vary?",
+          back:
+            "Factory varies *which concrete type gets created*, hiding construction behind one " +
+            "call. Strategy varies *which algorithm runs*, swapped at runtime through a common " +
+            "interface — a retry policy that can be fixed-delay or exponential backoff.",
+        },
+        {
+          front: "What is the meta-answer about design patterns?",
+          back:
+            "They are a shared vocabulary for describing designs that already exist, not a " +
+            "checklist to apply up front. Reaching for a pattern before you have the problem is " +
+            "how simple code becomes complicated.",
+        },
+      ],
       resources: [
         {
           title: "Refactoring Guru — Catalog (Singleton, Factory, Observer, Strategy)",

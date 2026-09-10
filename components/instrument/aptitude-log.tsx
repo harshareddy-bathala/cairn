@@ -53,9 +53,13 @@ export function AptitudeLog({
             setFlash(res.percent);
           })
         }
-        className="flex flex-wrap items-end gap-3"
+        // On a phone: topic on its own row, the two counts side by side,
+        // then the button. At `sm` it collapses back to one line — at 326px of
+        // usable width the single row wrapped mid-form, stranding "of" and the
+        // button on a second line with a gap above them.
+        className="grid grid-cols-2 gap-3 sm:flex sm:flex-wrap sm:items-end"
       >
-        <label className="min-w-40 flex-1">
+        <label className="col-span-2 sm:min-w-40 sm:flex-1">
           <span className="legend">topic</span>
           <input
             value={topic}
@@ -63,7 +67,7 @@ export function AptitudeLog({
             className="mt-1 w-full rounded-[3px] border border-line bg-ink-900 px-2.5 py-1.5 text-sm text-hi focus:border-phos-dim focus:outline-none"
           />
         </label>
-        <label className="w-20">
+        <label className="sm:w-20">
           <span className="legend">correct</span>
           <input
             value={correct}
@@ -76,7 +80,7 @@ export function AptitudeLog({
             className="mt-1 w-full rounded-[3px] border border-line bg-ink-900 px-2.5 py-1.5 text-sm tabular-nums text-hi placeholder:text-lo focus:border-phos-dim focus:outline-none"
           />
         </label>
-        <label className="w-20">
+        <label className="sm:w-20">
           <span className="legend">of</span>
           <input
             value={total}
@@ -90,7 +94,7 @@ export function AptitudeLog({
         </label>
         <button
           type="submit"
-          className="rounded-[3px] border border-line px-4 py-1.5 text-sm text-mid transition-colors duration-[120ms] hover:border-phos hover:text-phos"
+          className="col-span-2 rounded-[3px] border border-line px-4 py-2 text-sm text-mid transition-colors duration-[120ms] hover:border-phos hover:text-phos sm:col-span-1 sm:py-1.5"
         >
           log
         </button>

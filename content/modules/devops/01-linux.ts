@@ -20,6 +20,37 @@ export const linuxFoundations: Module = {
 An **inode** holds a file's metadata and block pointers — everything except its name. A directory entry maps a name to an inode number. That single fact explains both link types: a **hard link** is a second directory entry pointing at the same inode (so the file survives deleting either name, and the link count in \`ls -l\` is what tracks it), while a **symlink** is a tiny file containing a *path*, which is why it breaks when the target moves.
 
 Be able to read every field of \`ls -la\`: type character, permission triads, link count, owner, group, size, mtime.`,
+      interviewAngle:
+        "`What is the difference between a hard link and a symlink?` is a standard opener for " +
+        "any ops role. Answering at the inode level rather than by behaviour is what makes it a " +
+        "good answer.",
+      pitfalls: [
+        "Explaining links by what they do rather than what they are. The inode is the " +
+          "explanation; the behaviour follows from it.",
+        "Assuming a symlink survives the target moving. It stores a path, so it does not.",
+        "Misreading the second field of `ls -l` as file size. It is the link count.",
+      ],
+      recall: [
+        {
+          front: "What does an inode hold, and what does it conspicuously not hold?",
+          back:
+            "All of a file's metadata and its block pointers — everything except the name. The " +
+            "name lives in a directory entry that maps it to an inode number.",
+        },
+        {
+          front: "Hard link versus symlink, at the inode level.",
+          back:
+            "A hard link is a second directory entry pointing at the same inode, so the data " +
+            "survives deleting either name and the link count tracks how many names exist. A " +
+            "symlink is a small file containing a path, so it breaks when the target moves.",
+        },
+        {
+          front: "What lives in `/etc`, `/var` and `/proc`?",
+          back:
+            "`/etc` is configuration, `/var` is state that changes at runtime, and `/proc` is a " +
+            "virtual filesystem that is a window into the kernel rather than files on disk.",
+        },
+      ],
       resources: [
         {
           title: "OverTheWire — Bandit levels 0–8",
@@ -50,6 +81,43 @@ Be able to read every field of \`ls -la\`: type character, permission triads, li
 On a **directory** the bits mean something different and this is the part people get wrong: \`x\` means you may traverse into it, \`r\` means you may list its contents. A directory with \`x\` but no \`r\` lets you open a file whose name you already know but not discover it.
 
 \`umask\` subtracts from the default creation mode. The special bits: **SUID** runs the file with the *owner's* privileges (this is how \`passwd\` writes to \`/etc/shadow\`), **SGID** on a directory makes new files inherit its group, and the **sticky bit** on \`/tmp\` stops you deleting other people's files.`,
+      interviewAngle:
+        "The directory question is the one that separates memorisation from understanding: what " +
+        "do r and x mean on a directory, as opposed to a file?",
+      pitfalls: [
+        "Carrying the file meaning of `r` and `x` over to directories. On a directory `x` is " +
+          "traverse and `r` is list — they are not the same permission.",
+        "Thinking `umask` adds permissions. It subtracts from the default creation mode.",
+        "Describing SUID as `runs as root`. It runs as the file's *owner*, which is often but " +
+          "not always root.",
+      ],
+      recall: [
+        {
+          front: "On a directory, what do `r` and `x` each permit?",
+          back:
+            "`x` permits traversing into it — opening a file whose name you already know. `r` " +
+            "permits listing its contents. A directory with `x` but not `r` allows the first " +
+            "and forbids the second.",
+        },
+        {
+          front:
+            "What does SUID actually do to a running process, and give the canonical example.",
+          back:
+            "It runs the executable with the privileges of the file's owner rather than the " +
+            "invoking user. `passwd` is SUID root, which is how an unprivileged user can write " +
+            "to `/etc/shadow`.",
+        },
+        {
+          front: "What is `755` in rwx notation, and how do you get there?",
+          back: "`rwxr-xr-x`. Each triad is r=4, w=2, x=1, so 7 is rwx and 5 is r-x.",
+        },
+        {
+          front: "What does the sticky bit on `/tmp` accomplish?",
+          back:
+            "It restricts deletion within the directory to the file's owner, so a " +
+            "world-writable directory does not let anyone delete anyone else's files.",
+        },
+      ],
       resources: [
         {
           title: "Red Hat — Linux file permissions explained",
@@ -85,6 +153,41 @@ awk '{print $1}' access.log | sort | uniq -c | sort -rn | head
 \`\`\`
 
 Also get redirection exactly right: \`>\` truncates, \`>>\` appends, \`2>&1\` sends stderr to wherever stdout currently points — **and order matters**, because \`cmd > f 2>&1\` and \`cmd 2>&1 > f\` do different things.`,
+      interviewAngle:
+        "You will be handed a log file and asked a question about it. Building the pipeline out " +
+        "loud, stage by stage, is the demonstration — not knowing awk syntax by heart.",
+      pitfalls: [
+        "Getting redirection order wrong. `cmd > f 2>&1` sends both streams to the file; `cmd " +
+          "2>&1 > f` sends stderr to the *old* stdout and only stdout to the file.",
+        "Using `>` when you meant `>>`. The first truncates the file before the command even " +
+          "runs.",
+        "Confusing basic and extended regex. `grep` needs `-E` (or backslashed " +
+          "metacharacters) for `+`, `?` and `|`.",
+        "Writing a script when one pipeline would do. Build it left to right and check the " +
+          "output at every stage.",
+      ],
+      recall: [
+        {
+          front: "Write the top-talkers pipeline for a log file, and say what each stage does.",
+          back:
+            "`awk '{print $1}' access.log | sort | uniq -c | sort -rn | head` — extract the " +
+            "first field, sort so equal values are adjacent, count runs, sort by count " +
+            "descending, take the top.",
+        },
+        {
+          front: "Why does `uniq -c` need a `sort` before it?",
+          back:
+            "`uniq` only collapses *adjacent* duplicate lines, so unsorted input leaves the " +
+            "same value counted in several separate runs.",
+        },
+        {
+          front: "What is the difference between `cmd > f 2>&1` and `cmd 2>&1 > f`?",
+          back:
+            "The first sends stdout to the file and then points stderr at the same place, so " +
+            "both land in f. The second points stderr at the terminal (where stdout still is), " +
+            "then redirects only stdout to f.",
+        },
+      ],
       resources: [
         {
           title: "The Linux Command Line — ch. 6–7, 19–20 (Shotts)",
@@ -113,6 +216,47 @@ Also get redirection exactly right: \`>\` truncates, \`>>\` appends, \`2>&1\` se
 **SIGTERM (15)** politely asks a process to shut down — it can be caught, so the process flushes buffers, closes connections, and exits cleanly. **SIGKILL (9)** cannot be caught or ignored; the kernel destroys the process immediately, with no cleanup. Reaching for \`kill -9\` first is a genuine interview tell. This is also exactly why a container gets SIGTERM and a grace period before SIGKILL.
 
 A **zombie** has exited but its parent has not reaped its exit status — it holds a PID and nothing else, and the fix is to fix the parent. An **orphan** lost its parent and was re-parented to init/systemd, which reaps it correctly. Zombies are a bug; orphans are normal.`,
+      interviewAngle:
+        "`SIGTERM versus SIGKILL` is asked constantly, and reaching for `kill -9` first is a " +
+        "real tell. The container grace-period connection is the answer that shows you have " +
+        "operated something.",
+      pitfalls: [
+        "Trying to kill a zombie. It has already exited — the fix is to fix (or restart) the " +
+          "parent that is not reaping it.",
+        "Treating orphans as a problem. They are re-parented to init and reaped correctly; " +
+          "that is normal.",
+        "Reaching for `kill -9` before `kill`. SIGKILL skips every cleanup path — no flushed " +
+          "buffers, no closed connections.",
+      ],
+      recall: [
+        {
+          front: "SIGTERM versus SIGKILL — what is the operational difference?",
+          back:
+            "SIGTERM (15) can be caught, so the process flushes buffers, closes connections and " +
+            "exits cleanly. SIGKILL (9) cannot be caught or ignored; the kernel destroys the " +
+            "process with no cleanup at all.",
+        },
+        {
+          front: "Zombie versus orphan: which is a bug, and why?",
+          back:
+            "A zombie has exited but its parent has not reaped its exit status, so it holds a " +
+            "PID forever — that is a bug in the parent. An orphan simply lost its parent and " +
+            "was re-parented to init, which reaps it correctly; that is normal.",
+        },
+        {
+          front: "What do fork and exec each do, and why does the split matter?",
+          back:
+            "`fork` copies the parent process; `exec` replaces the process image with a new " +
+            "program. The gap between them is where a shell sets up redirection and file " +
+            "descriptors before the program starts.",
+        },
+        {
+          front: "Why does a container runtime send SIGTERM and wait before sending SIGKILL?",
+          back:
+            "It is the same contract: the grace period gives the process a chance to shut down " +
+            "cleanly, and SIGKILL is the guarantee that it stops regardless.",
+        },
+      ],
       resources: [
         {
           title: "Linux Journey — Processes",
@@ -159,6 +303,45 @@ WantedBy=multi-user.target
 \`journalctl -u sentinel -f\` follows its logs. Prefer a **systemd timer** over cron for anything new: timers get logging, dependency ordering, and catch-up after downtime for free.
 
 This unit is a direct prerequisite for shipping \`sentinel\` — you will write this file for real.`,
+      interviewAngle:
+        "`What is the difference between start and enable?` is the systemd question that gets " +
+        "asked, because it separates people who have run a service from people who have read " +
+        "about one.",
+      pitfalls: [
+        "Assuming `systemctl start` survives a reboot. It does not — that is `enable`. " +
+          "`enable --now` does both.",
+        "Reaching for cron for anything new. A timer gets logging, dependency ordering and " +
+          "catch-up after downtime for free.",
+        "Forgetting `[Install] WantedBy=`. Without it `enable` has nothing to hook the unit " +
+          "into.",
+      ],
+      recall: [
+        {
+          front: "`systemctl start` versus `systemctl enable` — what does each do?",
+          back:
+            "`start` runs the unit now; `enable` makes it run at boot. They are independent, " +
+            "and `enable --now` does both.",
+        },
+        {
+          front:
+            "Which three sections does a minimal `.service` file have, and what does each " +
+            "carry?",
+          back:
+            "`[Unit]` for description and ordering (`After=`), `[Service]` for how to run it " +
+            "(`Type=`, `ExecStart=`, `User=`), and `[Install]` for what enabling hooks it into " +
+            "(`WantedBy=multi-user.target`).",
+        },
+        {
+          front: "Why prefer a systemd timer over a cron job for new work?",
+          back:
+            "Timers get journal logging, dependency ordering against other units, and catch-up " +
+            "runs after downtime — none of which cron provides.",
+        },
+        {
+          front: "How do you follow a unit's logs?",
+          back: "`journalctl -u <unit> -f`.",
+        },
+      ],
       resources: [
         {
           title: "systemd.service — man page",
@@ -195,6 +378,45 @@ set -euo pipefail
 **Quote every variable expansion.** \`"$var"\`, not \`$var\`. Unquoted expansion word-splits on spaces, so a script works until a filename contains one.
 
 \`trap 'rm -f "$tmp"' EXIT\` guarantees cleanup on any exit path. Exit codes matter: 0 is success, anything else is failure, and \`$?\` holds the last one.`,
+      interviewAngle:
+        "Handed a script to review, the things to name are the missing strict mode and the " +
+        "unquoted expansions. Both are one-line fixes and both cause real incidents.",
+      pitfalls: [
+        "Omitting `-o pipefail`. Without it `false | true` succeeds, which is exactly how a " +
+          "backup script silently loses data.",
+        "Leaving a variable expansion unquoted. It word-splits, so the script works until a " +
+          "filename contains a space.",
+        "Cleaning up on the happy path only. `trap ... EXIT` is what makes cleanup run on " +
+          "every exit path.",
+        "Using `set -e` and assuming it catches everything. It does not fire inside " +
+          "conditions, in `||` chains, or for a command whose failure is tested.",
+      ],
+      recall: [
+        {
+          front: "What do the three flags in `set -euo pipefail` each do?",
+          back:
+            "`-e` exits on any failing command, `-u` errors on an undefined variable, and `-o " +
+            "pipefail` makes a pipeline fail if any stage fails rather than only the last.",
+        },
+        {
+          front: "Why does `set -e` alone let a broken pipeline succeed?",
+          back:
+            "Without `pipefail` a pipeline's exit status is only that of its last command, so " +
+            "`false | true` returns 0 and `-e` sees nothing wrong.",
+        },
+        {
+          front: "Why must every variable expansion be quoted?",
+          back:
+            "Unquoted expansion is word-split and glob-expanded, so `$file` breaks the moment a " +
+            "filename contains a space — quietly, and usually in production.",
+        },
+        {
+          front: "How do you guarantee a temporary file is cleaned up on every exit path?",
+          back:
+            "`trap 'rm -f \"$tmp\"' EXIT` — it runs on normal exit, on error, and on the signals " +
+            "that terminate the script.",
+        },
+      ],
       resources: [
         {
           title: "Google Shell Style Guide",

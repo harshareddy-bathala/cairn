@@ -26,7 +26,7 @@ export default async function ExamPage({ params }: { params: Promise<{ slug: str
 
   if (!standing.examUnlocked) {
     return (
-      <Boot className="mx-auto max-w-3xl space-y-6 px-6 py-10">
+      <Boot className="mx-auto max-w-3xl space-y-6 px-4 py-8 sm:px-6 sm:py-10">
         <BootItem>
           <header>
             <p className="legend">{phase.title} · exam</p>
@@ -56,7 +56,7 @@ export default async function ExamPage({ params }: { params: Promise<{ slug: str
   const qs = examPaper(slug, moduleSlugs, seed);
 
   return (
-    <Boot className="mx-auto max-w-3xl space-y-6 px-6 py-10">
+    <Boot className="mx-auto max-w-3xl space-y-6 px-4 py-8 sm:px-6 sm:py-10">
       <BootItem>
         <header>
           <p className="legend">{phase.title} · phase exam</p>
