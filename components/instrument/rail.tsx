@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { Cairn, type Stone } from "./cairn";
 import { Mark } from "./mark";
 import { NAV, activeHref } from "@/lib/nav";
+import { AccountMenu, type AccountInfo } from "./account";
 import { cn } from "@/lib/cn";
 
 /**
@@ -13,7 +14,15 @@ import { cn } from "@/lib/cn";
  * A 48px fixed rail costs 12% of a 390px screen and gives back nine unlabelled
  * glyphs, so on a phone it is replaced rather than shrunk.
  */
-export function Rail({ stones, dayIndex }: { stones: Stone[]; dayIndex: number }) {
+export function Rail({
+  stones,
+  dayIndex,
+  account,
+}: {
+  stones: Stone[];
+  dayIndex: number;
+  account: AccountInfo;
+}) {
   const pathname = usePathname();
   const current = activeHref(pathname);
 
@@ -56,6 +65,7 @@ export function Rail({ stones, dayIndex }: { stones: Stone[]; dayIndex: number }
         <span className="legend tabular-nums" title="active days">
           {String(dayIndex).padStart(2, "0")}
         </span>
+        <AccountMenu account={account} />
       </div>
     </nav>
   );

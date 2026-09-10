@@ -17,6 +17,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   if (!session?.user?.id) redirect("/signin");
 
   const journey = await getJourneyStateCached(session.user.id);
+  const account = {
+    email: session.user.email ?? "",
+    name: session.user.name ?? null,
+    handle: session.user.handle ?? null,
+    image: session.user.image ?? null,
+  };
 
   return (
     <div className="min-h-dvh">
@@ -27,8 +33,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         Skip to content
       </a>
 
-      <Rail stones={journey.stones} dayIndex={journey.dayIndex} />
-      <MobileNav />
+      <Rail stones={journey.stones} dayIndex={journey.dayIndex} account={account} />
+      <MobileNav account={account} />
 
       <main
         id="main"

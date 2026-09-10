@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { PRIMARY_NAV, SECONDARY_NAV, activeHref } from "@/lib/nav";
+import { AccountRow, type AccountInfo } from "./account";
 import { scrim, sheet } from "@/lib/motion";
 import { cn } from "@/lib/cn";
 
@@ -31,7 +32,7 @@ import { cn } from "@/lib/cn";
  * page, the tab bar (30) stays above it and usable, and the sheet (40) sits on
  * top of both.
  */
-export function MobileNav() {
+export function MobileNav({ account }: { account: AccountInfo }) {
   const pathname = usePathname();
   const current = activeHref(pathname);
   const [open, setOpen] = useState(false);
@@ -149,6 +150,7 @@ export function MobileNav() {
                   </li>
                 ))}
               </ul>
+              <AccountRow account={account} />
             </motion.nav>
           </>
         )}

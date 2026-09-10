@@ -23,6 +23,14 @@ function isPgTable(v: unknown): v is PgTable {
 }
 
 async function main() {
+  // A preview or a local build may have no database wired at all. "Cannot reach
+  // it" is not the same failure as "it is behind", and blocking a build for the
+  // first would make this check something people route around.
+  if (!process.env.DATABASE_URL) {
+    console.log("no DATABASE_URL — skipping the schema check");
+    process.exit(0);
+  }
+
   const live = await db.execute<{ table_name: string; column_name: string }>(sql`
     select table_name, column_name from information_schema.columns
     where table_schema = 'public'

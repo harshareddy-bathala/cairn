@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { eq, sql } from "drizzle-orm";
+import QRCode from "qrcode";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { db } from "@/db";
@@ -73,11 +74,23 @@ export async function startTelegramLink() {
   await db.update(users).set({ telegramLinkToken: token }).where(eq(users.id, userId));
 
   const bot = process.env.TELEGRAM_BOT_USERNAME;
+  const url = bot ? `https://t.me/${bot}?start=${token}` : null;
+
+  // The QR encodes the same deep link the button uses, so scanning it opens
+  // the bot with the token already attached — no code to read across to a
+  // phone and retype. Rendered here rather than in the browser so the qrcode
+  // library never reaches the client bundle.
+  const qr = url
+    ? await QRCode.toDataURL(url, {
+        errorCorrectionLevel: "M",
+        margin: 1,
+        width: 320,
+        color: { dark: "#0a0e0d", light: "#e8efe9" },
+      })
+    : null;
+
   revalidatePath("/settings");
-  return {
-    token,
-    url: bot ? `https://t.me/${bot}?start=${token}` : null,
-  };
+  return { token, url, qr };
 }
 
 export async function unlinkTelegram() {
