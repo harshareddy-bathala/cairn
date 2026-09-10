@@ -30,6 +30,35 @@ deliver. Commit it, then continue.
 
 ---
 
+## 0b. After any merge that touches `db/schema.ts` — this is a blocker
+
+Vercel builds from git and never touches Postgres. A merged schema change ships
+as code that selects columns the database does not have, and there is no
+build-time symptom: the deploy goes green and every page reading that table
+500s at runtime.
+
+That is exactly what happened after PR #1 — `units.recall`, `units.pitfalls`,
+`units.interview_angle` and three `flashcards` columns were merged and deployed
+while the database still had the old shape, so every `/unit/*` page returned
+`column units.pitfalls does not exist`.
+
+So, before every deploy:
+
+```bash
+npm run db:check     # does the database have what the code selects?
+```
+
+Clean means the code and the database agree. If it lists missing columns, apply
+them by hand with additive SQL (`alter table … add column if not exists …`) and
+run it again, then `npm run seed` if the new columns carry content.
+
+**Do not reach for `drizzle-kit push`.** It needs a TTY, so it cannot run in a
+build, and it still wants to drop and recreate the primary keys on `accounts`
+and `verification_tokens` — pre-existing drift that has nothing to do with your
+change, and that would sign every user out.
+
+---
+
 ## 1. Vercel — **you**
 
 ```bash

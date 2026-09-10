@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "db:push": "drizzle-kit push",
+    "db:check": "tsx --env-file=.env.local scripts/schema-check.ts",
     "db:studio": "drizzle-kit studio",
     "seed": "tsx --env-file=.env.local scripts/seed.ts",
     "typecheck": "tsc --noEmit",
