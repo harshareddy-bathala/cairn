@@ -29,6 +29,41 @@ void solve(int i, vector<int>& cur) {
 The \`pop_back\` **is** the backtracking. You mutate on the way down and undo on the way up, so a single shared buffer serves the whole tree instead of copying at every node.
 
 Draw the tree for \`n = 3\` once, by hand. Every leaf is one subset, there are 2ⁿ of them, and the depth is n — which is exactly the O(2ⁿ) time and O(n) stack space you will be asked to state.`,
+      interviewAngle:
+        "This template is the ancestor of every DP question in phase 3. Being asked to state " +
+        "the complexity of your own recursion — and answering `2^n leaves, depth n, so O(2^n) " +
+        "time and O(n) stack` — is the routine follow-up.",
+      pitfalls: [
+        "Forgetting the `pop_back`. The undo *is* the backtracking; without it the shared " +
+          "buffer leaks state into sibling branches and the answers are quietly wrong rather " +
+          "than crashing.",
+        "Copying the buffer at every node instead of mutating and undoing. That is a whole " +
+          "extra factor of n for nothing.",
+        "Answering `exponential` when asked the complexity. The expected answer names the " +
+          "leaf count and the depth.",
+      ],
+      recall: [
+        {
+          front: "What single decision is almost every recursive combinatorial problem made of?",
+          back:
+            "Include the current element, or do not — the pick / not-pick two-branch template.",
+        },
+        {
+          front: "Which line in the template *is* the backtracking, and what does it buy you?",
+          back:
+            "The `pop_back` after the pick branch. Mutating on the way down and undoing on the " +
+            "way up lets one shared buffer serve the whole tree instead of copying at every " +
+            "node.",
+        },
+        {
+          front:
+            "For subsets of an array of n elements, state the time and space complexity and " +
+            "where each comes from.",
+          back:
+            "O(2^n * n) time — 2^n leaves, each subset copied out in O(n) — and O(n) extra " +
+            "stack from the recursion depth.",
+        },
+      ],
       resources: [
         {
           title: "Striver — recursion playlist (subsequences)",
@@ -76,6 +111,44 @@ for (int j = i; j < (int)a.size(); j++) {
 \`\`\`
 
 The \`j > i\` guard is doing precise work: it permits a repeated value *deeper* in the tree (where it means "use it twice") while forbidding it *beside* itself (where it would produce an identical subset).`,
+      interviewAngle:
+        "Combination Sum and Subsets II are asked back to back precisely because the difference " +
+        "between them is two characters. Explaining what the `j > i` guard does is the question " +
+        "inside the question.",
+      pitfalls: [
+        "Forgetting to sort before skipping duplicates. The skip compares adjacent values, so " +
+          "it only works on sorted input.",
+        "Writing the guard as `j > 0` instead of `j > i`. That also forbids the value at the " +
+          "first position of the level, losing valid combinations.",
+        "Recursing with `i + 1` on the pick branch of Combination Sum, where reuse is " +
+          "unlimited — it should recurse with `i`.",
+        "Not pruning when the remaining target goes negative. Correct without it, much slower.",
+      ],
+      recall: [
+        {
+          front:
+            "Combination Sum allows unlimited reuse. What is the one-character change from the " +
+            "standard template?",
+          back:
+            "On the pick branch, recurse with `i` rather than `i + 1`, so the same element can " +
+            "be chosen again.",
+        },
+        {
+          front:
+            "What exactly does the `j > i` in `if (j > i && a[j] == a[j-1]) continue;` " +
+            "accomplish?",
+          back:
+            "It forbids a repeated value as a *sibling* at the same level (which would produce " +
+            "an identical subset) while still permitting the same value *deeper* in the tree, " +
+            "where it legitimately means using it twice.",
+        },
+        {
+          front: "Why must the array be sorted before that duplicate skip works?",
+          back:
+            "The skip compares `a[j]` against its immediate predecessor, so equal values have " +
+            "to be adjacent for the test to catch them.",
+        },
+      ],
       resources: [
         {
           title: "Striver A2Z — Step 9: recursion (subsets, combinations)",
@@ -100,6 +173,35 @@ The \`j > i\` guard is doing precise work: it permits a repeated value *deeper* 
 **Used-array**: keep \`vector<bool> used(n)\` and pick any unused element at each level. O(n) extra space, but it naturally produces lexicographic order when the input is sorted, and it extends more cleanly to the duplicates variant.
 
 For permutations II, sort and skip \`if (i > 0 && a[i] == a[i-1] && !used[i-1]) continue;\`. The \`!used[i-1]\` condition is subtle: it enforces that equal elements are always consumed left to right, which fixes one canonical ordering per multiset.`,
+      interviewAngle:
+        "`Give me another way` is the standard second half of this question. Having both the " +
+        "swap and used-array versions, and a reason to pick one, is the answer.",
+      pitfalls: [
+        "Claiming the swap-based version emits lexicographic order. It does not; the " +
+          "used-array version on sorted input does.",
+        "Forgetting to swap back after the recursive call. Same class of bug as a missing " +
+          "`pop_back`.",
+        "Dropping the `!used[i-1]` condition in Permutations II. Without it the duplicate " +
+          "skip either over-prunes or does nothing.",
+      ],
+      recall: [
+        {
+          front: "Swap-based versus used-array permutations — what is the trade-off?",
+          back:
+            "Swap-based needs no extra storage but emits a non-lexicographic order. The " +
+            "used-array version costs O(n) extra space but produces lexicographic order on " +
+            "sorted input and extends more cleanly to duplicates.",
+        },
+        {
+          front:
+            "In Permutations II the skip is `if (i > 0 && a[i] == a[i-1] && !used[i-1]) " +
+            "continue;`. What is `!used[i-1]` doing?",
+          back:
+            "It forces equal elements to be consumed strictly left to right, which fixes one " +
+            "canonical ordering per multiset and so emits each distinct permutation exactly " +
+            "once.",
+        },
+      ],
       resources: [
         {
           title: "Striver — permutations of an array",
@@ -122,6 +224,45 @@ For permutations II, sort and skip \`if (i > 0 && a[i] == a[i-1] && !used[i-1]) 
 For N-Queens, place one queen per row and keep three boolean arrays: \`col[]\`, \`diag1[row + col]\`, \`diag2[row - col + n - 1]\`. That makes the validity check O(1) instead of rescanning the board — and deriving those two diagonal index formulas yourself is the part worth doing on paper.
 
 The universal shape: **choose → explore → un-choose.** Forgetting the un-choose is a common backtracking bug, and it produces answers that are subtly, confusingly wrong rather than crashing.`,
+      interviewAngle:
+        "N-Queens is asked to see whether you prune, and whether you can derive the diagonal " +
+        "indices rather than recite them. Pruning is the entire difference between a toy and a " +
+        "working solution.",
+      pitfalls: [
+        "Rescanning the board to check validity. Three boolean arrays make the check O(1); " +
+          "the scan makes it O(n) per placement for no reason.",
+        "Getting the second diagonal index wrong. It is `row - col + n - 1` — the shift is " +
+          "what keeps it non-negative.",
+        "Forgetting the un-choose step. Choose, explore, un-choose: a missing un-choose " +
+          "produces subtly wrong answers rather than a crash.",
+      ],
+      recall: [
+        {
+          front:
+            "State the universal backtracking shape in three words, and name the step people " +
+            "forget.",
+          back:
+            "Choose, explore, un-choose. The un-choose is the one that gets forgotten, and it " +
+            "corrupts sibling branches instead of crashing.",
+        },
+        {
+          front:
+            "For N-Queens, what three arrays make the validity check O(1), and how are the " +
+            "diagonals indexed?",
+          back:
+            "`col[col]`, `diag1[row + col]` for one diagonal direction, and `diag2[row - col + " +
+            "n - 1]` for the other — the `+ n - 1` shift keeps the index non-negative.",
+        },
+        {
+          front:
+            "Why does pruning matter so much here when it does not change the worst-case " +
+            "complexity?",
+          back:
+            "It abandons a branch the moment it cannot lead to a solution, so the tree actually " +
+            "explored is a tiny fraction of the theoretical one. The bound is unchanged; the " +
+            "practical runtime goes from impossible to instant.",
+        },
+      ],
       resources: [
         {
           title: "Striver — N-Queens",

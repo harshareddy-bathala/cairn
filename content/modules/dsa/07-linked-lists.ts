@@ -31,6 +31,36 @@ return prev;
 Saving \`next\` before overwriting \`cur->next\` is the entire trick; skip it and you lose the rest of the list.
 
 **The dummy head** is the technique that removes most edge cases. Allocate a throwaway node in front, build from there, and return \`dummy.next\`. Deleting the real head stops being a special case, and so does inserting into an empty list. Use it by default — the code is shorter and the reviewer sees you know it.`,
+      interviewAngle:
+        "Reversal is asked as a warm-up and expected to be fluent. Reaching for a dummy head " +
+        "unprompted is a small, reliable signal that you have done this before.",
+      pitfalls: [
+        "Overwriting `cur->next` before saving it. That loses the rest of the list — the " +
+          "single most common linked-list bug.",
+        "Special-casing the head instead of using a dummy node. Deleting the head, inserting " +
+          "into an empty list and merging all stop being special cases with one throwaway node.",
+        "Returning `head` after an iterative reversal. The new head is `prev`; `head` is now " +
+          "the tail.",
+      ],
+      recall: [
+        {
+          front: "Write the four statements of the iterative reversal loop, in order.",
+          back:
+            "`next = cur->next` (save first), `cur->next = prev` (reverse), `prev = cur`, `cur " +
+            "= next` (advance). Return `prev`, not `head`.",
+        },
+        {
+          front: "What does a dummy head buy you, concretely?",
+          back:
+            "It removes the head from every special case: deleting the first node, inserting " +
+            "into an empty list and building a merged list all become the same code. Return " +
+            "`dummy.next` at the end.",
+        },
+        {
+          front: "Recursive versus iterative reversal — what is the difference that matters?",
+          back: "Space. Iterative is O(1); recursive is O(n) in stack frames, one per node.",
+        },
+      ],
       resources: [
         {
           title: "Striver A2Z — Step 6: linked lists",
@@ -57,6 +87,45 @@ Saving \`next\` before overwriting \`cur->next\` is the entire trick; skip it an
 **Cycle start**: after they meet, reset one pointer to the head and advance both one step at a time — they meet at the entrance. The proof is a short bit of algebra worth doing once on paper: if the tail before the loop is length \`a\`, the meeting point is \`b\` into a loop of length \`c\`, then \`a ≡ c − b\`, which is exactly why the two-pointer walk converges there.
 
 Removing the nth node from the end is the same family: advance one pointer n steps first, then move both until it hits the end — plus a dummy head so removing the actual head is not a special case.`,
+      interviewAngle:
+        "`Why does resetting to the head find the cycle entrance?` is the follow-up to Floyd's, " +
+        "and it is the whole reason the question is asked. Know the algebra, not just the " +
+        "recipe.",
+      pitfalls: [
+        "Not knowing which middle your loop returns. `while (fast && fast->next)` gives the " +
+          "second middle on an even-length list — decide deliberately.",
+        "Dereferencing `fast->next` without first checking `fast`. Order matters in that " +
+          "condition.",
+        "Removing the nth node from the end without a dummy head. Removing the actual head " +
+          "then becomes a special case you will forget.",
+      ],
+      recall: [
+        {
+          front:
+            "Why must a fast pointer moving two steps eventually meet a slow pointer inside a " +
+            "cycle?",
+          back:
+            "Once both are in the loop, fast gains exactly one position on slow per step, so " +
+            "the gap shrinks by one each time and must reach zero. Without a cycle, fast falls " +
+            "off the end instead.",
+        },
+        {
+          front:
+            "After Floyd's pointers meet, how do you find the start of the cycle, and why does " +
+            "it work?",
+          back:
+            "Reset one pointer to the head and advance both one step at a time; they meet at " +
+            "the entrance. With tail length a, meeting point b into a loop of length c, the " +
+            "algebra gives a ≡ c − b, so both walks cover the same remaining distance.",
+        },
+        {
+          front: "How do you remove the nth node from the end in one pass?",
+          back:
+            "Advance one pointer n steps first, then move both until it reaches the end — the " +
+            "trailing pointer is at the node before the target. Use a dummy head so removing " +
+            "the real head is not special.",
+        },
+      ],
       resources: [
         {
           title: "Striver — detect and remove a loop in a linked list",
@@ -79,6 +148,37 @@ Removing the nth node from the end is the same family: advance one pointer n ste
 **Sorting a linked list** is where merge sort beats quicksort decisively: no random access is needed, and the merge step requires no auxiliary array because you are just relinking. Split with the fast/slow middle, recurse on both halves, merge. O(n log n) time, O(log n) stack.
 
 **Palindrome check** composes three things you already have: find the middle, reverse the second half, compare, and then restore the list. Restoring it is the detail that separates a careful answer from a merely correct one — an interviewer will notice you left the input mutated.`,
+      interviewAngle:
+        "`Why merge sort and not quicksort for a linked list?` is the question inside the " +
+        "question. The answer is about random access and the merge needing no auxiliary array.",
+      pitfalls: [
+        "Allocating a new list when merging. The whole point is rewiring pointers — no " +
+          "allocation.",
+        "Forgetting to attach the remaining tail after one list is exhausted.",
+        "Leaving the list reversed after a palindrome check. Restore it; an interviewer " +
+          "notices a mutated input.",
+      ],
+      recall: [
+        {
+          front: "Why is merge sort the right sort for a linked list, where quicksort is not?",
+          back:
+            "Merge sort needs no random access, and its merge step is pure pointer relinking " +
+            "with no auxiliary array. Quicksort's partition depends on random access to be " +
+            "efficient.",
+        },
+        {
+          front: "What is the complexity of sorting a linked list by merge sort?",
+          back:
+            "O(n log n) time and O(log n) space — the stack from the recursion, since the merge " +
+            "itself allocates nothing.",
+        },
+        {
+          front: "Palindrome check on a linked list — which three techniques does it compose?",
+          back:
+            "Find the middle with fast/slow, reverse the second half, compare the halves — and " +
+            "then reverse it back to restore the input.",
+        },
+      ],
       resources: [
         {
           title: "Striver — sort a linked list",
@@ -106,6 +206,37 @@ The requirement is O(1) for both \`get\` and \`put\`, which forces the combinati
 Neither alone suffices: a map has no ordering, and a list has no fast lookup. Saying exactly that is the answer they are listening for.
 
 Two dummy nodes — head and tail sentinels — remove every null check from the splice operations. In C++ you can lean on \`std::list\` plus \`unordered_map<int, list<...>::iterator>\`, since \`list::splice\` is O(1) and does not invalidate iterators. Know how to do it by hand as well.`,
+      interviewAngle:
+        "A top-tier favourite. The answer they are listening for is why *both* structures are " +
+        "needed — say that before you write any code.",
+      pitfalls: [
+        "Proposing a map alone. It has no recency ordering, so eviction becomes O(n).",
+        "Proposing a list alone. It has no fast lookup, so `get` becomes O(n).",
+        "Using a singly linked list. Removing a node from the middle in O(1) requires the " +
+          "previous pointer, which is what makes it doubly linked.",
+        "Skipping the head and tail sentinels, then writing null checks in every splice.",
+      ],
+      recall: [
+        {
+          front: "Why does an O(1) LRU cache need both a hash map and a doubly linked list?",
+          back:
+            "The map gives O(1) lookup from key to node; the list keeps recency order so " +
+            "move-to-front and eviction from the back are O(1). A map has no ordering and a " +
+            "list has no fast lookup, so neither alone works.",
+        },
+        {
+          front: "Why must the list be doubly linked rather than singly?",
+          back:
+            "Removing a node from the middle in O(1) needs its predecessor. A singly linked " +
+            "list would have to walk to find it.",
+        },
+        {
+          front: "What do the head and tail sentinel nodes buy you?",
+          back:
+            "Every splice — insert at front, remove from back, move to front — has a real " +
+            "neighbour on both sides, so no null checks are needed anywhere.",
+        },
+      ],
       resources: [
         {
           title: "NeetCode — LRU Cache",

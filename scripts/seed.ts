@@ -49,6 +49,9 @@ async function main() {
         objective: u.objective,
         estMinutes: u.estMinutes,
         conceptMd: u.conceptMd ?? "",
+        recall: u.recall ?? [],
+        pitfalls: u.pitfalls ?? [],
+        interviewAngle: u.interviewAngle ?? null,
       };
       await db.insert(s.units).values(unit).onConflictDoUpdate({ target: s.units.slug, set: unit });
       unitCount++;
@@ -137,7 +140,12 @@ async function main() {
   if (liveProjects.length) await db.delete(s.projects).where(notInArray(s.projects.slug, liveProjects));
 
   console.log(`modules   ${modules.length}`);
+  const recallCount = modules.reduce(
+    (n, m) => n + m.units.reduce((k, u) => k + (u.recall?.length ?? 0), 0),
+    0,
+  );
   console.log(`units     ${unitCount}`);
+  console.log(`recall    ${recallCount} cards`);
   console.log(`resources ${resourceCount}`);
   console.log(`problems  ${problemCount}`);
   console.log(`projects  ${projects.length} (${deliverableCount} deliverables)`);

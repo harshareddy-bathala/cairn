@@ -41,6 +41,38 @@ while (getline(ss, tok, ',')) parts.push_back(tok);
 \`\`\`
 
 Two more that come up: \`s.back()\` on an empty string is undefined behaviour, so check \`!s.empty()\` first; and a \`char\` is an integer, so \`s[i] - '0'\` gives the digit and \`s[i] - 'a'\` gives the 0..25 index every frequency array is built on.`,
+      interviewAngle:
+        "Strings are the warm-up, so fluency here buys calm in the first ten minutes. A hidden " +
+        "`substr` in a loop is the one thing that turns an easy question into a timeout.",
+      pitfalls: [
+        "Calling `substr` inside a loop. Each call copies, so a scan that looks linear is " +
+          "quietly O(n^2) — use `compare(i, m, t)` to compare in place.",
+        "Comparing `find`'s result against -1. It returns `string::npos`, an unsigned maximum.",
+        "Reading `substr(pos, len)` as `substr(begin, end)`. The second argument is a length.",
+      ],
+      recall: [
+        {
+          front:
+            "Why is `if (s.substr(i, m) == t)` inside a loop a performance bug, and what " +
+            "replaces it?",
+          back:
+            "`substr` copies m characters on every call, making the scan O(n*m) in allocations. " +
+            "`s.compare(i, m, t) == 0` compares in place with no copy.",
+        },
+        {
+          front:
+            "What does `s.find(t)` return when the substring is absent, and why does comparing " +
+            "to -1 fail?",
+          back:
+            "It returns `string::npos`, which is the maximum value of an unsigned type. " +
+            "Comparing against -1 does not match it under the usual integer conversions, so the " +
+            "failure goes undetected.",
+        },
+        {
+          front: "What are the two arguments to `substr`?",
+          back: "A position and a *length* — not a start and an end index.",
+        },
+      ],
       resources: [
         {
           title: "cppreference — std::string",
@@ -80,6 +112,46 @@ return true;
 Every inner \`while\` repeats the \`l < r\` test — without it a string of only punctuation walks a pointer off the end. The \`(unsigned char)\` cast is not decoration either: passing a negative \`char\` to \`isalnum\` is undefined behaviour, which is a genuinely obscure bug on inputs with non-ASCII bytes.
 
 **Palindrome with one deletion allowed** is the natural follow-up: converge as normal, and on the first mismatch return \`isPalindrome(l+1, r) || isPalindrome(l, r-1)\`. Still O(n), because that branch happens at most once.`,
+      interviewAngle:
+        "Valid Palindrome with filtering is a standard opener, and the follow-up is `now allow " +
+        "one deletion`. Both are two pointers; the second is one extra branch.",
+      pitfalls: [
+        "Omitting `l < r` from the inner skip loops. A string of pure punctuation walks a " +
+          "pointer off the end.",
+        "Passing a plain `char` to `isalnum` or `tolower`. A negative value is undefined " +
+          "behaviour — cast to `unsigned char` first.",
+        "Assuming the one-deletion variant needs a second full algorithm. It is the same " +
+          "converge, with one branch on the first mismatch.",
+      ],
+      recall: [
+        {
+          front:
+            "In the filtered-palindrome loop, why does every inner skip loop repeat the `l < r` " +
+            "test?",
+          back:
+            "Without it, an input made entirely of non-alphanumeric characters advances a " +
+            "pointer past the other and off the end of the string.",
+        },
+        {
+          front: "Why cast to `unsigned char` before calling `isalnum` or `tolower`?",
+          back:
+            "Those functions are undefined for negative values other than EOF, and plain `char` " +
+            "is signed on most platforms — so non-ASCII bytes are undefined behaviour.",
+        },
+        {
+          front: "How do you allow one deletion in a palindrome check while staying O(n)?",
+          back:
+            "Converge normally; on the first mismatch return `isPalindrome(l + 1, r) || " +
+            "isPalindrome(l, r - 1)`. That branch can only happen once, so the cost stays " +
+            "linear.",
+        },
+        {
+          front: "What is the in-place trick for reversing the words of a string?",
+          back:
+            "Reverse the entire string, then reverse each word individually. The difficulty is " +
+            "handling arbitrary runs of spaces, which is why it is a fair question.",
+        },
+      ],
       resources: [
         {
           title: "Striver A2Z — Step 5: strings",
@@ -117,6 +189,44 @@ for (char c : w) k2[c - 'a']++;
 **Anagram check without extra passes:** if the lengths differ they cannot be anagrams — test that first and return early. It is one line, and interviewers do notice when it is missing.
 
 The 26-slot assumption is worth stating out loud rather than assuming: it holds for lowercase ASCII only. Unicode, mixed case, or arbitrary bytes need the map, and saying "I am assuming lowercase a-z, otherwise I would use a hash map" is exactly the sentence that makes the choice look deliberate.`,
+      interviewAngle:
+        "Group Anagrams is really `design a canonical key`. Naming the alphabet assumption out " +
+        "loud — `I am assuming lowercase a-z, otherwise a hash map` — is what makes the 26-slot " +
+        "choice look deliberate rather than lucky.",
+      pitfalls: [
+        "Serialising counts into a `string` one char per letter. That breaks past 9 " +
+          "occurrences of a letter — use a separator or a `vector<int>` key.",
+        "Skipping the length check on an anagram test. Different lengths cannot be anagrams, " +
+          "and the missing early return gets noticed.",
+        "Using one map for Isomorphic Strings. A single direction wrongly accepts `ab` " +
+          "mapping to `aa`; you need both directions.",
+        "Assuming the 26-slot array without saying so. It only holds for lowercase ASCII.",
+      ],
+      recall: [
+        {
+          front:
+            "Why prefer `int cnt[26]` over `unordered_map<char,int>` when the alphabet is " +
+            "known?",
+          back:
+            "Better constant factor and cache behaviour — no hashing, no nodes, contiguous " +
+            "memory. Asymptotically the same, but it is the answer that shows you think about " +
+            "machines.",
+        },
+        {
+          front:
+            "Two canonical keys for grouping anagrams — what are they and when does each win?",
+          back:
+            "The sorted word, O(k log k) per word, and the 26-length count vector serialised, " +
+            "O(k). The count key wins when words are long.",
+        },
+        {
+          front: "Why does Isomorphic Strings need two maps rather than one?",
+          back:
+            "One direction only enforces that each source character maps consistently. Without " +
+            "the reverse map, two different source characters can both map to the same target — " +
+            "`ab` to `aa` would pass.",
+        },
+      ],
       resources: [
         {
           title: "Striver — sort characters by frequency",
@@ -146,6 +256,41 @@ The 26-slot assumption is worth stating out loud rather than assuming: it holds 
 **Sliding window** on strings: expand \`right\` always; when the window becomes invalid, advance \`left\` until it is valid again. Each index enters and leaves once, so it is O(n) despite the nested loop appearance.
 
 For longest-substring-without-repeats, keep \`lastSeen[c]\`; when you meet a repeat inside the current window, jump \`left\` to \`lastSeen[c] + 1\` rather than stepping one at a time.`,
+      interviewAngle:
+        "atoi is asked to see whether you volunteer edge cases before being prompted. The " +
+        "sliding window is asked to see whether you can argue O(n) despite the nested loop.",
+      pitfalls: [
+        "Checking for overflow after multiplying. By then it has already happened — test `res " +
+          "> (INT_MAX - d) / 10` before.",
+        "Wrapping on overflow instead of clamping. The specification says clamp to INT_MAX / " +
+          "INT_MIN.",
+        "Advancing `left` one step at a time on a repeat. Jump it to `lastSeen[c] + 1`.",
+        "Jumping `left` backwards. Only move it when `lastSeen[c]` is inside the current " +
+          "window, or an earlier occurrence drags the window back.",
+      ],
+      recall: [
+        {
+          front: "Why is a sliding window O(n) even though it contains a nested loop?",
+          back:
+            "Each index is entered by `right` once and left by `left` once, so the total " +
+            "pointer movement across the whole run is 2n — the inner loop is amortised, not " +
+            "multiplied.",
+        },
+        {
+          front: "How do you test for overflow in atoi before it happens?",
+          back:
+            "Before `res = res * 10 + d`, check `res > (INT_MAX - d) / 10`; if so, clamp to " +
+            "INT_MAX or INT_MIN according to the sign.",
+        },
+        {
+          front:
+            "In longest-substring-without-repeats, what do you do when the current character " +
+            "was seen before?",
+          back:
+            "Jump `left` to `lastSeen[c] + 1` — but only if that is ahead of the current " +
+            "`left`, or an occurrence from outside the window drags it backwards.",
+        },
+      ],
       resources: [
         {
           title: "NeetCode — Sliding window",
