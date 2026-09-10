@@ -10,6 +10,8 @@ import { ReminderSchedule } from "@/components/instrument/reminder-schedule";
 import { TelegramLink } from "@/components/instrument/telegram-link";
 import { TimezoneSync } from "@/components/instrument/timezone-sync";
 import { ThemeControl } from "@/components/instrument/theme-control";
+import { ResetProgress } from "@/components/instrument/reset-progress";
+import { progressSummary } from "@/app/actions/reset";
 import { REMINDER_LABELS, normaliseSlots } from "@/lib/reminders";
 import { telegramConfigured } from "@/lib/telegram";
 
@@ -39,6 +41,7 @@ export default async function SettingsPage() {
       .limit(8),
   ]);
 
+  const summary = await progressSummary();
   const slots = normaliseSlots(row?.reminderSlots);
   const linked = Boolean(row?.telegramChatId);
   const timezone = row?.timezone ?? "Asia/Kolkata";
@@ -82,6 +85,12 @@ export default async function SettingsPage() {
             <Readout label="weekday" value={row?.budgetWeekdayMin ?? 240} unit="min" />
             <Readout label="weekend" value={row?.budgetWeekendMin ?? 360} unit="min" />
           </div>
+        </Panel>
+      </BootItem>
+
+      <BootItem>
+        <Panel legend="start over">
+          <ResetProgress summary={summary} />
         </Panel>
       </BootItem>
 

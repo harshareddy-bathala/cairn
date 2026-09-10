@@ -1,34 +1,14 @@
-import { eq, getTableColumns, getTableName, is } from "drizzle-orm";
-import { PgTable } from "drizzle-orm/pg-core";
+import { eq, getTableColumns } from "drizzle-orm";
 import { db } from "@/db";
-import * as schema from "@/db/schema";
 import { users } from "@/db/schema";
+import { progressTables } from "@/lib/progress-tables";
 
 /**
- * Wipes your own progress, keeping the curriculum.
+ * Wipes your own progress from the command line, keeping the curriculum.
  *
- * The table list is derived, not written down: every table with a user_id
- * column except `users` itself is progress. A hand-maintained list went stale
- * twice — once leaving projects and applications behind, once leaving a
- * certificate that made the next test run start from someone else's state.
+ * The table list comes from `lib/progress-tables`, shared with the reset button
+ * in Settings so the two cannot disagree about what "progress" means.
  */
-/** identity, not progress — wiping these would sign you out and unlink Google */
-const AUTH_TABLES = new Set(["accounts", "sessions", "authenticators"]);
-
-function progressTables() {
-  const tables: PgTable[] = [];
-  for (const value of Object.values(schema)) {
-    if (!is(value, PgTable)) continue;
-    const t = value as PgTable;
-    if (t === (users as unknown as PgTable)) continue;
-    const cols = getTableColumns(t) as Record<string, { name: string }>;
-    if (!("userId" in cols)) continue;
-    if (AUTH_TABLES.has(getTableName(t))) continue;
-    tables.push(t);
-  }
-  return tables;
-}
-
 async function main() {
   const [u] = await db
     .select()
