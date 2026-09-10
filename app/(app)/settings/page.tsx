@@ -9,6 +9,7 @@ import { Readout } from "@/components/instrument/readout";
 import { ReminderSchedule } from "@/components/instrument/reminder-schedule";
 import { TelegramLink } from "@/components/instrument/telegram-link";
 import { TimezoneSync } from "@/components/instrument/timezone-sync";
+import { ThemeControl } from "@/components/instrument/theme-control";
 import { REMINDER_LABELS, normaliseSlots } from "@/lib/reminders";
 import { telegramConfigured } from "@/lib/telegram";
 
@@ -54,6 +55,12 @@ export default async function SettingsPage() {
             late, because nothing here can be late.
           </p>
         </header>
+      </BootItem>
+
+      <BootItem>
+        <Panel legend="appearance">
+          <ThemeControl />
+        </Panel>
       </BootItem>
 
       <BootItem>

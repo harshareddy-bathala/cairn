@@ -7,6 +7,7 @@ import { cardFace, ease, DUR } from "@/lib/motion";
 import { GRADES, type Grade } from "@/content/review";
 import type { DueCard } from "@/lib/recall";
 import { gradeCard, buryCard } from "@/app/actions/review";
+import { Markdown } from "./markdown";
 import { cn } from "@/lib/cn";
 
 /**
@@ -139,7 +140,10 @@ export function RecallDeck({ cards, dayIndex }: { cards: DueCard[]; dayIndex: nu
             animate="shown"
             exit="exit"
           >
-            <p className="text-base leading-relaxed text-hi">{card.front}</p>
+            {/* the fronts are authored with inline code spans — `reserve(n)`
+                and friends — so they render as markdown, not as text with
+                visible backticks */}
+            <Markdown source={card.front} className="text-base text-hi" />
 
             {flipped ? (
               <motion.div
@@ -148,7 +152,7 @@ export function RecallDeck({ cards, dayIndex }: { cards: DueCard[]; dayIndex: nu
                 transition={ease(DUR.base)}
                 className="mt-3.5 border-t border-line-soft pt-3.5"
               >
-                <p className="prose-cairn text-base">{card.back}</p>
+                <Markdown source={card.back} className="text-base" />
               </motion.div>
             ) : (
               <button

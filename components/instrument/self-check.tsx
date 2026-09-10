@@ -50,7 +50,7 @@ export function SelfCheck({ cards }: { cards: RecallCard[] }) {
           const open = shown.has(i);
           return (
             <li key={i} className="border-l-2 border-line-soft pl-3">
-              <p className="text-sm leading-snug text-hi">{c.front}</p>
+              <Markdown source={c.front} className="text-base text-hi" />
               {open ? (
                 <motion.div
                   initial={reduce ? false : { opacity: 0, y: 3 }}

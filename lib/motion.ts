@@ -20,16 +20,13 @@ export const ease = (duration: number = DUR.base): Transition => ({
 /** physical objects only: stones landing, cards being tossed */
 export const spring: Transition = { type: "spring", stiffness: 420, damping: 34 };
 
-/** 1 — boot: panels power on, rows stagger 40ms. Once per session, <=450ms. */
-export const boot: Variants = {
-  hidden: { opacity: 0 },
-  shown: { opacity: 1, transition: { staggerChildren: 0.04, delayChildren: 0.04 } },
-};
-
-export const bootItem: Variants = {
-  hidden: { opacity: 0, y: 6 },
-  shown: { opacity: 1, y: 0, transition: ease(DUR.slow) },
-};
+/**
+ * 1 — boot lives in CSS, not here.
+ *
+ * `.boot` in globals.css. It was a motion variant with `initial: opacity 0`,
+ * which meant JavaScript was load-bearing for the page being visible at all.
+ * See components/instrument/boot.tsx for why that is the wrong trade.
+ */
 
 /** 2 — a row completing */
 export const rowComplete: Variants = {
