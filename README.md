@@ -21,7 +21,7 @@ absorb two skipped ones, and a bad-day button collapses the plan to the minimum 
 | App | Next.js 16 (App Router), React 19, TypeScript, Tailwind v4 |
 | Data | Drizzle ORM → Postgres (local Docker; Neon in production) |
 | Auth | Auth.js v5, Google, gated by an `allowed_emails` allowlist |
-| Motion | `motion` — nine named moments, nothing else animates |
+| Motion | `motion` for interaction; the boot is CSS, so a page renders without JS |
 | Reminders | Telegram bot, driven by a Cloudflare Worker cron trigger |
 
 Curriculum content lives in `content/` as typed TypeScript and is pushed into Postgres by
@@ -38,6 +38,23 @@ Reads like a tool an SRE built for themselves. Three rules carry it:
 
 Explicitly avoided: CRT flicker, scanlines, typewriter effects, green-on-black prose,
 glassmorphism, emoji. Terminal cosplay is as generic as the SaaS look it reacts to.
+
+**Two grounds.** Dark is the default and the identity. **Daylight** exists because a phone
+gets used outdoors, where an all-black surface stops being a design choice and becomes a
+mirror. It is a re-grounding rather than an inversion — all three rules survive, including
+phosphor-for-state, which is why every signal colour is re-derived for a light ground
+instead of reused (the dark phosphor reads ~1.5:1 on paper). Chosen in Settings, stored on
+the device rather than the user, so your phone and your desk may disagree.
+
+**Two shells.** Below `sm` the fixed rail is replaced, not shrunk: a bottom tab bar with
+the four destinations a day passes through, the rest behind a sheet that sits *on top of*
+the bar so the primary tabs stay live. `lib/nav.ts` is the one list both render from —
+they cannot disagree about what exists, which is how `/review` once shipped as a 404.
+
+**The boot animation is CSS.** It was a motion variant with `initial: opacity 0`, which
+made JavaScript load-bearing for the page being *visible* — any failure between HTML and
+hydration left a blank screen rather than a degraded one. Wrong failure mode for the
+surface you open every morning.
 
 ## Running it
 
@@ -83,8 +100,9 @@ enforces the allowlist.
 | `npm run latency` | measure database round-trip cost |
 | `npm run reset-me` | wipe your own progress rows, keeping the curriculum |
 | `npm run reminders` | 19 invariants: the schedule, the copy, the due window |
+| `npm run review` | 43 invariants: the scheduler, the deck, misses, the week review |
 | `npm run telegram` | bot plumbing — `setup`, `info`, `tick`, `preview` |
-| `npm run shots` | screenshot key pages into `shots/` for design QA |
+| `npm run shots` | every page at 390px and 1280px; fails on sideways scroll or console errors |
 
 ## Layout
 
@@ -94,11 +112,15 @@ content/     curriculum source of truth — modules, units, resources, problems,
              and the checkpoint question banks
 db/          drizzle schema + client
 lib/         planner.ts (the daily plan), journey.ts (day math + streak),
+             recall.ts (spaced repetition, in active days), week-review.ts,
+             misses.ts (checkpoint questions you still get wrong),
              reminders.ts (what a nudge says), reminder-slots.ts (the schedule),
-             telegram.ts, motion.ts (the motion budget), format.ts, cn.ts
-components/instrument/   Panel, Readout, Sparkline, Cairn, BurnGauge, Rail, Boot
-app/(app)/   authenticated surfaces: today, roadmap, metrics, projects, career,
-             certification, checkpoint, exam, cohort, start
+             telegram.ts, motion.ts (the motion budget), nav.ts (both shells),
+             theme.ts, format.ts, cn.ts
+components/instrument/   Panel, Readout, Sparkline, Cairn, BurnGauge, Rail,
+             TabBar, Boot, RecallDeck, SelfCheck
+app/(app)/   authenticated surfaces: today, roadmap, review, metrics, projects,
+             career, certification, checkpoint, exam, cohort, start
 app/c/ app/u/  public: certificates and profiles, no sign-in, settings
 app/api/     cron (the reminder tick), telegram (the bot webhook)
 workers/reminders/   the Cloudflare Worker cron trigger — a clock, no logic
@@ -107,13 +129,16 @@ docs/roadmap/  personal source material (git-ignored, local only)
 
 ## Status
 
-Built in 7 days. Phase 1 is authored in full — 17 modules, 75 units, 108 curated
-resources, 98 problems, 85 checkpoint questions — and the whole loop works:
+Phase 1 is authored in full — 17 modules, 75 units, 108 curated resources, 98 problems,
+262 recall cards, 244 pitfalls, 85 checkpoint questions — and the whole loop works:
 
 - **The day.** `lib/planner.ts` generates 4–6 sized blocks against your budget.
   Catch-up at 1.5×/2× pulls the next unit in each track forward; the bad-day
   button collapses to one problem and the log; closing the day drops a stone.
 - **The work.** Problem outcomes, a self-scheduling redo queue, unit completion.
+- **The review.** A spaced-repetition deck seeded from the units you finish, the
+  redo queue in full, checkpoint questions you still get wrong with their
+  explanations, and a journey-week review every 7 active days.
 - **The side tracks.** Aptitude log, three projects with 17 deliverables, mock
   cadence, STAR bank, applications counter.
 - **The certification.** Module checkpoints → a timed phase exam → a defense
@@ -127,6 +152,21 @@ the generator sheds DSA *problems* before it drops a whole block, and it will
 never drop DSA, aptitude or the close — that is the roadmap's own "never cut"
 list, encoded. The plan is written into `journey_days.plan` the first time you
 open the app, so finishing a unit does not reshuffle the rest of your morning.
+
+**How a unit teaches.** A concept note, then *where this goes wrong* — the mistakes
+someone makes having just read it and believing they understood — then how it shows up
+in the room, then a self-check that asks the unit's own questions back before you tick
+it done. Nothing there is scored: an assessment attached to marking a unit done is a
+reason not to mark units done. But answering three questions cold changes what the tick
+means, and ticking it is what puts those questions in your deck.
+
+**Why the deck counts active days.** Every other spaced-repetition tool schedules on the
+calendar, so a week away greets you with a week of debt — reproducing, inside the review
+page, the exact failure this app exists to fix. An interval of 6 here means six days you
+actually showed up. Skip three weeks and nothing is overdue; the deck waits. It is
+scheduled above new material in the day's plan, protected from the budget trimmer, and it
+survives a bad day at five minutes, because it is the only block that protects work you
+have already paid for.
 
 **Why the side tracks are counted.** Aptitude has no repo and five applications
 leave no commit, so they are the lanes that vanish first and are only missed in

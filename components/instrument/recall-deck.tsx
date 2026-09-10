@@ -70,7 +70,7 @@ export function RecallDeck({ cards, dayIndex }: { cards: DueCard[]; dayIndex: nu
 
       if (e.key === " " || e.key === "Enter") {
         e.preventDefault();
-        setFlipped((f) => f || true);
+        setFlipped(true);
         return;
       }
       if (!flipped) return;

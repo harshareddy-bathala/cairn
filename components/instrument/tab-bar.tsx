@@ -85,7 +85,7 @@ export function MobileNav() {
               type="button"
               onClick={() => setOpen((o) => !o)}
               aria-expanded={open}
-              aria-haspopup="menu"
+              aria-controls="more-sections"
               className={cn(
                 "relative flex w-full flex-col items-center gap-[3px] px-1 py-2",
                 "transition-colors duration-[120ms]",
@@ -115,8 +115,9 @@ export function MobileNav() {
               exit="exit"
               className="fixed inset-0 z-20 bg-ink-900/70 sm:hidden"
             />
-            <motion.div
-              role="menu"
+            <motion.nav
+              id="more-sections"
+              aria-label="More sections"
               variants={reduce ? undefined : sheet}
               initial="hidden"
               animate="shown"
@@ -134,7 +135,6 @@ export function MobileNav() {
                   <li key={n.href}>
                     <Link
                       href={n.href}
-                      role="menuitem"
                       aria-current={current === n.href ? "page" : undefined}
                       className={cn(
                         "flex items-center gap-3 rounded-[3px] px-3 py-3 text-sm transition-colors duration-[120ms]",
@@ -149,7 +149,7 @@ export function MobileNav() {
                   </li>
                 ))}
               </ul>
-            </motion.div>
+            </motion.nav>
           </>
         )}
       </AnimatePresence>

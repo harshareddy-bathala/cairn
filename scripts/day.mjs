@@ -1,7 +1,11 @@
 // Day 4 end-to-end: the plan, catch-up, bad day, and closing the day.
 import { chromium } from "playwright";
-const EXE = process.env.HOME + "/.cache/ms-playwright/chromium_headless_shell-1234/chrome-headless-shell-linux64/chrome-headless-shell";
-const b = await chromium.launch({ executablePath: EXE });
+// CHROME_PATH overrides the browser binary, for images that ship Chromium
+// somewhere other than where Playwright expects it. Pinning a path here is
+// what silently broke every one of these scripts once the version moved.
+const b = await chromium.launch(
+  process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : {},
+);
 const ctx = await b.newContext({ viewport: { width: 1280, height: 1000 }, deviceScaleFactor: 2 });
 const p = await ctx.newPage();
 p.setDefaultTimeout(60000);
@@ -38,10 +42,19 @@ say(`stretch blocks marked (${stretch})`, stretch > 0);
 await p.screenshot({ path: "shots/today-catchup.png", fullPage: true });
 
 // --- bad day collapses to the minimum chain
+//
+// Asserted as a shape rather than a count. The chain is one problem, the log,
+// and the deck when anything is due — five minutes of recall is the one block
+// that protects work already paid for, so it survives a bad day deliberately.
+// A hardcoded number here fails the day that policy changes, which tells you
+// nothing about whether the collapse still works.
 await p.getByRole("button", { name: "bad day" }).click();
 await p.waitForTimeout(4000);
 const n3 = await rows.count();
-say(`bad day collapses (${n3} blocks)`, n3 === 2);
+const badTitles = await rows.locator("a, span").allInnerTexts();
+const learning = badTitles.filter((t) => /^(Filesystem|Processes|Toolchain|Complexity|Stack)/.test(t));
+say(`bad day collapses (${n3} blocks)`, n3 < n2 && n3 <= 3);
+say("bad day drops new learning", learning.length === 0);
 const heading = await p.getByRole("heading", { level: 1 }).textContent();
 say("bad day is named, not hidden", heading?.includes("Bad day"));
 await p.screenshot({ path: "shots/today-badday.png", fullPage: true });
