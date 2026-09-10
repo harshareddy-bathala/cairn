@@ -25,6 +25,47 @@ A **branch is just a file containing a commit SHA.** That is the whole thing. Cr
 This explains the three resets. \`--soft\` moves the branch pointer only, leaving your changes staged. \`--mixed\` (the default) moves the pointer and unstages. \`--hard\` moves the pointer and **discards working tree changes** — the only genuinely destructive one.
 
 And it explains \`reflog\`: git records where HEAD has been, so almost nothing is truly lost for about 90 days. \`git reflog\` has recovered more "deleted" work than any other command.`,
+      interviewAngle:
+        "`What actually is a branch?` sounds trivial and is a real filter. `A file containing a " +
+        "commit SHA` is the answer, and every reset and reflog question follows from it.",
+      pitfalls: [
+        "Describing a branch as a copy of the code. It is a 41-byte file holding one SHA, " +
+          "which is why creating one is instant.",
+        "Using `reset --hard` as a general undo. It is the only reset that discards " +
+          "working-tree changes.",
+        "Believing work is gone after a bad reset. `git reflog` records where HEAD has been " +
+          "for about 90 days.",
+      ],
+      recall: [
+        {
+          front: "Name the three object types and what each holds.",
+          back:
+            "A blob is file contents; a tree maps names to blobs and other trees (a directory); " +
+            "a commit points to one tree plus its parent commits, with author and message. All " +
+            "content-addressed by SHA.",
+        },
+        {
+          front: "What is a branch, physically?",
+          back:
+            "A file containing a single commit SHA. That is why branching is instant, and why " +
+            "moving a branch is just rewriting those bytes.",
+        },
+        {
+          front:
+            "`reset --soft`, `--mixed` and `--hard` — what does each move and what does each " +
+            "destroy?",
+          back:
+            "All three move the branch pointer. `--soft` leaves changes staged, `--mixed` (the " +
+            "default) unstages them but keeps them in the working tree, and `--hard` discards " +
+            "working-tree changes — the only destructive one.",
+        },
+        {
+          front: "You reset --hard and lost a commit you needed. What now?",
+          back:
+            "`git reflog` — git records every position HEAD has held for roughly 90 days, so " +
+            "the commit is still reachable by SHA even though no branch points at it.",
+        },
+      ],
       resources: [
         {
           title: "Pro Git — ch. 10.2, Git Objects",
@@ -56,6 +97,39 @@ Hence the golden rule: **never rebase commits that other people have pulled.** R
 \`git rebase -i HEAD~5\` is the tool for making your work reviewable: \`squash\` combines commits, \`reword\` fixes messages, \`drop\` deletes, and reordering is just moving lines. Cleaning up before opening a pull request is a habit reviewers notice immediately.
 
 \`git cherry-pick <sha>\` copies one commit somewhere else — useful for hotfixes that need to land on both main and a release branch.`,
+      interviewAngle:
+        "`Merge or rebase?` is a judgement question, not a preference question. The golden rule " +
+        "about shared history is the part that has to be in the answer.",
+      pitfalls: [
+        "Rebasing commits other people have already pulled. Rebase creates new SHAs, so " +
+          "everyone else's history diverges from yours.",
+        "Treating rebase as `merge but tidier`. It rewrites history, which is a different " +
+          "operation with different consequences.",
+        "Opening a pull request without cleaning up the branch. `rebase -i` to squash and " +
+          "reword is the habit reviewers notice.",
+      ],
+      recall: [
+        {
+          front: "State the golden rule of rebasing, and the reason behind it.",
+          back:
+            "Never rebase commits that other people have pulled. Rebase replays commits as " +
+            "*new* commits with new SHAs, so shared history diverges and everyone else has to " +
+            "reconcile it painfully.",
+        },
+        {
+          front: "Merge versus rebase — what does each produce?",
+          back:
+            "Merge creates a commit with two parents: history is truthful but noisy. Rebase " +
+            "replays your commits onto the target, producing linear history at the cost of " +
+            "rewriting SHAs.",
+        },
+        {
+          front: "What are the three most useful actions in `git rebase -i`?",
+          back:
+            "`squash` to combine commits, `reword` to fix a message, and `drop` to delete one — " +
+            "plus reordering, which is just moving lines in the todo list.",
+        },
+      ],
       resources: [
         {
           title: "Atlassian — merging vs rebasing",
@@ -82,6 +156,39 @@ Hence the golden rule: **never rebase commits that other people have pulled.** R
 **Already pushed and it was a leaked secret** → reverting is not enough, because the blob is still in history. You must rewrite history (\`git filter-repo\`), force-push, coordinate with everyone, **and rotate the credential** — which is the real fix, since you must assume it is compromised the moment it was pushed.
 
 Volunteering that last case is what separates a good answer from a complete one.`,
+      interviewAngle:
+        "This is asked constantly, and the complete answer is three cases, not one command. " +
+        "Volunteering the leaked-secret case unprompted is what makes it a strong answer.",
+      pitfalls: [
+        "Answering with a single command. The question is a distinction: pushed or not pushed.",
+        "Reverting a leaked secret and stopping there. The blob is still in history — you " +
+          "must rewrite history *and* rotate the credential.",
+        "Force-pushing a rewritten shared branch without telling anyone.",
+      ],
+      recall: [
+        {
+          front: "A bad commit that has NOT been pushed — how do you undo it?",
+          back:
+            "`git reset`. Rewriting local history is free: `--soft` to keep the changes staged, " +
+            "`--hard` to discard them.",
+        },
+        {
+          front: "A bad commit that HAS been pushed — how do you undo it, and why not reset?",
+          back:
+            "`git revert <sha>`, which creates a new commit undoing the old one. History stays " +
+            "intact and everyone else's clones stay valid; a reset plus force-push would " +
+            "rewrite history other people already have.",
+        },
+        {
+          front:
+            "You pushed a secret. Why is `git revert` not enough, and what is the real fix?",
+          back:
+            "Revert adds a commit but the blob containing the secret is still in history and " +
+            "still fetchable. You must rewrite history (`git filter-repo`), force-push and " +
+            "coordinate — and above all rotate the credential, because it must be assumed " +
+            "compromised the moment it was pushed.",
+        },
+      ],
       resources: [
         {
           title: "Pro Git — Undoing Things",
@@ -110,6 +217,37 @@ Volunteering that last case is what separates a good answer from a complete one.
 **Commit messages**: a short imperative subject ("Add retry with backoff to the collector"), a blank line, then *why* rather than *what* — the diff already shows what. This directly improves your GitHub profile, which recruiters do read.
 
 **Tags and semver**: \`git tag -a v1.0.0 -m "..."\`, MAJOR.MINOR.PATCH. Tag \`sentinel\` when you ship it; a tagged release reads as finished work rather than an abandoned repo.`,
+      interviewAngle:
+        "`How would you find which commit broke this?` — answering `git bisect run` with a test " +
+        "script is a genuinely differentiating answer at this level.",
+      pitfalls: [
+        "Reading commits one by one to find a regression. Bisect turns a thousand commits " +
+          "into about ten tests.",
+        "Marking bisect steps by hand when a script could decide. `git bisect run ./test.sh` " +
+          "automates the whole search.",
+        "Writing commit messages that restate the diff. The subject says what, the body " +
+          "should say why.",
+      ],
+      recall: [
+        {
+          front: "What does `git bisect` do, and how many tests does it need over 1000 commits?",
+          back:
+            "It binary searches history for the commit that introduced a bug — about 10 tests " +
+            "for 1000 commits, since each test halves the range.",
+        },
+        {
+          front: "How do you make bisect fully automatic?",
+          back:
+            "`git bisect run ./test.sh` — the script's exit status marks each revision good or " +
+            "bad, so the whole search runs unattended.",
+        },
+        {
+          front: "What shape should a commit message have?",
+          back:
+            "A short imperative subject line, a blank line, then the body explaining *why* — " +
+            "the diff already shows what changed.",
+        },
+      ],
       resources: [
         {
           title: "git-bisect documentation",
