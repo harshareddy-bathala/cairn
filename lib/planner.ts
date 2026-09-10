@@ -9,7 +9,7 @@ import { CADENCE } from "@/content/cadence";
  * ------------------------------------------------------------------ */
 
 export type BlockKind =
-  | "redo" | "dsa" | "aptitude" | "domain" | "corecs" | "project" | "cadence" | "close";
+  | "redo" | "recall" | "dsa" | "aptitude" | "domain" | "corecs" | "project" | "cadence" | "close";
 
 export type PlanProblem = {
   slug: string;
@@ -100,6 +100,8 @@ export type PlanInput = {
   redo: PlanProblem[];
   deliverable?: OpenDeliverable | null;
   cadenceDue?: CadenceDue[];
+  /** recall cards whose interval has come due on or before today */
+  cardsDue?: number;
 };
 
 /** DevOps four days out of five, SDE on the fifth. The roadmap's Wed fork, generalised. */
@@ -186,6 +188,23 @@ export function generatePlan(input: PlanInput): DayPlan {
   // A bad day is not a failed day. Minimum viable chain: one problem, then log
   // it. The streak survives, which is the whole point of having the button.
   if (input.mode === "bad_day") {
+    // The deck survives a bad day. It is five minutes, it is the only block that
+    // protects work already done, and letting it lapse is what turns one bad day
+    // into a fortnight of relearning.
+    if ((input.cardsDue ?? 0) > 0) {
+      blocks.push({
+        id: "recall",
+        kind: "recall",
+        track: "recall",
+        title: `Recall — ${input.cardsDue} card${input.cardsDue === 1 ? "" : "s"}`,
+        detail: "five minutes, and nothing you already paid for lapses",
+        href: "/review",
+        minutes: 5,
+        unitSlug: null,
+        problems: [],
+        stretch: false,
+      });
+    }
     const p = input.redo[0] ?? input.problems[0];
     if (p) {
       blocks.push({
@@ -236,6 +255,29 @@ export function generatePlan(input: PlanInput): DayPlan {
       minutes: shown.reduce((n, p) => n + p.estMinutes, 0),
       unitSlug: null,
       problems: shown,
+      stretch: false,
+    });
+  }
+
+  // 1b. The deck, before anything new is learned.
+  //
+  // Retrieval is cheap and it decays; a card left a week past due is close to
+  // relearning it from scratch. Ten minutes here protects everything already
+  // paid for, which is why it sits above the new material rather than below it.
+  if ((input.cardsDue ?? 0) > 0) {
+    const n = input.cardsDue!;
+    blocks.push({
+      id: "recall",
+      kind: "recall",
+      track: "recall",
+      title: `Recall — ${n} card${n === 1 ? "" : "s"}`,
+      detail: "spaced by active day, so nothing is ever overdue",
+      href: "/review",
+      // ~20s a card, floored at 5 and capped at 15: a deck sitting is short by
+      // design, and a long one means the cap in getRecallDeck is doing its job
+      minutes: Math.min(15, Math.max(5, Math.round((n * 20) / 60))),
+      unitSlug: null,
+      problems: [],
       stretch: false,
     });
   }
@@ -329,7 +371,7 @@ export function generatePlan(input: PlanInput): DayPlan {
   // 6. Trim to the budget. Redo, the first DSA block, aptitude and the close are
   //    load-bearing — the roadmap's own "never cut" list. Everything else goes,
   //    stretch blocks first.
-  const protectedIds = new Set<string>(["redo", "aptitude", "close"]);
+  const protectedIds = new Set<string>(["redo", "recall", "aptitude", "close"]);
   const firstDsa = blocks.find((b) => b.kind === "dsa");
   if (firstDsa) protectedIds.add(firstDsa.id);
 
@@ -399,6 +441,7 @@ export type DayContext = {
   problems: (PlanProblem & { moduleSlug: string; unitSlug: string | null })[];
   redo: PlanProblem[];
   doneUnits: string[];
+  cardsDue: number;
 };
 
 /**
@@ -521,6 +564,10 @@ export async function getDayContext(userId: string): Promise<DayContext> {
         from users u where u.id = ${userId}
       ),
       'storedPlan', (select plan from day),
+      'cardsDue', (
+        select count(*)::int from flashcards f, day d
+        where f.user_id = ${userId} and f.due_day_index <= d.day_index
+      ),
       'doneUnits', coalesce((
         select json_agg(unit_slug) from prog where state = 'done'
       ), '[]'::json),
@@ -617,6 +664,7 @@ function hydrate(
     let done = ticked.has(b.id);
     if (b.unitSlug) done = doneUnits.has(b.unitSlug);
     else if (b.kind === "redo") done = b.problems.every((p) => !stillDue.has(p.slug));
+    else if (b.kind === "recall") done = (ctx.cardsDue ?? 0) === 0;
     else if (b.kind === "close") done = ctx.closed;
     return { ...b, done };
   });
@@ -647,6 +695,7 @@ export function planInputFrom(
     redo: ctx.redo,
     deliverable: ctx.deliverable,
     cadenceDue: cadenceDueFor(ctx.journeyWeek, ctx.mocksThisWeek),
+    cardsDue: ctx.cardsDue,
   };
 }
 

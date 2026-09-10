@@ -9,6 +9,7 @@ import { Boot, BootItem } from "@/components/instrument/boot";
 import { ProblemList } from "@/components/instrument/problem-list";
 import { Markdown } from "@/components/instrument/markdown";
 import { UnitComplete } from "@/components/instrument/unit-complete";
+import { SelfCheck } from "@/components/instrument/self-check";
 import { cn } from "@/lib/cn";
 
 const KIND_GLYPH: Record<string, string> = {
@@ -33,6 +34,9 @@ export default async function UnitPage({ params }: { params: Promise<{ slug: str
       objective: units.objective,
       estMinutes: units.estMinutes,
       conceptMd: units.conceptMd,
+      pitfalls: units.pitfalls,
+      interviewAngle: units.interviewAngle,
+      recall: units.recall,
       moduleSlug: modules.slug,
       moduleTitle: modules.title,
       trackSlug: modules.trackSlug,
@@ -93,6 +97,41 @@ export default async function UnitPage({ params }: { params: Promise<{ slug: str
           <Panel legend="concept">
             <Markdown source={unit.conceptMd} />
           </Panel>
+        </BootItem>
+      )}
+
+      {unit.pitfalls.length > 0 && (
+        <BootItem>
+          <Panel legend="where this goes wrong" aux={`${unit.pitfalls.length}`}>
+            <p className="mb-3 text-2xs leading-relaxed text-lo">
+              Not everything that can go wrong — what goes wrong for someone who has just
+              read the above and believes they understood it.
+            </p>
+            <ul className="space-y-2.5">
+              {unit.pitfalls.map((x, i) => (
+                <li key={i} className="flex gap-2.5">
+                  <span className="mt-[3px] shrink-0 text-2xs text-warn" aria-hidden>
+                    ▲
+                  </span>
+                  <Markdown source={x} className="text-base" />
+                </li>
+              ))}
+            </ul>
+          </Panel>
+        </BootItem>
+      )}
+
+      {unit.interviewAngle && (
+        <BootItem>
+          <Panel legend="in the room">
+            <Markdown source={unit.interviewAngle} className="text-base" />
+          </Panel>
+        </BootItem>
+      )}
+
+      {unit.recall.length > 0 && (
+        <BootItem>
+          <SelfCheck cards={unit.recall} />
         </BootItem>
       )}
 

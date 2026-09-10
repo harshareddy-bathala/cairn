@@ -12,6 +12,7 @@ import { DUR, EASE } from "@/lib/motion";
 
 const GLYPH: Record<string, string> = {
   redo: "↺",
+  recall: "◱",
   dsa: "▦",
   aptitude: "▤",
   devops: "◈",
@@ -100,7 +101,7 @@ function Block({
             "tap w-4 shrink-0 text-center text-sm leading-none",
             b.done
               ? "text-phos"
-              : b.kind === "redo" || b.kind === "cadence"
+              : b.kind === "redo" || b.kind === "cadence" || b.kind === "recall"
                 ? "text-info"
                 : "text-lo",
           )}

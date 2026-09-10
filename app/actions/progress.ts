@@ -146,14 +146,27 @@ export async function revealHint(problemSlug: string) {
   return { ok: true };
 }
 
-/** Marks a unit done (or reopens it). Completion is the unit of progress on the trail. */
+/**
+ * Marks a unit done (or reopens it). Completion is the unit of progress on the
+ * trail — and the moment its recall cards enter the deck.
+ *
+ * The seeding happens here rather than in a background job because it must be
+ * atomic with the completion: a unit that reads as done but whose cards never
+ * arrived is a silent hole in the review surface, and nothing would ever
+ * notice it. The insert is a sibling CTE, so this is still one round trip.
+ *
+ * Reopening a unit deliberately does NOT remove its cards. You read the
+ * material; the cards are yours now, and un-ticking a checkbox is not evidence
+ * that you forgot it. Deleting them would also discard their whole review
+ * history, which is the expensive part.
+ */
 export async function setUnitState(unitSlug: string, done: boolean) {
   const userId = await requireUser();
   const slug = slugSchema.parse(unitSlug);
 
-  const res = await db.execute<{ day_index: number }>(sql`
+  const res = await db.execute<{ day_index: number; seeded: number }>(sql`
     with ${OPEN_TODAY_CTE(userId)},
-    u as (select slug from units where slug = ${slug}),
+    u as (select slug, recall from units where slug = ${slug}),
     up as (
       insert into unit_progress (user_id, unit_slug, state, completed_on_day_index, updated_at)
       select
@@ -165,8 +178,18 @@ export async function setUnitState(unitSlug: string, done: boolean) {
         completed_on_day_index = excluded.completed_on_day_index,
         updated_at = excluded.updated_at
       returning completed_on_day_index
+    ),
+    cards as (
+      insert into flashcards (user_id, unit_slug, front, back, due_day_index)
+      select ${userId}, u.slug, c->>'front', c->>'back', d.day_index + 1
+      from u, day d, jsonb_array_elements(u.recall) c
+      where ${done}
+      -- the unique (user, front) index makes re-completing a unit a no-op
+      -- rather than a second copy of every card
+      on conflict do nothing
+      returning 1
     )
-    select d.day_index from day d, up
+    select d.day_index, (select count(*)::int from cards) as seeded from day d, up
   `);
 
   if (!res.rows[0]) throw new Error("unknown unit");
@@ -174,5 +197,10 @@ export async function setUnitState(unitSlug: string, done: boolean) {
   revalidatePath(`/unit/${slug}`);
   revalidatePath("/roadmap");
   revalidatePath("/today");
-  return { done, dayIndex: Number(res.rows[0].day_index) };
+  revalidatePath("/review");
+  return {
+    done,
+    dayIndex: Number(res.rows[0].day_index),
+    cardsSeeded: Number(res.rows[0].seeded ?? 0),
+  };
 }
