@@ -76,7 +76,17 @@ Cairn is invite-only. Add people to the allowlist:
 
 ```bash
 npm run invite -- friend@example.com "batchmate"
-npm run invite                       # list everyone invited
+npm run invite                       # list everyone invited, and who has arrived
+```
+
+Removing someone takes them off the allowlist and drops their live sessions, so
+they are out immediately rather than whenever their cookie expires. Their
+account and progress are kept — re-inviting the same address resumes it — unless
+you ask for them to go too:
+
+```bash
+npm run invite -- --remove friend@example.com
+npm run invite -- --remove friend@example.com --purge   # and erase their work
 ```
 
 Without Google OAuth credentials, set `AUTH_DEV_LOGIN=1` in `.env.local` and visit
@@ -91,8 +101,8 @@ enforces the allowlist.
 | `npm run db:push` | apply `db/schema.ts` to the database |
 | `npm run seed` | validate and load `content/` (idempotent) |
 | `npm run typecheck` | `tsc --noEmit` |
-| `npm run invite` | add an email to the allowlist, or list the allowlist |
-| `npm run verify` | 22 invariants: journey days, redo queue, planner, streak |
+| `npm run invite` | list the allowlist, add to it, or `--remove` from it |
+| `npm run verify` | the invariants: journey days, redo queue, planner, streak |
 | `npm run e2e` | drive the problem/unit loop in a real browser (needs `npm run dev`) |
 | `npm run e2e:day` | drive the plan, catch-up, bad day and day close in a browser |
 | `npm run e2e:tracks` | drive aptitude, projects, applications and the STAR bank |
