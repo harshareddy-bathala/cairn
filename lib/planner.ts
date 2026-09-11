@@ -96,7 +96,7 @@ export type PlanInput = {
   /** weekends get the bigger budget and the project block */
   isWeekend: boolean;
   units: CandidateUnit[];
-  problems: (PlanProblem & { moduleSlug: string; unitSlug: string | null })[];
+  problems: (PlanProblem & { moduleSlug: string; unitSlug: string | null; trackSlug: string })[];
   redo: PlanProblem[];
   deliverable?: OpenDeliverable | null;
   cadenceDue?: CadenceDue[];
@@ -113,11 +113,27 @@ const REDO_CAP = 3;
 const DSA_PROBLEM_CAP = 3;
 const APTITUDE_MIN = 30;
 
-/** problems for a unit: its own first, then its module's, never one already solved */
-function problemsFor(input: PlanInput, unit: CandidateUnit, cap: number) {
-  const mine = input.problems.filter((p) => p.unitSlug === unit.slug);
-  const module = input.problems.filter((p) => p.moduleSlug === unit.moduleSlug && p.unitSlug !== unit.slug);
-  return [...mine, ...module].slice(0, cap);
+/**
+ * Problems for a unit: its own first, then the rest of its module's, then any
+ * stranded in the same track by a module whose units are all finished.
+ *
+ * Problems hang off modules, and a module owes far more of them than its units
+ * can carry — arrays is 6 units against 23 problems at three a day. The
+ * stranded tail is therefore the normal case, not an edge one, and it queues
+ * behind the current module rather than interleaving with it: today should
+ * still read as today's module, with the backlog filling the slots the current
+ * module can no longer fill.
+ *
+ * `used` is applied before the cap, not after: taking three and then dropping
+ * the ones already in the day leaves a short block while candidates remain.
+ */
+function problemsFor(input: PlanInput, unit: CandidateUnit, cap: number, used: Set<string>) {
+  const live = new Set(input.units.map((u) => u.moduleSlug));
+  const open = input.problems.filter((p) => !used.has(p.slug));
+  const mine = open.filter((p) => p.unitSlug === unit.slug);
+  const module = open.filter((p) => p.moduleSlug === unit.moduleSlug && p.unitSlug !== unit.slug);
+  const stranded = open.filter((p) => p.trackSlug === unit.trackSlug && !live.has(p.moduleSlug));
+  return [...mine, ...module, ...stranded].slice(0, cap);
 }
 
 function nextInTrack(input: PlanInput, track: string, nth: number) {
@@ -294,9 +310,33 @@ export function generatePlan(input: PlanInput): DayPlan {
   for (let i = 0; i <= extra.dsa; i++) {
     const u = nextInTrack(input, "dsa", i);
     if (!u) break;
-    const ps = problemsFor(input, u, DSA_PROBLEM_CAP).filter((p) => !used.has(p.slug));
+    const ps = problemsFor(input, u, DSA_PROBLEM_CAP, used);
     ps.forEach((p) => used.add(p.slug));
     blocks.push(unitBlock("dsa", u, ps, i > 0));
+  }
+
+  // The track runs out of units long before it runs out of problems — 32 units
+  // carry 98 of them. DSA still has to happen on those days; there is simply no
+  // unit left to hang it on, so the block stands on its own.
+  if (!nextInTrack(input, "dsa", 0)) {
+    const ps = input.problems
+      .filter((p) => p.trackSlug === "dsa" && !used.has(p.slug))
+      .slice(0, DSA_PROBLEM_CAP);
+    if (ps.length > 0) {
+      ps.forEach((p) => used.add(p.slug));
+      blocks.push({
+        id: "dsa:practice",
+        kind: "dsa",
+        track: "dsa",
+        title: "Practice",
+        detail: "every unit is read — what is left is the reps",
+        href: null,
+        minutes: ps.reduce((n, p) => n + p.estMinutes, 0),
+        unitSlug: null,
+        problems: ps,
+        stretch: false,
+      });
+    }
   }
 
   // 3. Aptitude — daily, timed, protected from the trimmer.
@@ -438,7 +478,7 @@ export type DayContext = {
   budgetMin: number;
   storedPlan: (DayPlan & { ticked?: string[] }) | null;
   units: CandidateUnit[];
-  problems: (PlanProblem & { moduleSlug: string; unitSlug: string | null })[];
+  problems: (PlanProblem & { moduleSlug: string; unitSlug: string | null; trackSlug: string })[];
   redo: PlanProblem[];
   doneUnits: string[];
   cardsDue: number;
@@ -509,11 +549,27 @@ export async function getDayContext(userId: string): Promise<DayContext> {
       select distinct problem_slug from problem_attempts
       where user_id = ${userId} and outcome in ('clean', 'hinted')
     ),
+    /*
+     * A module keeps owing problems after its last unit is ticked. Sourcing
+     * only from modules that still have an unfinished unit strands the
+     * remainder at that moment — permanently, since the redo queue reaches only
+     * what you have already attempted and nothing else looks at problems at
+     * all. So a finished module stays in the pool while it still owes unsolved
+     * problems, and problemsFor queues those behind current work.
+     */
+    drained as (
+      select m.slug as module_slug
+      from modules m
+      where not exists (select 1 from cand c where c.module_slug = m.slug)
+    ),
     prob as (
       select p.slug, p.title, p.url, p.platform, p.difficulty, p.pattern_tag, p.trigger_hint,
-             p.approach_hint, p.est_minutes, p.is_must, p.module_slug, p.unit_slug, p."order"
+             p.approach_hint, p.est_minutes, p.is_must, p.module_slug, p.unit_slug, p."order",
+             m.track_slug, m."order" as module_order
       from problems p
-      where p.module_slug in (select distinct module_slug from top)
+      join modules m on m.slug = p.module_slug
+      where (p.module_slug in (select module_slug from top)
+             or p.module_slug in (select module_slug from drained))
         and p.slug not in (select problem_slug from solved)
     ),
     redoq as (
@@ -583,8 +639,8 @@ export async function getDayContext(userId: string): Promise<DayContext> {
           'slug', slug, 'title', title, 'url', url, 'platform', platform,
           'difficulty', difficulty, 'patternTag', pattern_tag, 'triggerHint', trigger_hint,
           'approachHint', approach_hint, 'estMinutes', est_minutes, 'isMust', is_must,
-          'moduleSlug', module_slug, 'unitSlug', unit_slug
-        ) order by module_slug, (unit_slug is null), "order") from prob
+          'moduleSlug', module_slug, 'unitSlug', unit_slug, 'trackSlug', track_slug
+        ) order by module_order, (unit_slug is null), "order") from prob
       ), '[]'::json),
       'redo', coalesce((
         select json_agg(json_build_object(

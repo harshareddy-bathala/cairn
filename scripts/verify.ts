@@ -139,6 +139,61 @@ async function main() {
     scheduled.length === new Set(scheduled).size,
     `${scheduled.length} slots, ${new Set(scheduled).size} distinct`);
 
+  /*
+   * The problem pool outlives the units it hangs off: 32 DSA units carry 98
+   * problems at three a day, so every module finishes owing problems. These
+   * run on a built input rather than the seed, because the failure only shows
+   * once a module is finished — which the seed, at day one, never is.
+   */
+  const mkUnit = (slug: string, moduleSlug: string, trackSlug: string): typeof ctx.units[number] => ({
+    slug, title: slug, objective: "", estMinutes: 30,
+    moduleSlug, moduleTitle: moduleSlug, trackSlug, rnTrack: 1, rnModule: 1,
+  });
+  const mkProb = (
+    slug: string, moduleSlug: string, unitSlug: string | null, trackSlug = "dsa",
+  ): typeof ctx.problems[number] => ({
+    slug, title: slug, url: "", platform: "leetcode", difficulty: "easy",
+    patternTag: "", triggerHint: "", approachHint: "", estMinutes: 20, isMust: false,
+    moduleSlug, unitSlug, trackSlug,
+  });
+
+  const here = mkUnit("u-now", "m-now", "dsa");
+  const backlog = generatePlan({
+    dayIndex: 4, mode: "normal", multiplier: 1, budgetMin: 240, isWeekend: false,
+    units: [here],
+    problems: [
+      mkProb("p-now", "m-now", "u-now"),
+      ...[1, 2, 3].map((n) => mkProb(`p-old-${n}`, "m-done", null)),
+    ],
+    redo: [],
+  });
+  const drained = backlog.blocks.find((b) => b.kind === "dsa")?.problems.map((pr) => pr.slug) ?? [];
+  ok("finished modules still owe", drained.length === 3, drained.join(","));
+  ok("backlog queues behind today", drained[0] === "p-now", drained[0] ?? "none");
+
+  // A stranded problem is only ever offered to a unit in its own lane.
+  const crossed = generatePlan({
+    dayIndex: 4, mode: "normal", multiplier: 1, budgetMin: 240, isWeekend: false,
+    units: [here],
+    problems: [mkProb("p-now", "m-now", "u-now"), mkProb("p-cs", "m-os", null, "corecs")],
+    redo: [],
+  });
+  ok("backlog stays in its track",
+    !crossed.blocks.flatMap((b) => b.problems).some((pr) => pr.slug === "p-cs"),
+    "no corecs problem in the dsa block");
+
+  // The end state of the same bug: units exhausted, problems remaining.
+  const reps = generatePlan({
+    dayIndex: 4, mode: "normal", multiplier: 1, budgetMin: 240, isWeekend: false,
+    units: [mkUnit("u-cs", "m-os", "corecs")],
+    problems: [1, 2, 3, 4].map((n) => mkProb(`p-left-${n}`, "m-done", null)),
+    redo: [],
+  });
+  const practice = reps.blocks.find((b) => b.kind === "dsa");
+  ok("dsa survives its last unit",
+    practice?.unitSlug === null && practice?.problems.length === 3,
+    `${practice?.problems.length ?? 0} problems, no unit`);
+
   const pools = new Set([1, 2, 3, 4, 5, 6, 7].map((d) => aptitudeTopicFor(d).pool));
   ok("aptitude rotates pools", pools.size === 3, [...pools].join(","));
   ok("aptitude deterministic",
