@@ -94,7 +94,7 @@ export function ProblemRow({
               href={p.url}
               target="_blank"
               rel="noreferrer noopener"
-              className="tap min-w-0 flex-1 truncate text-sm text-hi underline-offset-4 hover:underline"
+              className="tap min-w-0 flex-1 text-sm text-hi underline-offset-4 hover:underline sm:truncate"
             >
               {p.title}
             </a>
@@ -118,7 +118,7 @@ export function ProblemRow({
         <div className="space-y-3 pb-3 pr-2">
           <div>
             <p className="legend mb-1">trigger</p>
-            <p className="text-2xs leading-relaxed text-mid">{p.triggerHint}</p>
+            <p className="note text-mid">{p.triggerHint}</p>
           </div>
 
           <div>
@@ -126,7 +126,7 @@ export function ProblemRow({
             <div className="relative">
               <p
                 className={cn(
-                  "text-2xs leading-relaxed transition-colors",
+                  "note transition-colors",
                   revealed ? "text-mid" : "text-transparent select-none",
                 )}
               >
@@ -162,7 +162,7 @@ export function ProblemRow({
                   type="button"
                   onClick={() => onOutcome(p.slug, o)}
                   className={cn(
-                    "rounded-[2px] border px-2 py-1 text-2xs transition-colors duration-[120ms]",
+                    "ctl rounded-[2px] border px-2.5 py-1 text-xs transition-colors duration-[120ms]",
                     p.outcome === o
                       ? o === "clean"
                         ? "border-phos text-phos"

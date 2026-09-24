@@ -21,9 +21,10 @@
 
   /* --- text ---------------------------------------------------- */
   --color-hi: oklch(0.945 0.005 240);
-  --color-mid: oklch(0.720 0.008 240);
-  /* 4.68:1 on ink-900 — the legend is 11px, and small text needs 4.5 to pass AA */
-  --color-lo: oklch(0.585 0.010 240);
+  --color-mid: oklch(0.740 0.008 240);
+  /* ~5.4:1 on ink-900 and still over 4.5:1 on a panel — the legend is 11px, and
+     small text needs 4.5 to pass AA wherever it sits, not only on the page */
+  --color-lo: oklch(0.625 0.010 240);
 
   /* --- signal (state only) ------------------------------------- */
   --color-phos: oklch(0.82 0.17 152);
@@ -99,15 +100,26 @@
   --color-line-hi: oklch(0.2 0 0 / 0.05);
 
   --color-hi: oklch(0.235 0.008 260);
-  --color-mid: oklch(0.430 0.010 260);
-  /* 4.61:1 on ink-900 — the legend is 11px and small text needs 4.5 for AA */
-  --color-lo: oklch(0.545 0.012 260);
+  --color-mid: oklch(0.415 0.010 260);
+  /* ~5.2:1 on ink-900 and over 4.5:1 on a panel — the legend is 11px and small
+     text needs 4.5 for AA on every ground it sits on */
+  --color-lo: oklch(0.515 0.012 260);
 
-  --color-phos: oklch(0.505 0.145 152);     /* 4.6:1 — state, still never prose */
+  /* 5.7:1 on the page and 4.8:1 on a well (ink-800), where the selected
+     pace step and the active tab sit — state, still never prose */
+  --color-phos: oklch(0.480 0.145 152);
   --color-phos-dim: oklch(0.605 0.115 152);
   --color-warn: oklch(0.545 0.135 62);
   --color-bad: oklch(0.505 0.185 25);
   --color-info: oklch(0.500 0.115 245);
+}
+
+/* Dim phosphor is a fill colour first — the stones, the bars — and at 3.4:1
+   on paper it is too light to be text. Where it is used as text in daylight
+   (a streak, "closed recently") it takes full phosphor instead; the fills keep
+   their two greens, so catch-up stones still read apart from normal ones. */
+:root[data-theme="light"] .text-phos-dim {
+  color: var(--color-phos);
 }
 
 html {
@@ -165,6 +177,22 @@ body::before {
 .prose-cairn pre { max-width: 100%; }
 .prose-cairn > * + * { margin-top: 1em; }
 
+/*
+ * note: the helper sentence under a heading or inside a panel.
+ *
+ * These were set as 11px mono, which is the legend's voice — and on the busier
+ * pages more than half of all the text on screen was 11px mono in the dimmest
+ * grey. A sentence is prose, and rule 2 already says prose gets the text face,
+ * so notes are Plex Sans at the data-row size. The colour class still comes
+ * from the call site, so hierarchy (lo under mid under hi) is unchanged.
+ */
+@utility note {
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  line-height: 1.6;
+  font-variant-numeric: normal;
+}
+
 /* legend: 11px mono, uppercase, tracked — the instrument's voice */
 .legend {
   font-size: var(--text-2xs);
@@ -204,6 +232,21 @@ body::before {
 .boot > *:nth-child(9) { animation-delay: 320ms; }
 .boot > *:nth-child(n + 10) { animation-delay: 360ms; }
 
+/*
+ * The loading skeleton's bars. A slow sweep of brightness, not a spinner; under
+ * reduced motion the global rule below stops it after one pass and it simply
+ * sits there as a static outline, which is all it needs to be.
+ */
+@keyframes skeleton-breathe {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+.skeleton {
+  border-radius: 2px;
+  background: var(--color-ink-800);
+  animation: skeleton-breathe 1.4s var(--ease-instrument) infinite;
+}
+
 /**
  * WCAG 2.2 target size (24x24 minimum) without inflating the design.
  *
@@ -226,9 +269,39 @@ body::before {
 ::selection { background: var(--color-phos-dim); color: var(--color-ink-900); }
 :root[data-theme="light"] ::selection { color: oklch(0.99 0 0); }
 
+/* 2px, not 1: a hairline ring on a hairline UI is the one thing a keyboard
+   user needs to find instantly, and at 1px it read as another border */
 :focus-visible {
-  outline: 1px solid var(--color-phos);
+  outline: 2px solid var(--color-phos);
   outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/*
+ * Phones.
+ *
+ * iOS zooms the whole page when a focused field is under 16px, and every field
+ * here is 13px — so each input on a phone was a zoom-in the user then had to
+ * pinch back out of. 16px on narrow screens stops that. The min-height gives a
+ * thumb a 40px target on the fields and bordered buttons that make up the
+ * day's actual work.
+ */
+@media (max-width: 39.999rem) {
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    font-size: 16px;
+  }
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  .ctl {
+    min-height: 2.5rem;
+  }
+}
+
+/* a scrollable code block is reachable by keyboard; show where focus is */
+pre[tabindex]:focus-visible {
+  outline-offset: 0;
 }
 
 ::-webkit-scrollbar { width: 10px; height: 10px; }

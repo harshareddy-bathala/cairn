@@ -55,12 +55,25 @@ export function ThemeControl() {
     applyTheme(next);
   }
 
+  // A radiogroup is one tab stop that arrows move through — that is the
+  // contract `role="radio"` announces, so the keys have to honour it.
+  function onKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
+    const step = e.key === "ArrowRight" || e.key === "ArrowDown" ? 1 : e.key === "ArrowLeft" || e.key === "ArrowUp" ? -1 : 0;
+    if (!step) return;
+    e.preventDefault();
+    const i = THEMES.findIndex((t) => t.value === choice);
+    const next = THEMES[(i + step + THEMES.length) % THEMES.length];
+    pick(next.value);
+    e.currentTarget.querySelector<HTMLButtonElement>(`[data-value="${next.value}"]`)?.focus();
+  }
+
   return (
     <div>
       <div
         role="radiogroup"
         aria-label="Theme"
         className="grid gap-1.5 sm:grid-cols-3"
+        onKeyDown={onKeyDown}
         // until the stored choice is read, no option is truthfully selected
         aria-busy={!ready}
       >
@@ -72,6 +85,8 @@ export function ThemeControl() {
               type="button"
               role="radio"
               aria-checked={active}
+              data-value={t.value}
+              tabIndex={choice === t.value ? 0 : -1}
               onClick={() => pick(t.value)}
               className={cn(
                 "rounded-[3px] border px-3 py-2.5 text-left transition-colors duration-[120ms]",
@@ -90,12 +105,12 @@ export function ThemeControl() {
                 />
                 {t.label}
               </span>
-              <span className="mt-0.5 block text-2xs leading-relaxed text-lo">{t.note}</span>
+              <span className="mt-0.5 block note text-lo">{t.note}</span>
             </button>
           );
         })}
       </div>
-      <p className="mt-2.5 text-2xs leading-relaxed text-lo">
+      <p className="mt-2.5 note text-lo">
         Stored on this device only, so your phone and your desk can differ. Phosphor stays
         reserved for state in both — it is a different green in daylight because the dark
         one is unreadable on paper, not because the rule changed.

@@ -42,13 +42,13 @@ export function CertificateSeal({
       initial={reduce ? false : { opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: DUR.slow, ease: EASE }}
-      className="relative rounded-[--radius-panel] border border-line bg-ink-850/60 p-8
+      className="relative rounded-panel border border-line bg-ink-850/60 p-5 sm:p-8
                  before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-line-hi"
     >
       <div className="flex items-start justify-between gap-6">
         <div>
           <p className="legend">certificate of completion</p>
-          <h1 className="mt-2 text-3xl leading-tight text-hi">{phaseTitle}</h1>
+          <h1 className="mt-2 text-2xl leading-tight text-hi sm:text-3xl">{phaseTitle}</h1>
           {identity && <p className="mt-1 text-sm text-lo">{identity}</p>}
         </div>
         {/* the seal stamps in — the whole reason this page has a ceremony */}

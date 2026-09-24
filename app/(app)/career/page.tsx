@@ -34,7 +34,7 @@ export default async function CareerPage() {
         <header>
           <p className="legend">week {String(journey.journeyWeek).padStart(2, "0")}</p>
           <h1 className="mt-1 text-2xl text-hi">Career desk</h1>
-          <p className="mt-1 max-w-xl text-2xs leading-relaxed text-lo">
+          <p className="mt-1 max-w-xl note text-lo">
             Interviews are a separate skill from the one you practise every morning, and
             they are the one you get graded on. Most people start here too late and find
             out, in the room, that they freeze.
@@ -56,7 +56,7 @@ export default async function CareerPage() {
           legend="star bank"
           aux={`${Math.min(starReady, STAR_READY_TARGET)}/${STAR_READY_TARGET} ready`}
         >
-          <p className="mb-2 text-2xs leading-relaxed text-lo">
+          <p className="mb-2 note text-lo">
             {STAR_READY_TARGET} of these {STAR_PROMPTS.length} ready is the standard — the
             list is longer so you can pick the ones you have real material for. &ldquo;Tell
             me about yourself&rdquo; is first because it sets the tone for everything after
@@ -82,7 +82,7 @@ export default async function CareerPage() {
 
       <BootItem>
         <Panel legend="contacts" aux={`${c.contacts.length}`}>
-          <p className="mb-2 text-2xs leading-relaxed text-lo">
+          <p className="mb-2 note text-lo">
             A referral moves further than ten applications. Five conversations started
             beats fifty forms submitted.
           </p>

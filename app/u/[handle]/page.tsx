@@ -95,7 +95,7 @@ export default async function ProfilePage({
         <div>
           <p className="legend">/u/{p.handle}</p>
           <h1 className="mt-1 text-2xl text-hi">{p.name ?? p.handle}</h1>
-          <p className="mt-1 text-2xs leading-relaxed text-lo">
+          <p className="mt-1 note text-lo">
             Everything here is verifiable — checkpoints passed, problems solved, days
             closed. Nothing is self-assessed.
           </p>
@@ -150,7 +150,7 @@ export default async function ProfilePage({
         </Panel>
       )}
 
-      <p className="text-2xs text-lo">
+      <p className="note text-lo">
         Tracked with <span className="text-mid">cairn</span> — a stack of stones that marks
         a trail where there is no signposted path.
       </p>

@@ -103,7 +103,7 @@ export default async function UnitPage({ params }: { params: Promise<{ slug: str
       {unit.pitfalls.length > 0 && (
         <BootItem>
           <Panel legend="where this goes wrong" aux={`${unit.pitfalls.length}`}>
-            <p className="mb-3 text-2xs leading-relaxed text-lo">
+            <p className="mb-3 note text-lo">
               Not everything that can go wrong — what goes wrong for someone who has just
               read the above and believes they understood it.
             </p>
@@ -151,7 +151,7 @@ export default async function UnitPage({ params }: { params: Promise<{ slug: str
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="flex items-baseline gap-2">
-                      <span className="truncate text-sm text-hi underline-offset-4 group-hover:underline">
+                      <span className="min-w-0 text-sm text-hi underline-offset-4 group-hover:underline">
                         {r.title}
                       </span>
                       {r.isPrimary && <span className="legend shrink-0 text-phos">primary</span>}
@@ -159,7 +159,7 @@ export default async function UnitPage({ params }: { params: Promise<{ slug: str
                         <span className="legend ml-auto shrink-0 tabular-nums">~{r.minutes}m</span>
                       )}
                     </span>
-                    <span className="mt-0.5 block text-2xs leading-relaxed text-lo">
+                    <span className="mt-0.5 block note text-lo">
                       {r.whyThisOne}
                     </span>
                   </span>

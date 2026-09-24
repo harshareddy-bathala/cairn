@@ -33,7 +33,19 @@ const STATUS_TONE: Record<string, string> = {
 const input =
   "rounded-[3px] border border-line bg-ink-900 px-2.5 py-1.5 text-sm text-hi placeholder:text-lo focus:border-phos-dim focus:outline-none";
 const button =
-  "rounded-[3px] border border-line px-3 py-1.5 text-2xs text-mid transition-colors duration-[120ms] hover:border-phos hover:text-phos";
+  "ctl rounded-[3px] border border-line px-3 py-1.5 text-xs text-mid transition-colors duration-[120ms] hover:border-phos hover:text-phos";
+
+const OFFLINE = "Could not reach the server — nothing was saved. Try again.";
+
+/** the reason a form did not save, next to the form rather than instead of the page */
+function FormError({ error }: { error: string | null }) {
+  if (!error) return null;
+  return (
+    <p role="alert" className="note text-bad">
+      {error}
+    </p>
+  );
+}
 
 /**
  * Applications. The counter exists because this lane dies silently —
@@ -51,13 +63,19 @@ export function ApplicationDesk({
   const [company, setCompany] = useState("");
   const [role, setRole] = useState("");
   const [link, setLink] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
   return (
     <div className="space-y-4">
       <form
         action={() =>
           startTransition(async () => {
-            if (!company.trim() || !role.trim()) return;
+            if (!company.trim() || !role.trim()) {
+              setError("Company and role are both needed.");
+              return;
+            }
+            setError(null);
+            const typed = { company, role, link };
             const draft = {
               id: -Date.now(),
               company: company.trim(),
@@ -73,7 +91,16 @@ export function ApplicationDesk({
             setLink("");
             const res = await addApplication({
               company: draft.company, role: draft.role, link: draft.link ?? undefined,
-            });
+            }).catch(() => ({ ok: false as const, error: OFFLINE }));
+            if (!res.ok) {
+              // take the optimistic row back and hand the typing back with it
+              setRows((r) => r.filter((x) => x.id !== draft.id));
+              setCompany(typed.company);
+              setRole(typed.role);
+              setLink(typed.link);
+              setError(res.error);
+              return;
+            }
             setRows((r) =>
               r.map((x) =>
                 x.id === draft.id
@@ -85,25 +112,36 @@ export function ApplicationDesk({
         }
         className="flex flex-wrap items-end gap-2"
       >
-        <label className="min-w-36 flex-1">
+        <label className="min-w-0 flex-1 basis-36">
           <span className="legend">company</span>
           <input value={company} onChange={(e) => setCompany(e.target.value)} className={cn("mt-1 w-full", input)} />
         </label>
-        <label className="min-w-36 flex-1">
+        <label className="min-w-0 flex-1 basis-36">
           <span className="legend">role</span>
           <input value={role} onChange={(e) => setRole(e.target.value)} className={cn("mt-1 w-full", input)} />
         </label>
-        <label className="min-w-36 flex-1">
+        <label className="min-w-0 flex-1 basis-36">
           <span className="legend">link</span>
-          <input value={link} onChange={(e) => setLink(e.target.value)} placeholder="optional" className={cn("mt-1 w-full", input)} />
+          <input
+            value={link}
+            onChange={(e) => {
+              setLink(e.target.value);
+              setError(null);
+            }}
+            inputMode="url"
+            autoCapitalize="none"
+            placeholder="optional"
+            className={cn("mt-1 w-full", input)}
+          />
         </label>
         <button type="submit" className={cn("py-2", button)}>
           sent
         </button>
       </form>
+      <FormError error={error} />
 
       {rows.length === 0 ? (
-        <p className="text-2xs leading-relaxed text-lo">
+        <p className="note text-lo">
           Nothing sent yet. This is the lane that quietly stays at zero while everything
           else looks healthy.
         </p>
@@ -133,17 +171,20 @@ export function ApplicationDesk({
               </span>
               <select
                 value={a.status}
+                aria-label={`Status of ${a.company}`}
                 onChange={(e) => {
                   const next = e.target.value;
                   startTransition(async () => {
                     setRows((r) =>
                       r.map((x) => (x.id === a.id ? { ...x, status: next as typeof a.status } : x)),
                     );
-                    await setApplicationStatus(a.id, next);
+                    await setApplicationStatus(a.id, next).catch(() => {
+                      setRows((r) => r.map((x) => (x.id === a.id ? { ...x, status: a.status } : x)));
+                    });
                   });
                 }}
                 className={cn(
-                  "shrink-0 rounded-[3px] border border-line bg-ink-900 px-1.5 py-1 text-2xs focus:border-phos-dim focus:outline-none",
+                  "shrink-0 rounded-[3px] border border-line bg-ink-900 px-1.5 py-1 text-xs focus:border-phos-dim focus:outline-none",
                   STATUS_TONE[a.status],
                 )}
               >
@@ -168,13 +209,18 @@ export function ContactDesk({ contacts: initial }: { contacts: CareerView["conta
   const [rows, setRows] = useState(initial);
   const [name, setName] = useState("");
   const [company, setCompany] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
   return (
     <div className="space-y-3">
       <form
         action={() =>
           startTransition(async () => {
-            if (!name.trim()) return;
+            if (!name.trim()) {
+              setError("Add a name.");
+              return;
+            }
+            setError(null);
             const draft = {
               id: -Date.now(), name: name.trim(), company: company.trim() || null,
               channel: "linkedin", lastTouchWeek: null,
@@ -182,16 +228,24 @@ export function ContactDesk({ contacts: initial }: { contacts: CareerView["conta
             setRows((r) => [draft, ...r]);
             setName("");
             setCompany("");
-            await addContact({ name: draft.name, company: draft.company ?? undefined });
+            const res = await addContact({
+              name: draft.name, company: draft.company ?? undefined,
+            }).catch(() => ({ ok: false as const, error: OFFLINE }));
+            if (!res.ok) {
+              setRows((r) => r.filter((x) => x.id !== draft.id));
+              setName(draft.name);
+              setCompany(draft.company ?? "");
+              setError(res.error);
+            }
           })
         }
         className="flex flex-wrap items-end gap-2"
       >
-        <label className="min-w-36 flex-1">
+        <label className="min-w-0 flex-1 basis-36">
           <span className="legend">name</span>
           <input value={name} onChange={(e) => setName(e.target.value)} className={cn("mt-1 w-full", input)} />
         </label>
-        <label className="min-w-36 flex-1">
+        <label className="min-w-0 flex-1 basis-36">
           <span className="legend">company</span>
           <input value={company} onChange={(e) => setCompany(e.target.value)} className={cn("mt-1 w-full", input)} />
         </label>
@@ -199,6 +253,7 @@ export function ContactDesk({ contacts: initial }: { contacts: CareerView["conta
           add
         </button>
       </form>
+      <FormError error={error} />
 
       {rows.length > 0 && (
         <ul className="divide-y divide-line-soft border-t border-line-soft">
@@ -227,6 +282,7 @@ export function MockDesk({
   const [rows, setRows] = useState(initial);
   const [kind, setKind] = useState<string>("dsa_pair");
   const [score, setScore] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
   const available = CADENCE.filter((q) => journeyWeek >= q.fromWeek);
   const label = (k: string) => CADENCE.find((q) => q.kind === k)?.label ?? k;
@@ -242,7 +298,16 @@ export function MockDesk({
             };
             setRows((r) => [draft, ...r]);
             setScore("");
-            const res = await logMock({ kind: kind as never, score: score.trim() || undefined });
+            setError(null);
+            const res = await logMock({
+              kind: kind as never, score: score.trim() || undefined,
+            }).catch(() => ({ ok: false as const, error: OFFLINE }));
+            if (!res.ok) {
+              setRows((r) => r.filter((x) => x.id !== draft.id));
+              setScore(draft.score ?? "");
+              setError(res.error);
+              return;
+            }
             setRows((r) =>
               r.map((x) => (x.id === draft.id ? { ...x, dayIndex: res.dayIndex, journeyWeek: res.journeyWeek } : x)),
             );
@@ -250,7 +315,7 @@ export function MockDesk({
         }
         className="flex flex-wrap items-end gap-2"
       >
-        <label className="min-w-44 flex-1">
+        <label className="min-w-0 flex-1 basis-44">
           <span className="legend">session</span>
           <select
             value={kind}
@@ -272,6 +337,7 @@ export function MockDesk({
           log
         </button>
       </form>
+      <FormError error={error} />
 
       {rows.length > 0 && (
         <ul className="divide-y divide-line-soft border-t border-line-soft">
@@ -384,7 +450,8 @@ function StarForm({
   onSaved: (s: CareerView["stories"][number]) => void;
   onRehearsed: () => void;
 }) {
-  const [, startTransition] = useTransition();
+  const [pending, startTransition] = useTransition();
+  const [status, setStatus] = useState<"idle" | "saved" | "failed">("idle");
   const [v, setV] = useState({
     situation: story?.situation ?? "",
     task: story?.task ?? "",
@@ -408,9 +475,12 @@ function StarForm({
           </span>
           <textarea
             value={v[f.key]}
-            onChange={(e) => setV({ ...v, [f.key]: e.target.value })}
+            onChange={(e) => {
+              setV({ ...v, [f.key]: e.target.value });
+              setStatus("idle");
+            }}
             rows={2}
-            className={cn("prose-cairn mt-1 w-full resize-none", input)}
+            className={cn("prose-cairn mt-1 w-full resize-y", input)}
           />
         </label>
       ))}
@@ -425,19 +495,29 @@ function StarForm({
                 ...v,
                 rehearsedCount: story?.rehearsedCount ?? 0,
               });
-              await saveStory({ prompt, ...v });
+              const ok = await saveStory({ prompt, ...v }).then(
+                () => true,
+                () => false,
+              );
+              setStatus(ok ? "saved" : "failed");
             })
           }
-          className={button}
+          disabled={pending}
+          className={cn(button, "disabled:opacity-50")}
         >
-          save
+          {pending ? "saving…" : status === "saved" ? "saved ✓" : "save"}
         </button>
         <button type="button" onClick={onRehearsed} className={button}>
           rehearsed out loud
         </button>
-        <span className="text-2xs text-lo">
+        <span className="note text-lo">
           Say it standing up. Reading it back silently does not count.
         </span>
+        {status === "failed" && (
+          <span role="alert" className="note w-full text-bad">
+            {OFFLINE}
+          </span>
+        )}
       </div>
     </div>
   );

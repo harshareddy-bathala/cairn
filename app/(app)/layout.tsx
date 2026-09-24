@@ -40,8 +40,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         id="main"
         className={
           // clears the tab row (56px) and the home indicator below it; at `sm`
-          // that padding collapses and the rail takes the left instead
-          "min-h-dvh pb-[calc(3.5rem+env(safe-area-inset-bottom))] sm:ml-12 sm:pb-0"
+          // that padding collapses and the rail takes the left instead, and at
+          // `lg` the rail widens to carry its labels
+          "min-h-dvh pb-[calc(3.5rem+env(safe-area-inset-bottom))] sm:ml-12 sm:pb-0 lg:ml-52"
         }
       >
         {children}

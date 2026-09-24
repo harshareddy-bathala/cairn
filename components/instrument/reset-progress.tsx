@@ -43,7 +43,7 @@ export function ResetProgress({ summary }: { summary: Summary }) {
 
   if (nothingToLose) {
     return (
-      <p className="text-2xs leading-relaxed text-lo">
+      <p className="note text-lo">
         Nothing to reset yet — the trail has not started.
       </p>
     );
@@ -52,7 +52,7 @@ export function ResetProgress({ summary }: { summary: Summary }) {
   if (!open) {
     return (
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <p className="text-2xs leading-relaxed text-lo">
+        <p className="note text-lo">
           Clears the trail and starts the journey at day one. Your account, handle,
           timezone, Telegram link, budget and reminder schedule all stay.
         </p>

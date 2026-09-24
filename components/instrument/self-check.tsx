@@ -31,7 +31,7 @@ export function SelfCheck({ cards }: { cards: RecallCard[] }) {
       legend="self-check"
       aux={allShown ? "all shown" : `${cards.length} question${cards.length === 1 ? "" : "s"}`}
     >
-      <p className="mb-3.5 text-2xs leading-relaxed text-lo">
+      <p className="mb-3.5 note text-lo">
         Answer each one out loud before revealing it. Struggling here is the point — it is
         the retrieval that makes the material stick, not the reading.{" "}
         {!allShown && (
@@ -73,7 +73,7 @@ export function SelfCheck({ cards }: { cards: RecallCard[] }) {
         })}
       </ol>
 
-      <p className="mt-4 border-t border-line-soft pt-3 text-2xs leading-relaxed text-lo">
+      <p className="mt-4 border-t border-line-soft pt-3 note text-lo">
         Marking this unit done adds these to your{" "}
         <span className="text-mid">review deck</span>, spaced by active day.
       </p>

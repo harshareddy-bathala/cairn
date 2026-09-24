@@ -30,7 +30,7 @@ export default async function CertificationPage() {
         <header>
           <p className="legend">checkpoints · exams · certificates</p>
           <h1 className="mt-1 text-2xl text-hi">Certification</h1>
-          <p className="mt-1 max-w-xl text-2xs leading-relaxed text-lo">
+          <p className="mt-1 max-w-xl note text-lo">
             A checkpoint is {Math.round(CHECKPOINT_PASS * 100)}% on that module's questions.
             A phase exam opens at {Math.round(EXAM_UNLOCK * 100)}% of the phase's units.
             The certificate needs the exam, an out-loud defense recording, and{" "}
@@ -66,7 +66,7 @@ export default async function CertificationPage() {
                       </span>
                       <Link
                         href={`/checkpoint/${m.moduleSlug}`}
-                        className="min-w-0 flex-1 truncate text-sm text-hi transition-colors duration-[120ms] hover:text-phos"
+                        className="min-w-0 flex-1 py-1 text-sm text-hi transition-colors duration-[120ms] hover:text-phos"
                       >
                         {m.moduleTitle}
                       </Link>
@@ -86,7 +86,7 @@ export default async function CertificationPage() {
                     <span className="legend text-phos">◈ certificate issued</span>
                     <Link
                       href={`/c/${s.certificateId}`}
-                      className="text-2xs text-info underline underline-offset-[3px]"
+                      className="tap inline-block py-1 text-xs text-info underline underline-offset-[3px]"
                     >
                       view it
                     </Link>
@@ -94,7 +94,7 @@ export default async function CertificationPage() {
                 ) : s.examUnlocked ? (
                   <Link
                     href={`/exam/${s.phaseSlug}`}
-                    className="rounded-[3px] border border-line px-3 py-1.5 text-2xs text-mid transition-colors duration-[120ms] hover:border-phos hover:text-phos"
+                    className="ctl inline-flex items-center rounded-[3px] border border-line px-3 py-1.5 text-xs text-mid transition-colors duration-[120ms] hover:border-phos hover:text-phos"
                   >
                     {s.bestExam?.passed ? "defense & certificate" : "take the phase exam"}
                   </Link>

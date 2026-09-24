@@ -1,6 +1,6 @@
 "use client";
 
-import { useOptimistic, useTransition } from "react";
+import { useOptimistic, useState, useTransition } from "react";
 import { motion } from "motion/react";
 import { setUnitState } from "@/app/actions/progress";
 import { cn } from "@/lib/cn";
@@ -16,8 +16,9 @@ export function UnitComplete({
   done: boolean;
   completedOnDayIndex?: number | null;
 }) {
-  const [, startTransition] = useTransition();
+  const [pending, startTransition] = useTransition();
   const [done, setDone] = useOptimistic(initial, (_s, next: boolean) => next);
+  const [failed, setFailed] = useState(false);
 
   return (
     <div className="flex items-center justify-between gap-4">
@@ -28,8 +29,13 @@ export function UnitComplete({
             : "when the objective is genuinely met"}
         </p>
         {!done && (
-          <p className="mt-1 text-2xs leading-relaxed text-lo">
+          <p className="mt-1 note text-lo">
             Not when you have read it — when you could explain it to someone else.
+          </p>
+        )}
+        {failed && (
+          <p role="alert" className="note mt-1 text-bad">
+            That did not save — try again.
           </p>
         )}
       </div>
@@ -38,12 +44,18 @@ export function UnitComplete({
         type="button"
         onClick={() =>
           startTransition(async () => {
+            setFailed(false);
             setDone(!done);
-            await setUnitState(unitSlug, !done);
+            const ok = await setUnitState(unitSlug, !done).then(
+              () => true,
+              () => false,
+            );
+            if (!ok) setFailed(true);
           })
         }
+        disabled={pending}
         className={cn(
-          "relative shrink-0 overflow-hidden rounded-[3px] border px-4 py-2 text-sm transition-colors duration-[120ms]",
+          "ctl relative shrink-0 overflow-hidden rounded-[3px] border px-4 py-2 text-sm transition-colors duration-[120ms]",
           done
             ? "border-phos text-phos"
             : "border-line text-mid hover:border-phos-dim hover:text-hi",

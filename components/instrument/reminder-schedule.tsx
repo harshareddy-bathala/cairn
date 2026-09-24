@@ -29,6 +29,7 @@ export function ReminderSchedule({
   const [saved, setSaved] = useState(true);
   const [pending, startTransition] = useTransition();
   const [test, setTest] = useState<{ kind: ReminderKind; msg: string } | null>(null);
+  const [failed, setFailed] = useState(false);
 
   function edit(kind: ReminderKind, patch: Partial<Slot>) {
     setSlots((s) => s.map((x) => (x.kind === kind ? { ...x, ...patch } : x)));
@@ -59,7 +60,7 @@ export function ReminderSchedule({
 
               <div className="min-w-0 flex-1">
                 <p className={cn("text-sm", slot.enabled ? "text-hi" : "text-lo")}>{meta.label}</p>
-                <p className="truncate text-2xs text-lo">{meta.note}</p>
+                <p className="text-xs text-lo">{meta.note}</p>
               </div>
 
               {linked && slot.enabled && (
@@ -72,7 +73,7 @@ export function ReminderSchedule({
                       setTest({ kind, msg: r.ok ? "sent" : r.error });
                     })
                   }
-                  className="legend shrink-0 px-1 text-lo hover:text-hi disabled:opacity-40"
+                  className="tap legend shrink-0 px-1 text-lo hover:text-hi disabled:opacity-40"
                 >
                   test
                 </button>
@@ -87,8 +88,10 @@ export function ReminderSchedule({
                 className={cn(
                   // wide enough for a 12-hour locale's AM/PM: the browser picks the
                   // format, and a clipped one reads as the wrong time of day
-                  "w-[7.5rem] shrink-0 rounded-[3px] border border-line bg-ink-900 px-2 py-1",
-                  "text-sm tabular-nums text-hi [color-scheme:dark]",
+                  "w-[9rem] shrink-0 rounded-[3px] border border-line bg-ink-900 px-2 py-1 sm:w-[7.5rem]",
+                  // no forced color-scheme: the picker icon follows the theme,
+                  // where `dark` drew a white clock on Daylight's paper
+                  "text-sm tabular-nums text-hi",
                   "focus:border-phos-dim disabled:text-lo disabled:opacity-50",
                 )}
               />
@@ -98,12 +101,18 @@ export function ReminderSchedule({
       </ul>
 
       {test && (
-        <p className="text-2xs text-lo">
+        <p role="status" className="note text-lo">
           {REMINDER_LABELS[test.kind].label}: <span className="text-mid">{test.msg}</span>
         </p>
       )}
 
-      <div className="flex items-center justify-between gap-4 pt-1">
+      {failed && (
+        <p role="alert" className="note text-bad">
+          The schedule did not save — check the times and commit again.
+        </p>
+      )}
+
+      <div className="flex flex-wrap items-center justify-between gap-4 pt-1">
         <p className="legend">resolved against {timezone}</p>
 
         <button
@@ -111,12 +120,16 @@ export function ReminderSchedule({
           disabled={saved || pending}
           onClick={() =>
             startTransition(async () => {
-              await saveReminderSchedule({ slots });
-              setSaved(true);
+              const ok = await saveReminderSchedule({ slots }).then(
+                () => true,
+                () => false,
+              );
+              setSaved(ok);
+              setFailed(!ok);
             })
           }
           className={cn(
-            "relative overflow-hidden rounded-[3px] border px-4 py-1.5 text-sm transition-colors duration-[120ms]",
+            "ctl relative overflow-hidden rounded-[3px] border px-4 py-1.5 text-sm transition-colors duration-[120ms]",
             saved
               ? "border-line text-lo"
               : "border-phos-dim text-hi hover:border-phos",

@@ -50,6 +50,19 @@ the device rather than the user, so your phone and your desk may disagree.
 the four destinations a day passes through, the rest behind a sheet that sits *on top of*
 the bar so the primary tabs stay live. `lib/nav.ts` is the one list both render from —
 they cannot disagree about what exists, which is how `/review` once shipped as a 404.
+From `lg` the rail widens and writes its labels out; between `sm` and `lg` each glyph
+shows its label on hover *and* keyboard focus.
+
+**Notes are prose.** The sentence under a heading or inside a panel is set with the
+`note` utility — Plex Sans at the data-row size — not as an 11px legend. Legends stay
+mono, uppercase and small; they label things, they are not read. Every foreground token
+clears 4.5:1 on both the page and a panel, in both grounds — re-check with an axe pass
+after touching a colour token.
+
+**Failure has a shape.** `app/(app)/loading.tsx` answers a tap before the server does,
+`error.tsx` keeps the shell and offers a retry when an action throws, and the 404s are
+the instrument's own. Server actions refuse what a person typed by *returning*
+`{ ok: false, error }` — a thrown message is stripped in a production build.
 
 **The boot animation is CSS.** It was a motion variant with `initial: opacity 0`, which
 made JavaScript load-bearing for the page being *visible* — any failure between HTML and

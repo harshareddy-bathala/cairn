@@ -3,7 +3,12 @@ import { auth } from "@/auth";
 import { Panel } from "@/components/instrument/panel";
 import { Boot, BootItem } from "@/components/instrument/boot";
 import { ExamRunner } from "@/components/instrument/quiz-runner";
-import { examPaper, getCertificationState, shapeCertification } from "@/lib/certification";
+import {
+  examPaper,
+  examSeed,
+  getCertificationState,
+  shapeCertification,
+} from "@/lib/certification";
 import { CERT_CHECKPOINTS, EXAM_PASS, EXAM_UNLOCK } from "@/content/checkpoints";
 import { modules, phases } from "@/content";
 
@@ -39,7 +44,7 @@ export default async function ExamPage({ params }: { params: Promise<{ slug: str
               The exam opens at {Math.round(EXAM_UNLOCK * 100)}% of this phase's units. You
               are at {standing.unitsDone} of {standing.unitsTotal}.
             </p>
-            <p className="mt-2 text-2xs leading-relaxed text-lo">
+            <p className="mt-2 note text-lo">
               This is the only lock in the app, and it points the right way: the exam is
               gated on your progress, never the reverse. A bad result here costs you the
               certificate, not the curriculum.
@@ -51,7 +56,7 @@ export default async function ExamPage({ params }: { params: Promise<{ slug: str
   }
 
   // Deterministic per user and phase: reloading must not reroll the paper.
-  const seed = hash(`${session.user.id}:${slug}`);
+  const seed = examSeed(session.user.id, slug);
   const moduleSlugs = modules.filter((m) => m.phaseSlug === slug).map((m) => m.slug);
   const qs = examPaper(slug, moduleSlugs, seed);
 
@@ -61,7 +66,7 @@ export default async function ExamPage({ params }: { params: Promise<{ slug: str
         <header>
           <p className="legend">{phase.title} · phase exam</p>
           <h1 className="mt-1 text-2xl text-hi">{phase.title}</h1>
-          <p className="mt-1 max-w-xl text-2xs leading-relaxed text-lo">
+          <p className="mt-1 max-w-xl note text-lo">
             {qs.length} questions drawn across every module in the phase,{" "}
             {Math.round(qs.length * MINUTES_PER_QUESTION)} minutes,{" "}
             {Math.round(EXAM_PASS * 100)}% to pass. When the clock runs out the paper
@@ -92,13 +97,4 @@ export default async function ExamPage({ params }: { params: Promise<{ slug: str
       </BootItem>
     </Boot>
   );
-}
-
-function hash(s: string) {
-  let h = 2166136261;
-  for (let i = 0; i < s.length; i++) {
-    h ^= s.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return h >>> 0;
 }

@@ -7,14 +7,26 @@ import { auth } from "@/auth";
 import { db } from "@/db";
 import { questionsForModule } from "@/content/checkpoints";
 import { CERT_CHECKPOINTS, CHECKPOINT_PASS, EXAM_PASS } from "@/content/checkpoints";
-import { examPaper } from "@/lib/certification";
+import { examPaper, examSeed } from "@/lib/certification";
 import { modules as contentModules } from "@/content";
+import { safeUrlSchema } from "@/lib/safe-url";
 
 async function requireUser() {
   const session = await auth();
   if (!session?.user?.id) throw new Error("not signed in");
   return session.user.id;
 }
+
+/**
+ * A refusal the person can act on is returned, not thrown.
+ *
+ * Next strips the message from anything thrown out of a server action in a
+ * production build, so "that handle is taken" reached the browser as a generic
+ * "An error occurred in the Server Components render" — and a Zod failure
+ * reached it as a JSON dump in development. Only genuine faults still throw.
+ */
+type Refusal = { ok: false; error: string };
+const refuse = (error: string): Refusal => ({ ok: false, error });
 
 const answersSchema = z.record(z.string().max(60), z.number().int().min(0).max(3));
 
@@ -49,6 +61,7 @@ export async function submitCheckpoint(moduleSlug: string, given: Record<string,
   revalidatePath(`/module/${slug}`);
   revalidatePath("/certification");
   return {
+    ok: true as const,
     score,
     total: qs.length,
     passed,
@@ -57,19 +70,28 @@ export async function submitCheckpoint(moduleSlug: string, given: Record<string,
   };
 }
 
-/** Grades a phase exam against the same deterministic paper the page served. */
+/**
+ * Grades a phase exam against the same deterministic paper the page served.
+ *
+ * The seed still travels with the submission, but it is checked against the
+ * one the page is drawn from rather than taken on trust — otherwise a crafted
+ * request could be graded against any paper it liked.
+ */
 export async function submitExam(
   phaseSlug: string,
   seed: number,
   given: Record<string, number>,
-) {
+): Promise<QuizGrade | Refusal> {
   const userId = await requireUser();
   const slug = z.string().min(1).max(120).parse(phaseSlug);
   const s = z.number().int().parse(seed);
   const answers = answersSchema.parse(given);
 
+  const expected = examSeed(userId, slug);
+  if (s !== expected) return refuse("This paper does not match your exam. Reload the page and submit again.");
+
   const moduleSlugs = contentModules.filter((m) => m.phaseSlug === slug).map((m) => m.slug);
-  const qs = examPaper(slug, moduleSlugs, s);
+  const qs = examPaper(slug, moduleSlugs, expected);
   if (qs.length === 0) throw new Error("no exam for this phase");
 
   const score = qs.filter((q) => answers[q.id] === q.answer).length;
@@ -82,6 +104,7 @@ export async function submitExam(
 
   revalidatePath("/certification");
   return {
+    ok: true,
     score,
     total: qs.length,
     passed,
@@ -90,16 +113,29 @@ export async function submitExam(
   };
 }
 
+type QuizGrade = {
+  ok: true;
+  score: number;
+  total: number;
+  passed: boolean;
+  key: Record<string, number>;
+  why: Record<string, string>;
+};
+
 /**
  * Attaches the out-loud defense recording to your best passing attempt.
  *
  * A written quiz cannot tell whether you can explain the thing. The recording
  * is the part that can, which is why the certificate needs both.
  */
-export async function attachDefense(phaseSlug: string, url: string) {
+export async function attachDefense(phaseSlug: string, url: string): Promise<{ ok: true } | Refusal> {
   const userId = await requireUser();
   const slug = z.string().min(1).max(120).parse(phaseSlug);
-  const link = z.string().url().max(500).parse(url);
+  // the same scheme allowlist as every other typed link: `z.string().url()`
+  // accepted `javascript:` and refused `youtu.be/x`, the exact wrong way round
+  const parsed = safeUrlSchema.safeParse(url);
+  if (!parsed.success) return refuse("That is not a link — paste the full URL of the recording.");
+  const link = parsed.data;
 
   const res = await db.execute<{ id: number }>(sql`
     with best as (
@@ -112,7 +148,7 @@ export async function attachDefense(phaseSlug: string, url: string) {
     returning e.id
   `);
 
-  if (!res.rows[0]) throw new Error("pass the exam first");
+  if (!res.rows[0]) return refuse("Pass the exam first — the recording attaches to a passing attempt.");
   revalidatePath("/certification");
   return { ok: true };
 }
@@ -123,7 +159,9 @@ export async function attachDefense(phaseSlug: string, url: string) {
  * The snapshot is taken now and never recomputed — a certificate that silently
  * restated today's numbers would not be a record of anything.
  */
-export async function issueCertificate(phaseSlug: string) {
+export async function issueCertificate(
+  phaseSlug: string,
+): Promise<{ ok: true; id: string } | Refusal> {
   const userId = await requireUser();
   const slug = z.string().min(1).max(120).parse(phaseSlug);
   // the id's default is a Drizzle $defaultFn, which raw SQL does not run
@@ -140,8 +178,8 @@ export async function issueCertificate(phaseSlug: string) {
   `);
   const g = gate.rows[0]!;
   if (Number(g.total) > 0 && Number(g.passed) / Number(g.total) < CERT_CHECKPOINTS) {
-    throw new Error(
-      `${g.passed}/${g.total} checkpoints passed — the certificate needs ${Math.ceil(Number(g.total) * CERT_CHECKPOINTS)}`,
+    return refuse(
+      `${g.passed}/${g.total} checkpoints passed — the certificate needs ${Math.ceil(Number(g.total) * CERT_CHECKPOINTS)}.`,
     );
   }
 
@@ -197,11 +235,11 @@ export async function issueCertificate(phaseSlug: string) {
   `);
 
   const row = res.rows[0];
-  if (!row) throw new Error("pass the exam and attach a defense recording first");
+  if (!row) return refuse("Pass the exam and attach a defense recording first.");
 
   revalidatePath("/certification");
   revalidatePath(`/c/${row.id}`);
-  return { id: String(row.id) };
+  return { ok: true, id: String(row.id) };
 }
 
 const handleSchema = z
@@ -211,16 +249,30 @@ const handleSchema = z
   .regex(/^[a-z0-9][a-z0-9-]*$/, "lowercase letters, digits and dashes");
 
 /** Claims the public handle that /u/[handle] resolves. */
-export async function setHandle(handle: string) {
+export async function setHandle(handle: string): Promise<{ ok: true; handle: string } | Refusal> {
   const userId = await requireUser();
-  const h = handleSchema.parse(handle.trim().toLowerCase());
+  const parsed = handleSchema.safeParse(handle.trim().toLowerCase());
+  if (!parsed.success) {
+    const n = handle.trim().length;
+    return refuse(
+      n < 2
+        ? "At least two characters."
+        : n > 30
+          ? "Thirty characters at most."
+          : "Lowercase letters, digits and dashes only, starting with a letter or digit.",
+    );
+  }
+  const h = parsed.data;
 
   try {
     await db.execute(sql`update users set handle = ${h} where id = ${userId}`);
-  } catch {
-    throw new Error("that handle is taken");
+  } catch (e) {
+    // only a unique violation means "taken"; anything else is a real fault
+    const code = (e as { code?: string; cause?: { code?: string } }).cause?.code ?? (e as { code?: string }).code;
+    if (code === "23505") return refuse("That handle is taken.");
+    throw e;
   }
   revalidatePath("/certification");
   revalidatePath(`/u/${h}`);
-  return { handle: h };
+  return { ok: true, handle: h };
 }

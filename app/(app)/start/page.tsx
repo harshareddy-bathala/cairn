@@ -24,7 +24,7 @@ export default async function StartPage() {
         <header>
           <p className="legend">before you start</p>
           <h1 className="mt-1 text-2xl text-hi">Where are you actually?</h1>
-          <p className="mt-1 max-w-xl text-2xs leading-relaxed text-lo">
+          <p className="mt-1 max-w-xl note text-lo">
             You are not starting from zero. Tick anything you could explain to someone else
             right now — not everything you have read. Re-doing work you have already banked
             is the fastest way to abandon a roadmap for the third time.

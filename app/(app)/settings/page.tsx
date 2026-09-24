@@ -50,8 +50,8 @@ export default async function SettingsPage() {
     <Boot className="mx-auto max-w-3xl space-y-8 px-4 py-8 sm:px-6 sm:py-10">
       <BootItem>
         <header>
-          <p className="legend">settings</p>
-          <h1 className="mt-1 text-2xl text-hi">Reminders</h1>
+          <p className="legend">reminders · appearance · account</p>
+          <h1 className="mt-1 text-2xl text-hi">Settings</h1>
           <p className="prose-cairn mt-3 text-base">
             The roadmap failed twice for want of a nudge at the right hour. These are that
             nudge — and nothing more. A reminder reports the trail; it never marks anything

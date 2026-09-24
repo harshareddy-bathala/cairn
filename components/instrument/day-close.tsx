@@ -41,6 +41,7 @@ export function DayClose({
   const [minutes, setMinutes] = useState(
     String(initialMinutes || suggestedMinutes || ""),
   );
+  const [error, setError] = useState<string | null>(null);
 
   const shown: Stone[] = closed
     ? stones
@@ -76,13 +77,22 @@ export function DayClose({
               startTransition(async () => {
                 setClosed(false);
                 setJustClosed(false);
-                await reopenDay();
+                setError(null);
+                await reopenDay().catch(() => {
+                  setClosed(true);
+                  setError("Could not reopen — try again.");
+                });
               })
             }
-            className="mt-2 text-2xs text-lo underline underline-offset-[3px] transition-colors duration-[120ms] hover:text-mid"
+            className="tap mt-2 text-xs text-lo underline underline-offset-[3px] transition-colors duration-[120ms] hover:text-mid"
           >
             reopen — I have more in me
           </button>
+          {error && (
+            <p role="alert" className="note mt-1 text-bad">
+              {error}
+            </p>
+          )}
         </div>
       </div>
     );
@@ -92,12 +102,19 @@ export function DayClose({
     <form
       action={() =>
         startTransition(async () => {
+          setError(null);
           setClosed(true);
           setJustClosed(true);
+          // the stone lands optimistically; if the write does not, it is taken
+          // back and the two sentences stay in their fields
           await closeDay({
             learned: learned.trim() || undefined,
             tomorrowFirstTask: task.trim() || undefined,
-            minutes: minutes ? Number(minutes) : undefined,
+            minutes: minutes ? Math.min(Number(minutes), 1440) : undefined,
+          }).catch(() => {
+            setClosed(false);
+            setJustClosed(false);
+            setError("The day did not close — nothing was lost. Try again.");
           });
         })
       }
@@ -109,8 +126,9 @@ export function DayClose({
           value={learned}
           onChange={(e) => setLearned(e.target.value)}
           rows={2}
+          maxLength={2000}
           placeholder="one honest sentence — not a summary of what you read"
-          className="prose-cairn mt-1 w-full resize-none rounded-[3px] border border-line bg-ink-900 px-2.5 py-2 text-sm text-hi placeholder:text-lo focus:border-phos-dim focus:outline-none"
+          className="prose-cairn mt-1 w-full resize-y rounded-[3px] border border-line bg-ink-900 px-2.5 py-2 text-sm text-hi placeholder:text-lo focus:border-phos-dim focus:outline-none"
         />
       </label>
 
@@ -120,6 +138,7 @@ export function DayClose({
           <input
             value={task}
             onChange={(e) => setTask(e.target.value)}
+            maxLength={300}
             placeholder="the exact task you open first"
             className="mt-1 w-full rounded-[3px] border border-line bg-ink-900 px-2.5 py-1.5 text-sm text-hi placeholder:text-lo focus:border-phos-dim focus:outline-none"
           />
@@ -129,7 +148,7 @@ export function DayClose({
           <span className="legend">minutes</span>
           <input
             value={minutes}
-            onChange={(e) => setMinutes(e.target.value.replace(/\D/g, ""))}
+            onChange={(e) => setMinutes(e.target.value.replace(/\D/g, "").slice(0, 4))}
             inputMode="numeric"
             className="mt-1 w-full rounded-[3px] border border-line bg-ink-900 px-2.5 py-1.5 text-sm tabular-nums text-hi focus:border-phos-dim focus:outline-none"
           />
@@ -138,7 +157,7 @@ export function DayClose({
         <button
           type="submit"
           className={cn(
-            "rounded-[3px] border border-line px-4 py-1.5 text-sm text-mid",
+            "ctl rounded-[3px] border border-line px-4 py-1.5 text-sm text-hi",
             "transition-colors duration-[120ms] hover:border-phos hover:text-phos",
           )}
         >
@@ -146,7 +165,13 @@ export function DayClose({
         </button>
       </div>
 
-      <p className="text-2xs leading-relaxed text-lo">
+      {error && (
+        <p role="alert" className="note text-bad">
+          {error}
+        </p>
+      )}
+
+      <p className="note text-lo">
         Closing is what moves you along the trail — not the calendar. Skip a week and
         tomorrow is still day {String(dayIndex + 1).padStart(3, "0")}.
       </p>

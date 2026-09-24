@@ -16,7 +16,7 @@ export function TelegramLink({ linked, configured }: { linked: boolean; configur
 
   if (!configured) {
     return (
-      <p className="text-2xs leading-relaxed text-lo">
+      <p className="note text-lo">
         Reminders are not switched on for this deployment yet.
       </p>
     );
@@ -45,7 +45,7 @@ export function TelegramLink({ linked, configured }: { linked: boolean; configur
     <div className="space-y-3">
       {!issued ? (
         <div className="flex items-center justify-between gap-4">
-          <p className="text-2xs leading-relaxed text-lo">
+          <p className="note text-lo">
             Reminders arrive in Telegram. One code, used once, ties this account to that chat.
           </p>
           <button
@@ -78,7 +78,7 @@ export function TelegramLink({ linked, configured }: { linked: boolean; configur
                 height={144}
                 className="shrink-0 rounded-[3px] border border-line"
               />
-              <ol className="min-w-40 flex-1 space-y-1.5 text-2xs leading-relaxed text-lo">
+              <ol className="min-w-40 flex-1 space-y-1.5 note text-lo">
                 <li>
                   <span className="text-mid">1.</span> Scan this with your phone&rsquo;s camera.
                 </li>
@@ -113,7 +113,7 @@ export function TelegramLink({ linked, configured }: { linked: boolean; configur
             </code>
           </details>
 
-          <p className="text-2xs text-lo">Reload this page once the bot replies.</p>
+          <p className="note text-lo">Reload this page once the bot replies.</p>
         </div>
       )}
     </div>

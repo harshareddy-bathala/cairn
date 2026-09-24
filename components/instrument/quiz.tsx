@@ -13,6 +13,7 @@ export type QuizQuestion = Omit<Question, "answer" | "why"> & {
 };
 
 export type QuizResult = {
+  ok: true;
   score: number;
   total: number;
   passed: boolean;
@@ -32,18 +33,24 @@ export type QuizResult = {
 export function Quiz({
   questions,
   onSubmit,
+  onRetake,
+  retakeLabel = "retake",
   timeLimitMin,
   submitLabel = "submit",
 }: {
   questions: QuizQuestion[];
-  onSubmit: (answers: Record<string, number>) => Promise<QuizResult>;
+  onSubmit: (answers: Record<string, number>) => Promise<QuizResult | { ok: false; error: string }>;
+  /** offered once graded; without it, the result is the end of the paper */
+  onRetake?: () => void;
+  retakeLabel?: string;
   timeLimitMin?: number;
   submitLabel?: string;
 }) {
   const reduce = useReducedMotion();
-  const [, startTransition] = useTransition();
+  const [pending, startTransition] = useTransition();
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [result, setResult] = useState<QuizResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [left, setLeft] = useState(timeLimitMin ? timeLimitMin * 60 : null);
   const submitted = useRef(false);
 
@@ -52,8 +59,20 @@ export function Quiz({
   const submit = () => {
     if (submitted.current) return;
     submitted.current = true;
+    setError(null);
     startTransition(async () => {
-      const r = await onSubmit(answers);
+      // A failed submission must leave the answers on screen and the button
+      // live. Before, a dropped request left `submitted` latched forever and
+      // took the page down with it — twenty answers, gone.
+      const r = await onSubmit(answers).catch(() => ({
+        ok: false as const,
+        error: "Could not reach the server. Your answers are still here — submit again.",
+      }));
+      if (!r.ok) {
+        submitted.current = false;
+        setError(r.error);
+        return;
+      }
       setResult(r);
       window.scrollTo({ top: 0, behavior: reduce ? "auto" : "smooth" });
     });
@@ -62,7 +81,7 @@ export function Quiz({
   useEffect(() => {
     if (left == null || result) return;
     if (left <= 0) {
-      submit();
+      if (!submitted.current && !error) submit();
       return;
     }
     const t = setTimeout(() => setLeft((n) => (n == null ? null : n - 1)), 1000);
@@ -83,19 +102,35 @@ export function Quiz({
             {result.score}
             <span className="text-lo">/{result.total}</span>
           </span>
-          <span className="text-2xs leading-relaxed text-lo">
+          <span className="note text-lo">
             {result.passed
               ? "Passed. Read the explanations on anything you guessed — a lucky guess is still a gap."
               : "Not passed. Nothing is locked; the explanations below are the point, and you can retake it."}
+            {onRetake && (
+              <>
+                {" "}
+                <button
+                  type="button"
+                  onClick={onRetake}
+                  className="tap text-info underline underline-offset-[3px] hover:text-hi"
+                >
+                  {retakeLabel}
+                </button>
+              </>
+            )}
           </span>
         </motion.div>
       ) : (
-        <div className="flex items-baseline justify-between gap-4">
-          <span className="legend tabular-nums">
+        // sticky, so the count and the clock stay in view down a twenty-question
+        // paper instead of scrolling away with the first question
+        <div className="sticky top-0 z-10 -mx-4 flex items-baseline justify-between gap-4 border-b border-line-soft bg-ink-850/95 px-4 py-2.5 backdrop-blur-sm">
+          <span className="legend tabular-nums" aria-live="polite">
             {answeredCount}/{questions.length} answered
           </span>
           {left != null && (
             <span
+              role="timer"
+              aria-label={`${Math.ceil(left / 60)} minutes left`}
               className={cn(
                 "text-sm tabular-nums",
                 left < 60 ? "text-bad" : left < 300 ? "text-warn" : "text-mid",
@@ -130,10 +165,11 @@ export function Quiz({
                       <button
                         type="button"
                         disabled={result != null}
+                        aria-pressed={isChosen}
                         onClick={() => setAnswers((a) => ({ ...a, [q.id]: oi }))}
                         className={cn(
-                          "flex w-full items-baseline gap-2.5 rounded-[3px] border px-2.5 py-1.5 text-left text-sm transition-colors duration-[120ms]",
-                          result == null && isChosen && "border-phos-dim text-hi",
+                          "flex w-full items-baseline gap-2.5 rounded-[3px] border px-3 py-2 text-left text-sm transition-colors duration-[120ms]",
+                          result == null && isChosen && "border-phos-dim bg-ink-800 text-hi",
                           result == null && !isChosen && "border-line text-mid hover:border-line-hi hover:text-hi",
                           isKey && "border-phos text-phos",
                           wrongChoice && "border-bad text-bad",
@@ -169,12 +205,18 @@ export function Quiz({
           <button
             type="button"
             onClick={submit}
-            className="rounded-[3px] border border-line px-4 py-1.5 text-sm text-mid transition-colors duration-[120ms] hover:border-phos hover:text-phos"
+            disabled={pending}
+            className="ctl rounded-[3px] border border-line px-4 py-1.5 text-sm text-mid transition-colors duration-[120ms] hover:border-phos hover:text-phos disabled:opacity-50"
           >
-            {submitLabel}
+            {pending ? "grading…" : submitLabel}
           </button>
+          {error && (
+            <span role="alert" className="note w-full text-bad">
+              {error}
+            </span>
+          )}
           {answeredCount < questions.length && (
-            <span className="text-2xs text-lo">
+            <span className="note text-lo">
               {questions.length - answeredCount} unanswered — those count as wrong.
             </span>
           )}

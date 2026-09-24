@@ -86,7 +86,7 @@ export default async function RoadmapPage() {
                             </span>
                           </div>
                           <p className="mt-1.5 text-sm text-hi">{m.title}</p>
-                          <p className="mt-1 line-clamp-2 text-2xs leading-relaxed text-lo">
+                          <p className="mt-1 line-clamp-2 note text-lo">
                             {m.summary}
                           </p>
                           {blocking.length > 0 && (

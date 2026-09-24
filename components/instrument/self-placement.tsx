@@ -59,8 +59,9 @@ export function SelfPlacement({ modules }: { modules: Mod[] }) {
                   type="button"
                   onClick={() => toggleModule(m)}
                   aria-label={`select all of ${m.title}`}
+                  aria-pressed={mine === m.units.length ? true : mine > 0 ? "mixed" : false}
                   className={cn(
-                    "w-4 shrink-0 text-center text-sm leading-none transition-colors duration-[120ms]",
+                    "tap w-4 shrink-0 text-center text-sm leading-none transition-colors duration-[120ms]",
                     mine === m.units.length ? "text-phos" : mine > 0 ? "text-warn" : "text-lo hover:text-mid",
                   )}
                 >
@@ -70,14 +71,14 @@ export function SelfPlacement({ modules }: { modules: Mod[] }) {
                   type="button"
                   onClick={() => setOpen(isOpen ? null : m.slug)}
                   aria-expanded={isOpen}
-                  className="min-w-0 flex-1 truncate text-left text-sm text-hi transition-colors duration-[120ms] hover:text-phos"
+                  className="min-w-0 flex-1 py-1 text-left text-sm text-hi transition-colors duration-[120ms] hover:text-phos"
                 >
                   {m.title}
                 </button>
                 <span className="legend shrink-0 tabular-nums">
                   {mine}/{m.units.length}
                 </span>
-                <span className="w-4 shrink-0 text-center text-2xs text-lo">
+                <span className="w-4 shrink-0 text-center text-2xs text-lo" aria-hidden>
                   {isOpen ? "▾" : "▸"}
                 </span>
               </div>
@@ -89,9 +90,11 @@ export function SelfPlacement({ modules }: { modules: Mod[] }) {
                       <button
                         type="button"
                         onClick={() => toggleUnit(u.slug)}
-                        className="flex w-full items-baseline gap-2.5 py-1 text-left"
+                        aria-pressed={picked.has(u.slug)}
+                        className="flex w-full items-baseline gap-2.5 py-1.5 text-left"
                       >
                         <span
+                          aria-hidden
                           className={cn(
                             "w-3 shrink-0 text-center text-2xs leading-none",
                             picked.has(u.slug) ? "text-phos" : "text-lo",
@@ -108,7 +111,7 @@ export function SelfPlacement({ modules }: { modules: Mod[] }) {
                           >
                             {u.title}
                           </span>
-                          <span className="block text-2xs leading-relaxed text-lo">
+                          <span className="block note text-lo">
                             {u.objective}
                           </span>
                         </span>
@@ -134,11 +137,11 @@ export function SelfPlacement({ modules }: { modules: Mod[] }) {
               router.refresh();
             })
           }
-          className="rounded-[3px] border border-line px-4 py-1.5 text-sm text-mid transition-colors duration-[120ms] hover:border-phos hover:text-phos"
+          className="ctl rounded-[3px] border border-line px-4 py-1.5 text-sm text-mid transition-colors duration-[120ms] hover:border-phos hover:text-phos disabled:opacity-50"
         >
-          {picked.size === 0 ? "start from the beginning" : `bank ${picked.size} and start`}
+          {saving ? "banking…" : picked.size === 0 ? "start from the beginning" : `bank ${picked.size} and start`}
         </button>
-        <span className="text-2xs leading-relaxed text-lo">
+        <span className="note text-lo">
           Banked units count toward the map and the phase exam, but they put no stone on
           the cairn — you did not earn them here.
         </span>

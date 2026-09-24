@@ -39,6 +39,8 @@ export type JourneyState = {
   todayClosed: boolean;
   /** nothing has started yet — suppress velocity judgements */
   atTrailhead: boolean;
+  /** self-placement has been answered (even with "start from the beginning") */
+  onboarded: boolean;
 };
 
 export function journeyWeekOf(dayIndex: number) {
@@ -67,6 +69,7 @@ export async function getJourneyState(userId: string): Promise<JourneyState> {
         where user_id = ${userId} and state = 'done' and completed_on_day_index > 0
       ),
       'unitsTotal', (select count(*)::int from units),
+      'onboarded', (select onboarded_at is not null from users where id = ${userId}),
       'today', to_char((now() at time zone (
         select coalesce(timezone, 'Asia/Kolkata') from users where id = ${userId}
       ))::date, 'YYYY-MM-DD')
@@ -121,6 +124,7 @@ export async function getJourneyState(userId: string): Promise<JourneyState> {
     todayOpen: Boolean(last && !last.closed),
     todayClosed: Boolean(last?.closed),
     atTrailhead,
+    onboarded: Boolean(raw.onboarded),
   };
 }
 
@@ -135,6 +139,7 @@ type RawState = {
   unitsDone: number;
   unitsEarned: number;
   unitsTotal: number;
+  onboarded: boolean | null;
   today: string;
 };
 

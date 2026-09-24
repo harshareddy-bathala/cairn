@@ -44,7 +44,7 @@ export function TimezoneSync({
   if (!detected) return null;
 
   return (
-    <p className="mt-3 text-2xs text-warn">
+    <p className="note mt-3 text-warn">
       This browser is in {detected}, the schedule resolves against {timezone}.{" "}
       <button
         type="button"

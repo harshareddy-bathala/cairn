@@ -61,12 +61,15 @@ export function Markdown({ source, className }: { source: string; className?: st
       while (i < lines.length && !lines[i].startsWith("```")) body.push(lines[i++]);
       i++;
       blocks.push(
+        // focusable, so a keyboard can scroll a line wider than the panel
         <pre
           key={k++}
+          tabIndex={0}
+          aria-label={lang ? `${lang} code` : "code"}
           className="overflow-x-auto rounded-[3px] border border-line-soft bg-ink-900/70 p-3"
         >
           {lang && <span className="legend mb-1.5 block">{lang}</span>}
-          <code className="block whitespace-pre text-2xs leading-relaxed text-mid">
+          <code className="block whitespace-pre text-xs leading-relaxed text-mid">
             {body.join("\n")}
           </code>
         </pre>,

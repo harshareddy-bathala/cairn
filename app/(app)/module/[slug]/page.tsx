@@ -99,8 +99,8 @@ export default async function ModulePage({ params }: { params: Promise<{ slug: s
                     {u.state === "done" ? "✓" : String(u.order).padStart(2, "0")}
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm text-hi">{u.title}</span>
-                    <span className="mt-0.5 block text-2xs leading-relaxed text-lo">
+                    <span className="block text-sm text-hi">{u.title}</span>
+                    <span className="mt-0.5 block note text-lo">
                       {u.objective}
                     </span>
                   </span>
@@ -115,14 +115,14 @@ export default async function ModulePage({ params }: { params: Promise<{ slug: s
       <BootItem>
         <Panel legend="checkpoint">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="max-w-md text-2xs leading-relaxed text-lo">
+            <p className="max-w-md note text-lo">
               {questionsForModule(slug).length} questions,{" "}
               {Math.round(CHECKPOINT_PASS * 100)}% to pass. It gates the phase certificate,
               never the curriculum — and every question explains itself afterwards.
             </p>
             <Link
               href={`/checkpoint/${slug}`}
-              className="shrink-0 rounded-[3px] border border-line px-3 py-1.5 text-2xs text-mid transition-colors duration-[120ms] hover:border-phos hover:text-phos"
+              className="ctl inline-flex shrink-0 items-center rounded-[3px] border border-line px-3 py-1.5 text-xs text-mid transition-colors duration-[120ms] hover:border-phos hover:text-phos"
             >
               take the checkpoint
             </Link>

@@ -96,8 +96,10 @@ export function MobileNav({ account }: { account: AccountInfo }) {
               {(open || moreActive) && (
                 <span className="absolute inset-x-3 top-0 h-[2px] rounded-b-[1px] bg-phos" />
               )}
-              <span className="text-base leading-none">⋯</span>
-              <span className="text-[10px] uppercase tracking-[0.06em] leading-none">More</span>
+              <span className="text-base leading-none" aria-hidden>
+                ⋯
+              </span>
+              <span className="text-2xs uppercase tracking-[0.05em] leading-none">More</span>
             </button>
           </li>
         </ul>
@@ -138,7 +140,7 @@ export function MobileNav({ account }: { account: AccountInfo }) {
                       href={n.href}
                       aria-current={current === n.href ? "page" : undefined}
                       className={cn(
-                        "flex items-center gap-3 rounded-[3px] px-3 py-3 text-sm transition-colors duration-[120ms]",
+                        "flex items-center gap-3 rounded-[3px] px-3 py-3 text-base transition-colors duration-[120ms]",
                         current === n.href ? "bg-ink-800 text-phos" : "text-mid",
                       )}
                     >
@@ -184,7 +186,7 @@ function Tab({
       <span className="text-base leading-none" aria-hidden>
         {glyph}
       </span>
-      <span className="text-[10px] uppercase tracking-[0.06em] leading-none">{label}</span>
+      <span className="text-2xs uppercase tracking-[0.05em] leading-none">{label}</span>
     </Link>
   );
 }

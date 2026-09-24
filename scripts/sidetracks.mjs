@@ -51,13 +51,13 @@ if (await pledgeBtn.isVisible().catch(() => false)) {
 say("pledge accepted", await p.getByText("no-AI pledge accepted").first().isVisible().catch(() => false));
 
 // definition of done is shown, not hidden
-await p.locator('button[aria-label="definition of done"]').first().click();
+await p.locator('button[aria-label^="Show definition of done"]').first().click();
 await p.waitForTimeout(500);
 say("definition of done opens", await p.getByText(/A stranger can read the README/).isVisible().catch(() => false));
 
 const sentinel = p.locator("section").filter({ hasText: "sentinel" }).first();
 const doneBefore = Number((await sentinel.getByText(/^\d+\/6$/).first().innerText()).split("/")[0]);
-const box = sentinel.getByRole("button", { name: "▢" }).first();
+const box = sentinel.locator("button[aria-pressed=false][aria-label$=\"— done\"]").first();
 const canTick = await box.isVisible().catch(() => false);
 if (canTick) {
   await box.click();
@@ -109,7 +109,7 @@ await tick.click();
 await p.waitForTimeout(2500);
 say("a tick without evidence is flagged", await p.getByText("no evidence").first().isVisible().catch(() => false));
 
-await p.locator('button[aria-label="definition of done"]').first().click();
+await p.locator('button[aria-label^="Show definition of done"]').first().click();
 await p.waitForTimeout(600);
 const evidence = p.getByLabel("evidence").first();
 say("evidence is asked for", await evidence.isVisible().catch(() => false));

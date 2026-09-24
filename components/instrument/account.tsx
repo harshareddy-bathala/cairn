@@ -47,27 +47,39 @@ export function AccountMenu({ account }: { account: AccountInfo }) {
   }, [open]);
 
   return (
-    <div ref={ref} className="relative">
+    <div ref={ref} className="relative lg:w-full">
+      {/*
+        A disclosure, not an ARIA menu: what opens is an email, a link and a
+        button, and `role="menu"` would promise arrow-key navigation between
+        menu items that none of them are.
+      */}
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        aria-haspopup="menu"
+        aria-controls="account-panel"
         aria-label={`Signed in as ${account.email}`}
         title={account.email}
-        className={cn(
-          "tap flex h-7 w-7 items-center justify-center rounded-full border text-2xs uppercase transition-colors duration-[120ms]",
-          open
-            ? "border-phos text-phos"
-            : "border-line-soft text-lo hover:border-line hover:text-mid",
-        )}
+        className="tap group flex items-center gap-2.5 rounded-full transition-colors duration-[120ms] lg:w-full lg:rounded-[3px] lg:p-1 lg:hover:bg-ink-850"
       >
-        {initial(account)}
+        <span
+          className={cn(
+            "flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-2xs uppercase transition-colors duration-[120ms]",
+            open
+              ? "border-phos text-phos"
+              : "border-line-soft text-lo group-hover:border-line group-hover:text-mid",
+          )}
+        >
+          {initial(account)}
+        </span>
+        <span className="hidden min-w-0 flex-1 truncate text-left text-xs text-mid lg:block">
+          {account.email}
+        </span>
       </button>
 
       {open && (
         <div
-          role="menu"
+          id="account-panel"
           className="absolute bottom-0 left-[calc(100%+10px)] z-40 w-60 rounded-[3px] border border-line bg-ink-850 p-3 shadow-lg"
         >
           <p className="legend">signed in as</p>
@@ -90,7 +102,7 @@ export function AccountMenu({ account }: { account: AccountInfo }) {
             <Link
               href="/settings"
               onClick={() => setOpen(false)}
-              className="text-2xs text-lo transition-colors duration-[120ms] hover:text-mid"
+              className="tap text-xs text-mid transition-colors duration-[120ms] hover:text-hi"
             >
               settings
             </Link>
@@ -98,7 +110,7 @@ export function AccountMenu({ account }: { account: AccountInfo }) {
               type="button"
               disabled={pending}
               onClick={() => startTransition(() => void signOutAction())}
-              className="rounded-[3px] border border-line-soft px-2.5 py-1 text-2xs text-lo transition-colors duration-[120ms] hover:border-bad hover:text-bad disabled:opacity-40"
+              className="rounded-[3px] border border-line px-2.5 py-1 text-xs text-mid transition-colors duration-[120ms] hover:border-bad hover:text-bad disabled:opacity-40"
             >
               {pending ? "signing out…" : "sign out"}
             </button>
@@ -127,9 +139,9 @@ export function AccountRow({ account }: { account: AccountInfo }) {
         type="button"
         disabled={pending}
         onClick={() => startTransition(() => void signOutAction())}
-        className="tap shrink-0 rounded-[3px] border border-line-soft px-2.5 py-1.5 text-2xs text-lo transition-colors duration-[120ms] hover:border-bad hover:text-bad disabled:opacity-40"
+        className="ctl shrink-0 rounded-[3px] border border-line px-3 py-1.5 text-xs text-mid transition-colors duration-[120ms] hover:border-bad hover:text-bad disabled:opacity-40"
       >
-        {pending ? "…" : "sign out"}
+        {pending ? "signing out…" : "sign out"}
       </button>
     </div>
   );

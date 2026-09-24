@@ -52,7 +52,9 @@ export function Cairn({
   return (
     <div
       className={cn("flex w-full flex-col-reverse items-center gap-[3px]", className)}
-      aria-label={`${stones.length} active days`}
+      // a picture of a number, so it is named like one; a bare div cannot carry a label
+      role="img"
+      aria-label={`${stones.length} ${stones.length === 1 ? "active day" : "active days"}`}
     >
       {shown.map((s, i) => {
         const isLast = i === shown.length - 1;

@@ -150,6 +150,21 @@ export function examPaper(phaseSlug: string, moduleSlugs: string[], seed: number
   return ordered.slice(0, Math.min(EXAM_SIZE, ordered.length));
 }
 
+/**
+ * The seed for one person's paper in one phase — deterministic, so reloading
+ * does not reroll it. Shared by the page that draws the paper and the action
+ * that grades it, so the two cannot disagree.
+ */
+export function examSeed(userId: string, phaseSlug: string) {
+  const s = `${userId}:${phaseSlug}`;
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
 /** mulberry32 — small, deterministic, and good enough to shuffle a quiz */
 function shuffle<T>(items: T[], seed: number): T[] {
   const out = [...items];

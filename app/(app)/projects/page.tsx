@@ -25,7 +25,7 @@ export default async function ProjectsPage() {
         <header>
           <p className="legend">three projects · one rule</p>
           <h1 className="mt-1 text-2xl text-hi">Projects</h1>
-          <p className="mt-1 max-w-xl text-2xs leading-relaxed text-lo">
+          <p className="mt-1 max-w-xl note text-lo">
             These are the only artefacts an interviewer will actually open. Cairn is not
             among them and never will be — it was built by an AI, which is exactly what
             disqualifies it as evidence.
@@ -40,7 +40,7 @@ export default async function ProjectsPage() {
             <div className="mt-4 border-t border-line-soft pt-3">
               <p className="legend">the line it earns</p>
               <p className="prose-cairn mt-1 text-sm leading-relaxed text-mid">{p.resumeLine}</p>
-              <p className="mt-1.5 text-2xs leading-relaxed text-lo">
+              <p className="mt-1.5 note text-lo">
                 Written before the thing is built, so you can tell whether what you are
                 building will support the claim.
               </p>

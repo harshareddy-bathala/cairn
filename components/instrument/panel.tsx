@@ -24,10 +24,15 @@ export function Panel({
   return (
     <section
       className={cn(
-        "relative rounded-[--radius-panel] border border-line bg-ink-850/60",
-        "before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-line-hi",
+        // `rounded-panel`, not `rounded-[--radius-panel]`: Tailwind 4 no longer
+        // wraps a bare custom property in var(), so the old class compiled to
+        // `border-radius: --radius-panel` and every panel was square
+        "relative rounded-panel border border-line bg-ink-850/60",
+        "before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-px before:rounded-t-panel before:bg-line-hi",
+        // the glow used `var(--x)/20` inside the shadow, which is not a colour,
+        // so the whole declaration was dropped and "active" never glowed
         active &&
-          "border-phos-dim/50 shadow-[0_0_0_1px_var(--color-phos-dim)/20,0_0_40px_-12px_var(--color-phos)]",
+          "border-phos-dim/50 shadow-[0_0_0_1px_color-mix(in_oklab,var(--color-phos-dim)_20%,transparent),0_0_40px_-12px_color-mix(in_oklab,var(--color-phos)_60%,transparent)]",
         className,
       )}
     >

@@ -39,6 +39,7 @@ const APTITUDE_SOURCES = [
 export function PlanList({ blocks: initial }: { blocks: HydratedBlock[] }) {
   const [, startTransition] = useTransition();
   const [ticked, setTicked] = useState<Record<string, boolean>>({});
+  const [failed, setFailed] = useState(false);
   const merged = initial.map((b) => (b.id in ticked ? { ...b, done: ticked[b.id] } : b));
   const [blocks, patch] = useOptimistic(merged, (state, p: { id: string; done: boolean }) =>
     state.map((b) => (b.id === p.id ? { ...b, done: p.done } : b)),
@@ -49,24 +50,36 @@ export function PlanList({ blocks: initial }: { blocks: HydratedBlock[] }) {
   const [openId, setOpenId] = useState<string | null>(currentId ?? null);
 
   return (
-    <ul data-plan className="divide-y divide-line-soft">
-      {blocks.map((b) => (
-        <Block
-          key={b.id}
-          block={b}
-          current={b.id === currentId}
-          open={openId === b.id}
-          onToggleOpen={() => setOpenId(openId === b.id ? null : b.id)}
-          onTick={(done) =>
-            startTransition(async () => {
-              patch({ id: b.id, done });
-              await tickBlock(b.id, done);
-              setTicked((t) => ({ ...t, [b.id]: done }));
-            })
-          }
-        />
-      ))}
-    </ul>
+    <>
+      {failed && (
+        <p role="alert" className="note mb-2 text-bad">
+          That did not save — the server did not answer. Try again.
+        </p>
+      )}
+      <ul data-plan className="divide-y divide-line-soft">
+        {blocks.map((b) => (
+          <Block
+            key={b.id}
+            block={b}
+            current={b.id === currentId}
+            open={openId === b.id}
+            onToggleOpen={() => setOpenId(openId === b.id ? null : b.id)}
+            onTick={(done) =>
+              startTransition(async () => {
+                setFailed(false);
+                patch({ id: b.id, done });
+                const ok = await tickBlock(b.id, done).then(
+                  () => true,
+                  () => false,
+                );
+                if (!ok) return setFailed(true);
+                setTicked((t) => ({ ...t, [b.id]: done }));
+              })
+            }
+          />
+        ))}
+      </ul>
+    </>
   );
 }
 
@@ -90,7 +103,9 @@ function Block({
   const tickable = b.kind === "aptitude";
 
   return (
-    <li className={cn("relative", b.done && "opacity-55")}>
+    // a finished block is quieted by colour, not opacity — at 55% opacity its
+    // detail line fell to 2.4:1, below what anyone can read on a phone outdoors
+    <li className="relative">
       {current && !b.done && (
         <span className="absolute inset-y-0 -left-4 w-[2px] rounded-r-[1px] bg-phos" />
       )}
@@ -114,12 +129,12 @@ function Block({
           {b.href && !b.done ? (
             <Link
               href={b.href}
-              className="tap block truncate text-sm text-hi transition-colors duration-[120ms] hover:text-phos"
+              className="tap line-clamp-2 text-sm text-hi transition-colors duration-[120ms] hover:text-phos sm:truncate"
             >
               {b.title}
             </Link>
           ) : (
-            <span className={cn("block truncate text-sm", b.done ? "text-mid" : "text-hi")}>
+            <span className={cn("line-clamp-2 text-sm sm:truncate", b.done ? "text-lo" : "text-hi")}>
               {b.title}
             </span>
           )}
@@ -139,7 +154,7 @@ function Block({
             type="button"
             onClick={onToggleOpen}
             aria-expanded={open}
-            aria-label={open ? "collapse" : "expand"}
+            aria-label={`${open ? "Collapse" : "Expand"} ${b.title}`}
             className="tap w-4 shrink-0 text-center text-2xs text-lo transition-colors duration-[120ms] hover:text-mid"
           >
             {/* chevrons, not +/−: the plus is already spoken for by the
@@ -161,7 +176,7 @@ function Block({
 
           {b.kind === "aptitude" && (
             <div className="flex flex-wrap items-center gap-3">
-              <p className="text-2xs text-lo">
+              <p className="note text-lo">
                 25 questions, timed. Log the score, not the excuses.
               </p>
               {APTITUDE_SOURCES.map((s) => (
@@ -170,7 +185,7 @@ function Block({
                   href={s.url}
                   target="_blank"
                   rel="noreferrer"
-                  className="text-2xs text-info underline underline-offset-[3px]"
+                  className="tap inline-block py-1 text-xs text-info underline underline-offset-[3px]"
                 >
                   {s.title} ↗
                 </a>
@@ -180,7 +195,7 @@ function Block({
                   type="button"
                   onClick={() => onTick(!b.done)}
                   className={cn(
-                    "ml-auto rounded-[3px] border px-2.5 py-1 text-2xs transition-colors duration-[120ms]",
+                    "ctl ml-auto rounded-[3px] border px-3 py-1 text-xs transition-colors duration-[120ms]",
                     b.done
                       ? "border-phos text-phos"
                       : "border-line text-mid hover:border-phos-dim hover:text-hi",

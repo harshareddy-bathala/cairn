@@ -57,7 +57,7 @@ export default async function MetricsPage() {
             {String(journey.journeyWeek).padStart(2, "0")}
           </p>
           <h1 className="mt-1 text-2xl text-hi">Metrics</h1>
-          <p className="mt-1 max-w-xl text-2xs leading-relaxed text-lo">
+          <p className="mt-1 max-w-xl note text-lo">
             The lanes with nothing to show for them. Aptitude has no repo and five
             applications leave no commit, so they are the first to disappear — these are
             the numbers that notice.
@@ -91,7 +91,7 @@ export default async function MetricsPage() {
             </div>
             <div className="flex flex-col justify-center gap-1.5 border-l border-line-soft pl-4 sm:pl-5">
               <p className="legend">the curve</p>
-              <p className="text-2xs leading-relaxed text-lo">
+              <p className="note text-lo">
                 95 by the end of Foundations, 165 by Depth, 230 by Orchestration — measured
                 in active days, so a skipped week moves the target with you rather than
                 leaving you behind it.
@@ -128,22 +128,20 @@ export default async function MetricsPage() {
 
       <BootItem>
         <Panel legend="cadence" aux={`journey week ${String(journey.journeyWeek).padStart(2, "0")}`}>
-          <p className="mb-3 text-2xs leading-relaxed text-lo">
+          <p className="mb-3 note text-lo">
             Per journey week, not per calendar week — skip three days and the week simply
             has not ended yet.
           </p>
           <ul className="divide-y divide-line-soft">
             {due.map((q) => (
               <li key={q.kind} className="flex items-baseline gap-3 py-2">
-                <span
-                  className={cnTone(q.short === 0)}
-                  aria-label={q.short === 0 ? "met" : "outstanding"}
-                >
+                <span className={cnTone(q.short === 0)} aria-hidden>
                   {q.short === 0 ? "✓" : "▸"}
                 </span>
+                <span className="sr-only">{q.short === 0 ? "met:" : "outstanding:"}</span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm text-hi">{q.label}</span>
-                  <span className="block text-2xs leading-relaxed text-lo">{q.why}</span>
+                  <span className="block note text-lo">{q.why}</span>
                 </span>
                 <span className="legend shrink-0 tabular-nums">
                   {q.done}/{Math.ceil(q.perWeek)}
@@ -151,7 +149,7 @@ export default async function MetricsPage() {
               </li>
             ))}
           </ul>
-          <p className="mt-3 text-2xs text-lo">
+          <p className="note mt-3 text-lo">
             Log a session on the{" "}
             <Link href="/career" className="text-info underline underline-offset-[3px]">
               career desk
@@ -211,9 +209,9 @@ export default async function MetricsPage() {
                   label={`minutes per day over the last ${minutes.length} closed days, ${minutes.join(", ")}`}
                 />
               ) : (
-                <p className="text-2xs text-lo">Close a few days and the shape appears here.</p>
+                <p className="note text-lo">Close a few days and the shape appears here.</p>
               )}
-              <p className="text-2xs leading-relaxed text-lo">
+              <p className="note text-lo">
                 Minutes are the one number that cannot be gamed by reading more and
                 finishing less.
               </p>

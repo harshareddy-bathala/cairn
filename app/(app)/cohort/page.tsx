@@ -84,7 +84,7 @@ export default async function CohortPage() {
             {members.filter((m) => m.id != null).length} on the trail · {members.length} invited
           </p>
           <h1 className="mt-1 text-2xl text-hi">Cohort</h1>
-          <p className="mt-1 max-w-xl text-2xs leading-relaxed text-lo">
+          <p className="mt-1 max-w-xl note text-lo">
             No feed, no posts, no reactions. The only useful social pressure is that
             someone else can see whether you closed yesterday.
           </p>
@@ -99,15 +99,23 @@ export default async function CohortPage() {
               const stale = m.lastDate == null || daysBetween(m.lastDate, today) > 1;
               const label = m.name ?? m.handle ?? m.email;
               return (
+                /*
+                 * On a phone the three counts drop to their own line under the
+                 * name. Inline, they took ~200px of a 358px row and left the
+                 * name five characters and the status one word per line.
+                 *
+                 * Someone not yet arrived is dimmed by colour, not opacity —
+                 * opacity took their status line to 2.4:1.
+                 */
                 <li
                   key={m.email}
-                  className={cn("flex items-center gap-4 px-4 py-3", !joined && "opacity-60")}
+                  className="flex items-start gap-3 px-4 py-3 sm:items-center sm:gap-4"
                 >
-                  <div className="w-8 shrink-0">
+                  <div className="w-8 shrink-0 pt-1.5 sm:pt-0">
                     <Cairn stones={m.stones} max={14} />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm text-hi">
+                    <p className={cn("truncate text-sm", joined ? "text-hi" : "text-mid")}>
                       {m.handle ? (
                         <Link
                           href={`/u/${m.handle}`}
@@ -120,7 +128,7 @@ export default async function CohortPage() {
                       )}
                       {m.id === me && <span className="legend ml-2 text-phos-dim">you</span>}
                     </p>
-                    <p className={cn("text-2xs", stale ? "text-lo" : "text-phos-dim")}>
+                    <p className={cn("text-xs", stale ? "text-lo" : "text-phos-dim")}>
                       {!joined
                         ? "invited — has not signed in"
                         : m.lastDate == null
@@ -129,12 +137,19 @@ export default async function CohortPage() {
                             ? `last closed ${m.lastDate}`
                             : "closed recently"}
                     </p>
+                    <p className="legend mt-1.5 flex gap-4 tabular-nums sm:hidden">
+                      <span>{plural(m.activeDays, "day")}</span>
+                      <span>{plural(m.unitsDone, "unit")}</span>
+                      <span>{m.problemsSolved} dsa</span>
+                    </p>
                   </div>
-                  <span className="legend shrink-0 tabular-nums">{m.activeDays} days</span>
-                  <span className="legend w-16 shrink-0 text-right tabular-nums">
-                    {m.unitsDone} units
+                  <span className="legend hidden shrink-0 tabular-nums sm:inline">
+                    {plural(m.activeDays, "day")}
                   </span>
-                  <span className="legend w-16 shrink-0 text-right tabular-nums">
+                  <span className="legend hidden w-16 shrink-0 text-right tabular-nums sm:inline">
+                    {plural(m.unitsDone, "unit")}
+                  </span>
+                  <span className="legend hidden w-16 shrink-0 text-right tabular-nums sm:inline">
                     {m.problemsSolved} dsa
                   </span>
                 </li>
@@ -146,6 +161,10 @@ export default async function CohortPage() {
 
     </Boot>
   );
+}
+
+function plural(n: number, word: string) {
+  return `${n} ${n === 1 ? word : `${word}s`}`;
 }
 
 function daysBetween(a: string, b: string) {

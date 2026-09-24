@@ -56,7 +56,7 @@ export function WeekReviewForm({
 
   return (
     <div className="space-y-4">
-      <p className="text-2xs leading-relaxed text-lo">
+      <p className="note text-lo">
         {saved && !dirty ? (
           <>
             Reviewed on active day {dayOfWeek} of this journey week. Edit any answer to
@@ -76,7 +76,7 @@ export function WeekReviewForm({
             <label htmlFor={`wr-${p.id}`} className="block text-sm text-hi">
               {p.label}
             </label>
-            <p className="mb-1.5 mt-0.5 text-2xs leading-relaxed text-lo">{p.help}</p>
+            <p className="mb-1.5 mt-0.5 note text-lo">{p.help}</p>
             <textarea
               id={`wr-${p.id}`}
               rows={2}
@@ -93,7 +93,7 @@ export function WeekReviewForm({
 
       <div className="border-t border-line-soft pt-3.5">
         <p className="text-sm text-hi">Three priorities for next week</p>
-        <p className="mb-2 mt-0.5 text-2xs leading-relaxed text-lo">
+        <p className="mb-2 mt-0.5 note text-lo">
           Three, not five. A list you can hold in your head is a list you will act on.
         </p>
         <ol className="space-y-1.5">
@@ -114,14 +114,14 @@ export function WeekReviewForm({
         </ol>
       </div>
 
-      {error && <p className="text-2xs text-bad">{error}</p>}
+      {error && <p role="alert" className="note text-bad">{error}</p>}
 
       <div className="flex flex-wrap items-center gap-3">
         <button
           type="button"
           onClick={submit}
           disabled={pending || (saved && !dirty)}
-          className="rounded-[3px] border border-line px-3 py-2 text-2xs uppercase tracking-[0.08em] text-mid transition-colors duration-[120ms] hover:border-phos hover:text-phos disabled:opacity-50 disabled:hover:border-line disabled:hover:text-mid"
+          className="ctl rounded-[3px] border border-line px-3 py-2 text-xs uppercase tracking-[0.08em] text-mid transition-colors duration-[120ms] hover:border-phos hover:text-phos disabled:opacity-50 disabled:hover:border-line disabled:hover:text-mid"
         >
           {pending ? "saving…" : saved && !dirty ? "saved" : saved ? "revise" : "record review"}
         </button>

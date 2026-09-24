@@ -53,7 +53,7 @@ export default async function ReviewPage() {
             {String(journey.journeyWeek).padStart(2, "0")}
           </p>
           <h1 className="mt-1 text-2xl text-hi">Review</h1>
-          <p className="mt-1 max-w-xl text-2xs leading-relaxed text-lo">
+          <p className="mt-1 max-w-xl note text-lo">
             Everything here is spaced in <span className="text-mid">active days</span>, not
             calendar days. Skip a week and nothing is overdue waiting for you — the deck
             simply picks up where you left it.
@@ -69,7 +69,7 @@ export default async function ReviewPage() {
               opening an editorial schedules a redo, and a missed checkpoint question comes
               back here with its explanation.
             </p>
-            <p className="mt-3 text-2xs text-lo">
+            <p className="note mt-3 text-lo">
               <Link
                 href="/today"
                 className="text-info underline underline-offset-[3px] hover:text-phos"
@@ -123,7 +123,7 @@ export default async function ReviewPage() {
       {redo.length > 0 && (
         <BootItem>
           <Panel legend="redo queue" aux={`${redo.length} due`}>
-            <p className="mb-3 text-2xs leading-relaxed text-lo">
+            <p className="mb-3 note text-lo">
               Problems you opened the editorial on, or did not finish. They are already in
               today&apos;s plan — this is the whole list, including any past the plan&apos;s cap.
             </p>
@@ -172,7 +172,7 @@ export default async function ReviewPage() {
       {misses.length > 0 && (
         <BootItem>
           <Panel legend="checkpoint misses" aux={`${misses.length} open`}>
-            <p className="mb-3 text-2xs leading-relaxed text-lo">
+            <p className="mb-3 note text-lo">
               Questions you currently get wrong. Answering one correctly on a later attempt
               removes it from here — so this list is what you do not know yet, not a record
               of what you once got wrong.
@@ -203,7 +203,7 @@ export default async function ReviewPage() {
                         <li
                           key={i}
                           className={cn(
-                            "flex items-baseline gap-2 text-2xs leading-relaxed",
+                            "flex items-baseline gap-2 note",
                             i === m.answer
                               ? "text-phos"
                               : i === m.chose
@@ -247,7 +247,7 @@ export default async function ReviewPage() {
               dayOfWeek={week.dayOfWeek}
             />
           ) : (
-            <p className="text-2xs leading-relaxed text-lo">
+            <p className="note text-lo">
               Opens on active day {REVIEW_OPENS_ON_DAY} of this journey week — you are on day{" "}
               <span className="text-mid tabular-nums">{week.dayOfWeek}</span>. Early enough
               that the three priorities it produces still have days left to land.

@@ -17,6 +17,7 @@ type Patch = Partial<Pick<ProblemRowData, "outcome" | "hintRevealed" | "redoDueD
 export function ProblemList({ problems }: { problems: ProblemRowData[] }) {
   const [, startTransition] = useTransition();
   const [resolved, setResolved] = useState<Record<string, Patch>>({});
+  const [failed, setFailed] = useState(false);
 
   const base = useMemo(
     () => problems.map((p) => (resolved[p.slug] ? { ...p, ...resolved[p.slug] } : p)),
@@ -39,8 +40,12 @@ export function ProblemList({ problems }: { problems: ProblemRowData[] }) {
 
   function onOutcome(slug: string, outcome: Outcome) {
     startTransition(async () => {
+      setFailed(false);
       patchRow({ slug, outcome });
-      const res = await recordOutcome({ problemSlug: slug, outcome });
+      // on failure the optimistic mark simply falls away when the transition
+      // ends — nothing to undo by hand, only something to say
+      const res = await recordOutcome({ problemSlug: slug, outcome }).catch(() => null);
+      if (!res) return setFailed(true);
       setResolved((r) => ({
         ...r,
         [slug]: {
@@ -56,16 +61,27 @@ export function ProblemList({ problems }: { problems: ProblemRowData[] }) {
   function onRevealHint(slug: string) {
     startTransition(async () => {
       patchRow({ slug, hintRevealed: true });
-      await revealHint(slug);
+      const ok = await revealHint(slug).then(
+        () => true,
+        () => false,
+      );
+      if (!ok) return setFailed(true);
       setResolved((r) => ({ ...r, [slug]: { ...r[slug], hintRevealed: true } }));
     });
   }
 
   return (
-    <ul className="space-y-0.5">
-      {rows.map((p) => (
-        <ProblemRow key={p.slug} p={p} onOutcome={onOutcome} onRevealHint={onRevealHint} />
-      ))}
-    </ul>
+    <>
+      <ul className="space-y-0.5">
+        {rows.map((p) => (
+          <ProblemRow key={p.slug} p={p} onOutcome={onOutcome} onRevealHint={onRevealHint} />
+        ))}
+      </ul>
+      {failed && (
+        <p role="alert" className="note mt-2 text-bad">
+          That was not recorded — the server did not answer. Try it again.
+        </p>
+      )}
+    </>
   );
 }

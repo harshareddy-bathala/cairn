@@ -14,6 +14,27 @@ async function requireUser() {
 }
 
 /**
+ * A form a person typed into is answered, not thrown at.
+ *
+ * These are the fields people type free text and links into. A rejected link
+ * used to throw a Zod error out of the action, which took the whole page down
+ * to an error screen (and, in production, with the reason stripped). Now the
+ * first problem comes back as a sentence the form can show next to itself.
+ */
+type Refusal = { ok: false; error: string };
+const FIELD_ERRORS: Record<string, string> = {
+  link: "That link is not an http(s) URL.",
+  recordingUrl: "That link is not an http(s) URL.",
+  company: "Add the company.",
+  role: "Add the role.",
+  name: "Add a name.",
+};
+function refusal(error: z.ZodError): Refusal {
+  const field = String(error.issues[0]?.path[0] ?? "");
+  return { ok: false, error: FIELD_ERRORS[field] ?? "Some of that could not be saved — check the fields." };
+}
+
+/**
  * The current day_index without opening a day.
  *
  * Logging a score should not silently start a journey day for you — that has to
@@ -65,7 +86,9 @@ const mockSchema = z.object({
 /** Logs a session against this journey week's quota. */
 export async function logMock(input: z.input<typeof mockSchema>) {
   const userId = await requireUser();
-  const v = mockSchema.parse(input);
+  const parsed = mockSchema.safeParse(input);
+  if (!parsed.success) return refusal(parsed.error);
+  const v = parsed.data;
 
   const res = await db.execute<{ day_index: number; journey_week: number }>(sql`
     with d as (select ${CURRENT_DAY(userId)} as day_index)
@@ -79,7 +102,7 @@ export async function logMock(input: z.input<typeof mockSchema>) {
   revalidatePath("/career");
   revalidatePath("/metrics");
   const row = res.rows[0]!;
-  return { dayIndex: Number(row.day_index), journeyWeek: Number(row.journey_week) };
+  return { ok: true as const, dayIndex: Number(row.day_index), journeyWeek: Number(row.journey_week) };
 }
 
 /* ------------------------------------------------------------------ *
@@ -95,7 +118,9 @@ const appSchema = z.object({
 
 export async function addApplication(input: z.input<typeof appSchema>) {
   const userId = await requireUser();
-  const v = appSchema.parse(input);
+  const parsed = appSchema.safeParse(input);
+  if (!parsed.success) return refusal(parsed.error);
+  const v = parsed.data;
 
   const res = await db.execute<{ id: number; journey_week: number; link: string | null }>(sql`
     with d as (select ${CURRENT_DAY(userId)} as day_index)
@@ -110,7 +135,7 @@ export async function addApplication(input: z.input<typeof appSchema>) {
   const row = res.rows[0]!;
   // the normalised link comes back so the optimistic row can adopt it: what was
   // typed ("acme.com/jobs/1") is not what was stored ("https://acme.com/jobs/1")
-  return { id: Number(row.id), journeyWeek: Number(row.journey_week), link: row.link };
+  return { ok: true as const, id: Number(row.id), journeyWeek: Number(row.journey_week), link: row.link };
 }
 
 const statusSchema = z.enum([
@@ -137,7 +162,9 @@ const contactSchema = z.object({
 
 export async function addContact(input: z.input<typeof contactSchema>) {
   const userId = await requireUser();
-  const v = contactSchema.parse(input);
+  const parsed = contactSchema.safeParse(input);
+  if (!parsed.success) return refusal(parsed.error);
+  const v = parsed.data;
   await db.execute(sql`
     with d as (select ${CURRENT_DAY(userId)} as day_index)
     insert into contacts (user_id, name, company, channel, last_touch_week)
@@ -146,7 +173,7 @@ export async function addContact(input: z.input<typeof contactSchema>) {
     from d
   `);
   revalidatePath("/career");
-  return { ok: true };
+  return { ok: true as const };
 }
 
 /* ------------------------------------------------------------------ *

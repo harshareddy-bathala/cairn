@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { auth } from "@/auth";
 import { Panel } from "@/components/instrument/panel";
 import { Readout } from "@/components/instrument/readout";
@@ -53,6 +54,32 @@ export default async function TodayPage() {
         </header>
       </BootItem>
 
+      {/*
+        Self-placement was only ever reached after a reset — a first sign-in
+        went straight to the plan and started the trail at unit one, even for
+        someone weeks into the material. It is offered here, once, until it
+        has been answered either way.
+      */}
+      {!journey.onboarded && journey.atTrailhead && journey.unitsDone === 0 && (
+        <BootItem>
+          <Panel legend="before you start">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="note max-w-md text-mid">
+                Already done some of this? Tick what you could explain to someone else and
+                the trail starts where you actually are. Two minutes, and nothing is lost if
+                you skip it.
+              </p>
+              <Link
+                href="/start"
+                className="ctl inline-flex shrink-0 items-center rounded-[3px] border border-phos-dim px-4 py-1.5 text-sm text-hi transition-colors duration-[120ms] hover:border-phos hover:text-phos"
+              >
+                place yourself →
+              </Link>
+            </div>
+          </Panel>
+        </BootItem>
+      )}
+
       <BootItem>
         <Panel legend="status" aux={`${journey.unitsDone}/${journey.unitsTotal} units`}>
           <div className="grid gap-4 sm:grid-cols-2">
@@ -92,7 +119,7 @@ export default async function TodayPage() {
                 <p className="text-sm text-mid">
                   full — <span className="text-lo">nothing spent yet</span>
                 </p>
-                <p className="text-2xs leading-relaxed text-lo">
+                <p className="note text-lo">
                   Close your first day to set the baseline. Falling behind later never
                   locks anything; it only rebalances the plan.
                 </p>
@@ -115,13 +142,13 @@ export default async function TodayPage() {
           active={!today.closed}
         >
           {plan.mode === "bad_day" && (
-            <p className="mb-3 text-2xs leading-relaxed text-lo">
+            <p className="mb-3 note text-lo">
               One problem and the log. That is a complete day today — the streak does not
               know the difference, and neither will November.
             </p>
           )}
           {plan.multiplier > 1 && plan.mode !== "bad_day" && (
-            <p className="mb-3 text-2xs leading-relaxed text-lo">
+            <p className="mb-3 note text-lo">
               Catch-up at {plan.multiplier}× — the blocks marked{" "}
               <span className="text-phos-dim">+</span> are pulled forward from the next day.
             </p>

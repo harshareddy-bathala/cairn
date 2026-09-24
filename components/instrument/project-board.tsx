@@ -68,7 +68,7 @@ export function ProjectBoard({ project }: { project: ProjectView }) {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-baseline justify-between gap-3">
-        <p className="max-w-xl text-2xs leading-relaxed text-lo">{state.summary}</p>
+        <p className="max-w-xl note text-lo">{state.summary}</p>
         <span className="legend shrink-0 tabular-nums">
           {done}/{total}
         </span>
@@ -90,7 +90,7 @@ export function ProjectBoard({ project }: { project: ProjectView }) {
                 await acceptPledge(state.slug);
               });
             }}
-            className="mt-3 rounded-[3px] border border-line px-3 py-1.5 text-2xs text-mid transition-colors duration-[120ms] hover:border-phos hover:text-phos"
+            className="ctl mt-3 rounded-[3px] border border-line px-3 py-1.5 text-xs text-mid transition-colors duration-[120ms] hover:border-phos hover:text-phos"
           >
             I accept — no AI codegen in {state.name}
           </button>
@@ -146,12 +146,13 @@ export function ProjectBoard({ project }: { project: ProjectView }) {
           const isDone = d.doneOnDay != null;
           const isOpen = open === d.slug;
           return (
-            <li key={d.slug} className={cn(isDone && "opacity-60")}>
+            <li key={d.slug}>
               <div className="flex items-baseline gap-3 py-2.5">
                 <button
                   type="button"
                   onClick={() => toggle(d.slug, !isDone)}
                   aria-pressed={isDone}
+                  aria-label={`${d.title} — done`}
                   className={cn(
                     "tap w-4 shrink-0 text-center text-sm leading-none transition-colors duration-[120ms]",
                     isDone ? "text-phos" : "text-lo hover:text-mid",
@@ -160,7 +161,7 @@ export function ProjectBoard({ project }: { project: ProjectView }) {
                   {isDone ? "✓" : "▢"}
                 </button>
                 <span className="min-w-0 flex-1">
-                  <span className={cn("block truncate text-sm", isDone ? "text-mid" : "text-hi")}>
+                  <span className={cn("block text-sm", isDone ? "text-lo" : "text-hi")}>
                     {d.title}
                   </span>
                   {isDone && d.doneOnDay ? (
@@ -179,7 +180,7 @@ export function ProjectBoard({ project }: { project: ProjectView }) {
                   type="button"
                   onClick={() => setOpen(isOpen ? null : d.slug)}
                   aria-expanded={isOpen}
-                  aria-label={isOpen ? "collapse" : "definition of done"}
+                  aria-label={`${isOpen ? "Hide" : "Show"} definition of done for ${d.title}`}
                   className="tap w-4 shrink-0 text-center text-2xs text-lo transition-colors duration-[120ms] hover:text-mid"
                 >
                   {isOpen ? "▾" : "▸"}
@@ -274,7 +275,7 @@ function EvidenceField({
           open evidence
         </a>
       ) : (
-        <p className="text-2xs text-lo">
+        <p className="note text-lo">
           Optional, and worth the ten seconds — a tick you cannot open is a self-report.
         </p>
       )}

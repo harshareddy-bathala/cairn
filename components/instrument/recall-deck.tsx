@@ -88,7 +88,7 @@ export function RecallDeck({ cards, dayIndex }: { cards: DueCard[]; dayIndex: nu
     return (
       <div className="py-6 text-center">
         <p className="text-sm text-phos">Deck clear.</p>
-        <p className="mt-1.5 text-2xs leading-relaxed text-lo">
+        <p className="mt-1.5 note text-lo">
           {done > 0 ? (
             <>
               {done} card{done === 1 ? "" : "s"} reviewed
@@ -158,9 +158,9 @@ export function RecallDeck({ cards, dayIndex }: { cards: DueCard[]; dayIndex: nu
               <button
                 type="button"
                 onClick={() => setFlipped(true)}
-                className="mt-4 w-full rounded-[3px] border border-line px-3 py-2.5 text-2xs uppercase tracking-[0.08em] text-mid transition-colors duration-[120ms] hover:border-phos-dim hover:text-phos sm:py-2"
+                className="mt-4 w-full rounded-[3px] border border-line px-3 py-3 text-xs uppercase tracking-[0.08em] text-mid transition-colors duration-[120ms] hover:border-phos-dim hover:text-phos sm:py-2"
               >
-                show answer <span className="text-lo">· space</span>
+                show answer <span className="hidden text-lo sm:inline">· space</span>
               </button>
             )}
           </motion.div>
@@ -181,7 +181,7 @@ export function RecallDeck({ cards, dayIndex }: { cards: DueCard[]; dayIndex: nu
               onClick={() => advance(g.grade)}
               title={g.hint}
               className={cn(
-                "rounded-[3px] border px-2 py-2.5 text-2xs transition-colors duration-[120ms] sm:py-2",
+                "rounded-[3px] border px-2 py-3 text-xs transition-colors duration-[120ms] sm:py-2",
                 g.grade === "again"
                   ? "border-line text-mid hover:border-bad hover:text-bad"
                   : g.grade === "easy"
@@ -189,7 +189,7 @@ export function RecallDeck({ cards, dayIndex }: { cards: DueCard[]; dayIndex: nu
                     : "border-line text-mid hover:border-phos-dim hover:text-phos-dim",
               )}
             >
-              {g.label} <span className="text-lo">{g.key}</span>
+              {g.label} <span className="hidden text-lo sm:inline">{g.key}</span>
             </button>
           ))}
         </motion.div>

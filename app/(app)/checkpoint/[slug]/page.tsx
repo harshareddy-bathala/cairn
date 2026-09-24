@@ -41,7 +41,7 @@ export default async function CheckpointPage({
             · checkpoint
           </p>
           <h1 className="mt-1 text-2xl text-hi">{mod.title}</h1>
-          <p className="mt-1 max-w-xl text-2xs leading-relaxed text-lo">
+          <p className="mt-1 max-w-xl note text-lo">
             {qs.length} questions, {Math.round(CHECKPOINT_PASS * 100)}% to pass. Nothing is
             locked by the result — this only decides whether the module counts toward the
             phase certificate, and every question explains itself afterwards.

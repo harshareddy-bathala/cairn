@@ -53,13 +53,16 @@ export function PaceControl({
               onClick={() =>
                 startTransition(async () => {
                   setState({ multiplier: s, badDay: false });
-                  await setCatchup(s);
+                  // a failed write just lets the optimistic pace fall back
+                  await setCatchup(s).catch(() => {});
                 })
               }
               className={cn(
-                "px-2.5 py-1 text-2xs tabular-nums transition-colors duration-[120ms]",
+                "disabled:cursor-not-allowed",
+                // 36px tall on a phone, where this is a thumb target; 28px at `sm`
+                "h-9 min-w-11 px-2.5 text-xs tabular-nums transition-colors duration-[120ms] sm:h-7 sm:min-w-0 sm:text-2xs",
                 "border-r border-line last:border-r-0",
-                active ? "bg-ink-800 text-phos" : "text-lo hover:text-mid",
+                active ? "bg-ink-800 text-phos" : "text-mid hover:text-hi",
               )}
             >
               {s}×
@@ -76,14 +79,14 @@ export function PaceControl({
         onClick={() =>
           startTransition(async () => {
             setState({ multiplier: 1, badDay: !state.badDay });
-            await setBadDay(!state.badDay);
+            await setBadDay(!state.badDay).catch(() => {});
           })
         }
         className={cn(
-          "rounded-[3px] border px-2.5 py-1 text-2xs transition-colors duration-[120ms]",
+          "h-9 rounded-[3px] border px-3 text-xs transition-colors duration-[120ms] sm:h-7 sm:px-2.5 sm:text-2xs",
           state.badDay
             ? "border-info/60 bg-ink-800 text-info"
-            : "border-line text-lo hover:border-line-hi hover:text-mid",
+            : "border-line text-mid hover:border-lo hover:text-hi",
           disabled && "opacity-40",
         )}
       >

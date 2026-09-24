@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { Quiz, type QuizQuestion, type QuizResult } from "./quiz";
 import { submitCheckpoint, submitExam, attachDefense, issueCertificate } from "@/app/actions/certification";
 import { cn } from "@/lib/cn";
@@ -8,7 +8,7 @@ import { cn } from "@/lib/cn";
 const input =
   "rounded-[3px] border border-line bg-ink-900 px-2.5 py-1.5 text-sm text-hi placeholder:text-lo focus:border-phos-dim focus:outline-none";
 const button =
-  "rounded-[3px] border border-line px-3 py-1.5 text-2xs text-mid transition-colors duration-[120ms] hover:border-phos hover:text-phos";
+  "ctl rounded-[3px] border border-line px-3 py-1.5 text-xs text-mid transition-colors duration-[120ms] hover:border-phos hover:text-phos disabled:opacity-50";
 
 export function CheckpointRunner({
   moduleSlug,
@@ -17,11 +17,19 @@ export function CheckpointRunner({
   moduleSlug: string;
   questions: QuizQuestion[];
 }) {
+  // a checkpoint is a fixed bank, so a retake is the same paper, fresh — the
+  // key remounts the quiz with nothing answered rather than reloading the page
+  const [round, setRound] = useState(0);
   return (
     <Quiz
+      key={round}
       questions={questions}
       submitLabel="submit checkpoint"
       onSubmit={(a) => submitCheckpoint(moduleSlug, a) as Promise<QuizResult>}
+      onRetake={() => {
+        setRound((r) => r + 1);
+        window.scrollTo({ top: 0 });
+      }}
     />
   );
 }
@@ -61,24 +69,36 @@ export function ExamRunner({
   const [url, setUrl] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [taking, setTaking] = useState(!alreadyPassed);
+  const [round, setRound] = useState(0);
+  const [pending, startTransition] = useTransition();
 
   return (
     <div className="space-y-5">
       {taking ? (
         <Quiz
+          // a retake remounts the paper unanswered, with the clock reset
+          key={round}
           questions={questions}
           timeLimitMin={timeLimitMin}
           submitLabel="submit exam"
+          onRetake={() => {
+            setRound((r) => r + 1);
+            window.scrollTo({ top: 0 });
+          }}
           onSubmit={async (a) => {
-            const r = (await submitExam(phaseSlug, seed, a)) as QuizResult;
-            if (r.passed) setPassed(true);
+            const r = await submitExam(phaseSlug, seed, a);
+            if (r.ok && r.passed) setPassed(true);
             return r;
           }}
         />
       ) : (
         <p className="text-sm text-mid">
           You have already passed this exam.{" "}
-          <button type="button" onClick={() => setTaking(true)} className="text-info underline underline-offset-[3px]">
+          <button
+            type="button"
+            onClick={() => setTaking(true)}
+            className="tap text-info underline underline-offset-[3px]"
+          >
             retake it
           </button>{" "}
           <span className="text-lo">— your best attempt is the one that counts.</span>
@@ -96,34 +116,40 @@ export function ExamRunner({
               explain something; this is the part that can.
             </p>
           </div>
-          <div className="flex flex-wrap items-end gap-2">
-            <label className="min-w-64 flex-1">
+          <form
+            className="flex flex-wrap items-end gap-2"
+            action={() =>
+              startTransition(async () => {
+                setError(null);
+                const r = await attachDefense(phaseSlug, url.trim()).catch(() => null);
+                if (!r) return setError("Could not reach the server — try again.");
+                if (!r.ok) return setError(r.error);
+                setDefense(true);
+              })
+            }
+          >
+            <label className="min-w-0 flex-1 basis-64">
               <span className="legend">recording url</span>
               <input
                 value={url}
-                onChange={(e) => setUrl(e.target.value)}
+                onChange={(e) => {
+                  setUrl(e.target.value);
+                  setError(null);
+                }}
+                inputMode="url"
+                autoComplete="off"
                 placeholder="drive, youtube unlisted, anywhere you can link"
-                className={cn("mt-1 w-full", input)}
+                aria-invalid={error ? true : undefined}
+                className={cn("mt-1 w-full", input, error && "border-bad")}
               />
             </label>
-            <button
-              type="button"
-              onClick={async () => {
-                setError(null);
-                try {
-                  await attachDefense(phaseSlug, url.trim());
-                  setDefense(true);
-                } catch (e) {
-                  setError(e instanceof Error ? e.message : "could not attach that");
-                }
-              }}
-              className={cn("py-2", button)}
-            >
-              attach
+            <button type="submit" disabled={pending || !url.trim()} className={cn("py-2", button)}>
+              {pending ? "attaching…" : defense ? "replace" : "attach"}
             </button>
-          </div>
+          </form>
+          {defense && <p className="note text-phos-dim">Recording attached.</p>}
           {defense && checkpointsPassed < checkpointsNeeded && (
-            <p className="text-2xs leading-relaxed text-warn">
+            <p className="note text-warn">
               {checkpointsPassed}/{checkpointsNeeded} module checkpoints passed. The exam
               says you can answer questions about the phase; the checkpoints say you did it
               module by module. The certificate needs both.
@@ -132,21 +158,26 @@ export function ExamRunner({
           {defense && checkpointsPassed >= checkpointsNeeded && (
             <button
               type="button"
-              onClick={async () => {
-                setError(null);
-                try {
-                  const r = await issueCertificate(phaseSlug);
+              disabled={pending}
+              onClick={() =>
+                startTransition(async () => {
+                  setError(null);
+                  const r = await issueCertificate(phaseSlug).catch(() => null);
+                  if (!r) return setError("Could not reach the server — try again.");
+                  if (!r.ok) return setError(r.error);
                   setCertId(r.id);
-                } catch (e) {
-                  setError(e instanceof Error ? e.message : "could not issue it");
-                }
-              }}
-              className="rounded-[3px] border border-phos px-4 py-2 text-sm text-phos transition-colors duration-[120ms] hover:bg-phos/10"
+                })
+              }
+              className="ctl rounded-[3px] border border-phos px-4 py-2 text-sm text-phos transition-colors duration-[120ms] hover:bg-phos/10 disabled:opacity-50"
             >
-              issue the certificate
+              {pending ? "issuing…" : "issue the certificate"}
             </button>
           )}
-          {error && <p className="text-2xs text-bad">{error}</p>}
+          {error && (
+            <p role="alert" className="note text-bad">
+              {error}
+            </p>
+          )}
         </div>
       )}
 
@@ -155,7 +186,7 @@ export function ExamRunner({
           <p className="legend">certificate issued</p>
           <a
             href={`/c/${certId}`}
-            className="mt-1 block text-sm text-phos underline underline-offset-[3px]"
+            className="mt-1 block break-all py-1 text-sm text-phos underline underline-offset-[3px]"
           >
             /c/{certId}
           </a>

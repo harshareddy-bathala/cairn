@@ -120,7 +120,7 @@ export function AptitudeLog({
       </form>
 
       {!loggedToday && (
-        <p className="text-2xs leading-relaxed text-lo">
+        <p className="note text-lo">
           Today's rotation is <span className="text-mid">{suggested}</span>. 25 questions,
           timed — the clock is the part that transfers.
         </p>
