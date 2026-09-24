@@ -1,7 +1,7 @@
 import { sql } from "drizzle-orm";
 import { db } from "@/db";
-import { questions, questionsForModule } from "@/content/checkpoints";
-import { EXAM_SIZE, EXAM_UNLOCK } from "@/content/checkpoints";
+import { questionsForModule } from "@/content/checkpoints";
+import { EXAM_UNLOCK } from "@/content/checkpoints";
 import { phases } from "@/content/phases";
 
 /**
@@ -125,64 +125,22 @@ export function shapeCertification(raw: RawCert) {
 }
 
 /**
- * The questions for one phase exam attempt.
- *
- * Deterministic in the seed so a reload does not hand you a different paper,
- * and drawn across every module in the phase so it cannot be passed by knowing
- * one track well.
+ * Whether a phase's exam is open to this person — the same 80%-of-units rule
+ * the page shows, checked again wherever a paper is drawn or graded, because a
+ * rule that lives only on the page is a suggestion to anyone with devtools.
  */
-export function examPaper(phaseSlug: string, moduleSlugs: string[], seed: number) {
-  const pool = questions.filter((q) => moduleSlugs.includes(q.moduleSlug));
-  const byModule = new Map<string, typeof pool>();
-  for (const q of pool) {
-    const list = byModule.get(q.moduleSlug) ?? [];
-    list.push(q);
-    byModule.set(q.moduleSlug, list);
-  }
-
-  // round-robin across modules so coverage is even, then deterministic shuffle
-  const ordered: typeof pool = [];
-  const lists = [...byModule.values()].map((l) => shuffle(l, seed));
-  for (let i = 0; ordered.length < pool.length; i++) {
-    for (const l of lists) if (l[i]) ordered.push(l[i]);
-  }
-  void phaseSlug;
-  return ordered.slice(0, Math.min(EXAM_SIZE, ordered.length));
-}
-
-/**
- * The seed for one person's paper in one phase — deterministic, so reloading
- * does not reroll it. Shared by the page that draws the paper and the action
- * that grades it, so the two cannot disagree.
- */
-export function examSeed(userId: string, phaseSlug: string) {
-  const s = `${userId}:${phaseSlug}`;
-  let h = 2166136261;
-  for (let i = 0; i < s.length; i++) {
-    h ^= s.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return h >>> 0;
-}
-
-/** mulberry32 — small, deterministic, and good enough to shuffle a quiz */
-function shuffle<T>(items: T[], seed: number): T[] {
-  const out = [...items];
-  let s = seed >>> 0;
-  const rand = () => {
-    s = (s + 0x6d2b79f5) >>> 0;
-    let t = Math.imul(s ^ (s >>> 15), 1 | s);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-  for (let i = out.length - 1; i > 0; i--) {
-    const j = Math.floor(rand() * (i + 1));
-    [out[i], out[j]] = [out[j], out[i]];
-  }
-  return out;
-}
-
-export function scoreAnswers(qs: { id: string; answer: number }[], given: Record<string, number>) {
-  const correct = qs.filter((q) => given[q.id] === q.answer).length;
-  return { score: correct, total: qs.length };
+export async function examUnlocked(userId: string, phaseSlug: string) {
+  const res = await db.execute<{ done: number; total: number }>(sql`
+    select
+      (select count(*)::int from unit_progress up
+        join units u on u.slug = up.unit_slug
+        join modules m on m.slug = u.module_slug
+        where up.user_id = ${userId} and up.state = 'done' and m.phase_slug = ${phaseSlug}) as done,
+      (select count(*)::int from units u
+        join modules m on m.slug = u.module_slug
+        where m.phase_slug = ${phaseSlug}) as total
+  `);
+  const r = res.rows[0];
+  const total = Number(r?.total ?? 0);
+  return total > 0 && Number(r?.done ?? 0) / total >= EXAM_UNLOCK;
 }

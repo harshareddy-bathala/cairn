@@ -26,7 +26,11 @@ absorb two skipped ones, and a bad-day button collapses the plan to the minimum 
 
 Curriculum content lives in `content/` as typed TypeScript and is pushed into Postgres by
 `scripts/seed.ts`. **The database is a cache; git is the source of truth.** Re-seeding is
-idempotent and never touches progress tables.
+idempotent and runs in one transaction. It never deletes on its own: progress rows hang
+off content rows with `on delete cascade`, so removing a unit removes everyone's work on
+it. **Never rename a slug that has progress.** A slug content no longer defines is
+reported as stale; `--prune` removes the stale rows nobody has touched, and refuses the
+rest unless `--force` is added too. `--dry-run` prints the diff and rolls back.
 
 ## Design system — "Instrument"
 
@@ -74,7 +78,7 @@ surface you open every morning.
 ```bash
 npm install
 cp .env.example .env.local    # then fill in AUTH_SECRET and the Google OAuth pair
-npm run db:push               # schema -> database
+npm run db:push               # schema -> an EMPTY database only; after that, npm run migrate
 npm run seed                  # content/ -> database
 npm run dev
 ```
@@ -111,21 +115,28 @@ enforces the allowlist.
 | | |
 |---|---|
 | `npm run dev` | dev server |
-| `npm run db:push` | apply `db/schema.ts` to the database |
-| `npm run seed` | validate and load `content/` (idempotent) |
+| `npm run seed` | validate and load `content/` in one transaction; `-- --dry-run` to preview |
+| `npm run db:push` | create the schema in an empty database — never against a live one |
+| `npm run migrate` | apply the additive schema changes in `scripts/migrate.ts` (idempotent) |
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run invite` | list the allowlist, add to it, or `--remove` from it |
-| `npm run verify` | the invariants: journey days, redo queue, planner, streak |
+| `npm run verify` | the invariants: journey days, redo queue, planner, hints, papers, sittings, streak — exits non-zero on any FAIL |
 | `npm run e2e` | drive the problem/unit loop in a real browser (needs `npm run dev`) |
 | `npm run e2e:day` | drive the plan, catch-up, bad day and day close in a browser |
 | `npm run e2e:tracks` | drive aptitude, projects, applications and the STAR bank |
 | `npm run e2e:cert` | drive self-placement, checkpoints, the exam and a certificate |
 | `npm run latency` | measure database round-trip cost |
-| `npm run reset-me` | wipe your own progress rows, keeping the curriculum |
-| `npm run reminders` | 19 invariants: the schedule, the copy, the due window |
+| `npm run reset-me` | wipe your own progress rows, keeping the curriculum; `-- --email x` for another account |
+| `npm run reminders` | 21 invariants: the schedule, the copy, the due window, one send per slot |
 | `npm run review` | 43 invariants: the scheduler, the deck, misses, the week review |
 | `npm run telegram` | bot plumbing — `setup`, `info`, `tick`, `preview` |
 | `npm run shots` | every page at 390px and 1280px; fails on sideways scroll or console errors |
+
+**The e2e scripts drive `e2e@cairn.local`, never you.** Development shares the production
+database, so each browser run resets that account first and then works on it
+(`scripts/e2e-account.mjs`). Any address outside `@cairn.local` is refused unless
+`--i-know` is passed. Invite it once: `npm run invite -- e2e@cairn.local "e2e"`. Every
+script exits non-zero when a check fails.
 
 ## Layout
 

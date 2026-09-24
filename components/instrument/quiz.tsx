@@ -2,48 +2,42 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { motion, useReducedMotion } from "motion/react";
-import type { Question } from "@/content/checkpoints";
+import type { PaperQuestion } from "@/lib/quiz-paper";
+import type { QuizGrade } from "@/lib/quiz-sessions";
 import { cn } from "@/lib/cn";
 import { DUR, EASE } from "@/lib/motion";
 
-export type QuizQuestion = Omit<Question, "answer" | "why"> & {
-  /** withheld until the paper is submitted — the client never holds the key */
-  answer?: number;
-  why?: string;
-};
-
-export type QuizResult = {
-  ok: true;
-  score: number;
-  total: number;
-  passed: boolean;
-  /** question id -> correct index, returned only after submission */
-  key: Record<string, number>;
-  why: Record<string, string>;
-};
+export type QuizQuestion = PaperQuestion;
+export type QuizResult = QuizGrade;
 
 /**
  * One paper, all questions on screen.
  *
- * The correct answers are not in the page until you submit — otherwise the
- * checkpoint measures your willingness to open devtools. Afterwards every
- * question shows its explanation, right or wrong, because the checkpoint is
- * meant to teach as much as to gate.
+ * The correct answers are not in the page until a pass — otherwise the
+ * checkpoint measures your willingness to open devtools, and a failed paper
+ * that hands back its key turns the retake into transcription. A pass shows
+ * every explanation; a failed checkpoint marks which answers were wrong (their
+ * explanations wait on Review, from the next day); a failed exam shows where
+ * the marks went, module by module.
  */
 export function Quiz({
   questions,
   onSubmit,
   onRetake,
-  retakeLabel = "retake",
-  timeLimitMin,
+  retakeLabel = "sit a fresh paper",
+  deadlineAt,
+  serverNow,
   submitLabel = "submit",
 }: {
   questions: QuizQuestion[];
   onSubmit: (answers: Record<string, number>) => Promise<QuizResult | { ok: false; error: string }>;
-  /** offered once graded; without it, the result is the end of the paper */
+  /** offered once graded, or when the paper is spent; without it the result is the end */
   onRetake?: () => void;
   retakeLabel?: string;
-  timeLimitMin?: number;
+  /** epoch ms, from the server; omitted for an untimed paper */
+  deadlineAt?: number | null;
+  /** the server's clock when the paper was drawn, to correct for this tab's */
+  serverNow?: number;
   submitLabel?: string;
 }) {
   const reduce = useReducedMotion();
@@ -51,8 +45,17 @@ export function Quiz({
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [result, setResult] = useState<QuizResult | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [left, setLeft] = useState(timeLimitMin ? timeLimitMin * 60 : null);
   const submitted = useRef(false);
+
+  // The clock is the server's deadline, not a countdown this tab keeps: a
+  // countdown restarts on reload and stops when the tab sleeps. The skew
+  // corrects for a device clock that is simply wrong.
+  const skew = useRef(serverNow != null ? serverNow - Date.now() : 0);
+  const remaining = () =>
+    deadlineAt == null
+      ? null
+      : Math.max(0, Math.ceil((deadlineAt - (Date.now() + skew.current)) / 1000));
+  const [left, setLeft] = useState(remaining);
 
   const answeredCount = Object.keys(answers).length;
 
@@ -79,15 +82,18 @@ export function Quiz({
   };
 
   useEffect(() => {
-    if (left == null || result) return;
-    if (left <= 0) {
-      if (!submitted.current && !error) submit();
-      return;
-    }
-    const t = setTimeout(() => setLeft((n) => (n == null ? null : n - 1)), 1000);
-    return () => clearTimeout(t);
+    if (deadlineAt == null || result) return;
+    const t = setInterval(() => setLeft(remaining()), 1000);
+    return () => clearInterval(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [left, result]);
+  }, [deadlineAt, result]);
+
+  useEffect(() => {
+    if (left === 0 && !result && !submitted.current && !error) submit();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [left]);
+
+  const wrong = new Set(result?.wrong ?? []);
 
   return (
     <div className="space-y-5">
@@ -96,29 +102,50 @@ export function Quiz({
           initial={reduce ? false : { opacity: 0, y: -4 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: DUR.slow, ease: EASE }}
-          className="flex items-baseline justify-between gap-4 border-b border-line pb-3"
+          className="space-y-3 border-b border-line pb-3"
         >
-          <span className={cn("text-2xl tabular-nums", result.passed ? "text-phos" : "text-warn")}>
-            {result.score}
-            <span className="text-lo">/{result.total}</span>
-          </span>
-          <span className="note text-lo">
-            {result.passed
-              ? "Passed. Read the explanations on anything you guessed — a lucky guess is still a gap."
-              : "Not passed. Nothing is locked; the explanations below are the point, and you can retake it."}
-            {onRetake && (
-              <>
-                {" "}
-                <button
-                  type="button"
-                  onClick={onRetake}
-                  className="tap text-info underline underline-offset-[3px] hover:text-hi"
-                >
-                  {retakeLabel}
-                </button>
-              </>
-            )}
-          </span>
+          <div className="flex items-baseline justify-between gap-4">
+            <span className={cn("text-2xl tabular-nums", result.passed ? "text-phos" : "text-warn")}>
+              {result.score}
+              <span className="text-lo">/{result.total}</span>
+            </span>
+            <span className="note text-lo">
+              {result.passed
+                ? "Passed. Read the explanations on anything you guessed — a lucky guess is still a gap."
+                : result.wrong
+                  ? "Not passed. The ones marked ✕ were wrong; their explanations open on Review from tomorrow. A retake is a fresh paper, in a new order."
+                  : "Not passed. The breakdown shows where the marks went; a retake draws a new paper."}
+              {onRetake && (
+                <>
+                  {" "}
+                  <button
+                    type="button"
+                    onClick={onRetake}
+                    className="tap text-info underline underline-offset-[3px] hover:text-hi"
+                  >
+                    {retakeLabel}
+                  </button>
+                </>
+              )}
+            </span>
+          </div>
+          {result.byModule && (
+            <ul className="divide-y divide-line-soft border-t border-line-soft">
+              {result.byModule.map((m) => (
+                <li key={m.title} className="flex items-baseline justify-between gap-4 py-1.5 text-sm">
+                  <span className="text-mid">{m.title}</span>
+                  <span
+                    className={cn(
+                      "tabular-nums",
+                      m.score === m.total ? "text-phos-dim" : m.score === 0 ? "text-bad" : "text-warn",
+                    )}
+                  >
+                    {m.score}/{m.total}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
         </motion.div>
       ) : (
         // sticky, so the count and the clock stay in view down a twenty-question
@@ -146,12 +173,20 @@ export function Quiz({
       <ol className="space-y-5">
         {questions.map((q, i) => {
           const chosen = answers[q.id];
-          const key = result?.key[q.id];
+          const key = result?.key?.[q.id];
+          const markedWrong = wrong.has(q.id);
           return (
             <li key={q.id} className="space-y-2">
               <p className="flex gap-3 text-sm leading-relaxed text-hi">
                 <span className="legend shrink-0 pt-1 tabular-nums">
-                  {String(i + 1).padStart(2, "0")}
+                  {result?.wrong ? (
+                    <span className={markedWrong ? "text-bad" : "text-phos-dim"}>
+                      {markedWrong ? "✕" : "✓"}
+                      <span className="sr-only">{markedWrong ? " wrong" : " right"}</span>
+                    </span>
+                  ) : (
+                    String(i + 1).padStart(2, "0")
+                  )}
                 </span>
                 <span className="prose-cairn">{q.prompt}</span>
               </p>
@@ -159,7 +194,7 @@ export function Quiz({
                 {q.options.map((opt, oi) => {
                   const isChosen = chosen === oi;
                   const isKey = key === oi;
-                  const wrongChoice = result != null && isChosen && !isKey;
+                  const wrongChoice = key != null && isChosen && !isKey;
                   return (
                     <li key={oi}>
                       <button
@@ -173,11 +208,14 @@ export function Quiz({
                           result == null && !isChosen && "border-line text-mid hover:border-line-hi hover:text-hi",
                           isKey && "border-phos text-phos",
                           wrongChoice && "border-bad text-bad",
-                          result != null && !isKey && !wrongChoice && "border-line-soft text-lo",
+                          // no key on a failed paper: your choice stays visible, uncoloured
+                          result != null && key == null && isChosen && "border-line-hi text-mid",
+                          result != null && !isKey && !wrongChoice && !(key == null && isChosen) &&
+                            "border-line-soft text-lo",
                         )}
                       >
                         <span className="legend shrink-0">
-                          {result != null && isKey ? "✓" : wrongChoice ? "✕" : String.fromCharCode(97 + oi)}
+                          {isKey ? "✓" : wrongChoice ? "✕" : String.fromCharCode(97 + oi)}
                         </span>
                         <span className="prose-cairn">{opt}</span>
                       </button>
@@ -185,7 +223,7 @@ export function Quiz({
                   );
                 })}
               </ul>
-              {result?.why[q.id] && (
+              {result?.why?.[q.id] && (
                 <motion.p
                   initial={reduce ? false : { opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -213,6 +251,18 @@ export function Quiz({
           {error && (
             <span role="alert" className="note w-full text-bad">
               {error}
+              {onRetake && (
+                <>
+                  {" "}
+                  <button
+                    type="button"
+                    onClick={onRetake}
+                    className="tap text-info underline underline-offset-[3px] hover:text-hi"
+                  >
+                    {retakeLabel}
+                  </button>
+                </>
+              )}
             </span>
           )}
           {answeredCount < questions.length && (

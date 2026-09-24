@@ -17,10 +17,10 @@ const field =
  * could not explain are just the same three things you meant to do last week.
  */
 export function WeekReviewForm({
-  journeyWeek,
   existing,
   dayOfWeek,
 }: {
+  /** display only — the server files the review against the week you are in */
   journeyWeek: number;
   existing: WeekReview | null;
   dayOfWeek: number;
@@ -40,7 +40,6 @@ export function WeekReviewForm({
     start(async () => {
       try {
         await submitWeekReview({
-          journeyWeek,
           answers,
           threePriorities: priorities,
         });

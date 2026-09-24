@@ -11,6 +11,7 @@
     "db:check": "tsx --env-file=.env.local scripts/schema-check.ts",
     "db:studio": "drizzle-kit studio",
     "seed": "tsx --env-file=.env.local scripts/seed.ts",
+    "migrate": "tsx --env-file=.env.local scripts/migrate.ts",
     "typecheck": "tsc --noEmit",
     "shots": "node scripts/shot.mjs",
     "invite": "tsx --env-file=.env.local scripts/invite.ts",

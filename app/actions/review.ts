@@ -111,7 +111,6 @@ export async function buryCard(cardId: number) {
  * ------------------------------------------------------------------ */
 
 const reviewSchema = z.object({
-  journeyWeek: z.number().int().min(1).max(60),
   answers: z.record(z.string().max(40), z.string().max(2000)),
   threePriorities: z.array(z.string().max(200)).max(3),
 });
@@ -121,10 +120,10 @@ const reviewSchema = z.object({
  *
  * Keyed by journey week rather than calendar week, like everything else here —
  * a week is seven active days, so the review arrives when you have done the
- * work, not when Sunday arrives.
+ * work, not when Sunday arrives. The week is the server's: it is the one you
+ * are in now, so a review cannot be filed against a week you have not reached.
  */
 export async function submitWeekReview(input: {
-  journeyWeek: number;
   answers: Record<string, string>;
   threePriorities: string[];
 }) {
@@ -140,10 +139,10 @@ export async function submitWeekReview(input: {
 
   await db.execute(sql`
     insert into week_reviews (user_id, journey_week, answers, three_priorities, submitted_at)
-    values (
-      ${userId}, ${parsed.journeyWeek},
+    select ${userId},
+      greatest(1, ceil(greatest(coalesce(max(day_index), 1), 1) / 7.0)::int),
       ${JSON.stringify(answers)}::jsonb, ${JSON.stringify(priorities)}::jsonb, now()
-    )
+    from journey_days where user_id = ${userId}
     on conflict (user_id, journey_week) do update set
       answers = excluded.answers,
       three_priorities = excluded.three_priorities,

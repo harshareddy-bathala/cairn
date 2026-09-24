@@ -3,7 +3,7 @@ import Link from "next/link";
 import { and, asc, eq } from "drizzle-orm";
 import { auth } from "@/auth";
 import { db } from "@/db";
-import { modules, problemAttempts, problems, resources, unitProgress, units } from "@/db/schema";
+import { hintReveals, modules, problemAttempts, problems, resources, unitProgress, units } from "@/db/schema";
 import { Panel } from "@/components/instrument/panel";
 import { Boot, BootItem } from "@/components/instrument/boot";
 import { ProblemList } from "@/components/instrument/problem-list";
@@ -47,7 +47,7 @@ export default async function UnitPage({ params }: { params: Promise<{ slug: str
 
   if (!unit) notFound();
 
-  const [res, probs, progress, attempts] = await Promise.all([
+  const [res, probs, progress, attempts, reveals] = await Promise.all([
     db.select().from(resources).where(eq(resources.unitSlug, slug)).orderBy(asc(resources.order)),
     db
       .select()
@@ -70,7 +70,13 @@ export default async function UnitPage({ params }: { params: Promise<{ slug: str
       .from(problemAttempts)
       .where(eq(problemAttempts.userId, session.user.id))
       .orderBy(asc(problemAttempts.id)),
+    // hints opened that no outcome has consumed yet
+    db
+      .select({ problemSlug: hintReveals.problemSlug })
+      .from(hintReveals)
+      .where(eq(hintReveals.userId, session.user.id)),
   ]);
+  const pendingReveal = new Set(reveals.map((r) => r.problemSlug));
 
   // last attempt wins; an earlier revealed hint stays revealed
   const latest = new Map<string, (typeof attempts)[number] & { everRevealed: boolean }>();
@@ -196,7 +202,7 @@ export default async function UnitPage({ params }: { params: Promise<{ slug: str
                 estMinutes: p.estMinutes,
                 isMust: p.isMust,
                 outcome: latest.get(p.slug)?.outcome ?? null,
-                hintRevealed: latest.get(p.slug)?.everRevealed ?? false,
+                hintRevealed: pendingReveal.has(p.slug) || (latest.get(p.slug)?.everRevealed ?? false),
                 redoDueDay: latest.get(p.slug)?.redoClearedAt
                   ? null
                   : (latest.get(p.slug)?.redoDueDay ?? null),

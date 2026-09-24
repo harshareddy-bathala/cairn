@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Quiz, type QuizQuestion, type QuizResult } from "./quiz";
-import { submitCheckpoint, submitExam, attachDefense, issueCertificate } from "@/app/actions/certification";
+import { Quiz } from "./quiz";
+import { attachDefense, issueCertificate, startQuiz, submitQuiz } from "@/app/actions/certification";
+import type { Paper } from "@/lib/quiz-sessions";
 import { cn } from "@/lib/cn";
 
 const input =
@@ -10,26 +11,56 @@ const input =
 const button =
   "ctl rounded-[3px] border border-line px-3 py-1.5 text-xs text-mid transition-colors duration-[120ms] hover:border-phos hover:text-phos disabled:opacity-50";
 
-export function CheckpointRunner({
-  moduleSlug,
-  questions,
-}: {
-  moduleSlug: string;
-  questions: QuizQuestion[];
-}) {
-  // a checkpoint is a fixed bank, so a retake is the same paper, fresh — the
-  // key remounts the quiz with nothing answered rather than reloading the page
-  const [round, setRound] = useState(0);
+/**
+ * Draws a sitting from the server and keeps it. A retake asks for a new one;
+ * the server resumes an unsubmitted sitting instead, so a reload keeps both
+ * the paper and — for an exam — the clock.
+ */
+function useSitting(kind: "checkpoint" | "exam", slug: string) {
+  const [paper, setPaper] = useState<Paper | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+
+  const begin = () =>
+    startTransition(async () => {
+      setError(null);
+      const r = await startQuiz(kind, slug).catch(() => null);
+      if (!r) return setError("Could not reach the server — try again.");
+      if (!r.ok) return setError(r.error);
+      setPaper(r);
+      window.scrollTo({ top: 0 });
+    });
+
+  return { paper, error, pending, begin };
+}
+
+export function CheckpointRunner({ moduleSlug, count }: { moduleSlug: string; count: number }) {
+  const { paper, error, pending, begin } = useSitting("checkpoint", moduleSlug);
+
+  if (!paper) {
+    return (
+      <div className="flex flex-wrap items-center gap-3">
+        <button type="button" onClick={begin} disabled={pending} className={cn("py-2", button)}>
+          {pending ? "drawing the paper…" : `begin — ${count} questions`}
+        </button>
+        <span className="note text-lo">Untimed. Each sitting shuffles the order and the options.</span>
+        {error && (
+          <p role="alert" className="note w-full text-bad">
+            {error}
+          </p>
+        )}
+      </div>
+    );
+  }
+
   return (
     <Quiz
-      key={round}
-      questions={questions}
+      // a retake is a new sitting, so the paper remounts with nothing answered
+      key={paper.sessionId}
+      questions={paper.questions}
       submitLabel="submit checkpoint"
-      onSubmit={(a) => submitCheckpoint(moduleSlug, a) as Promise<QuizResult>}
-      onRetake={() => {
-        setRound((r) => r + 1);
-        window.scrollTo({ top: 0 });
-      }}
+      onSubmit={(a) => submitQuiz(paper.sessionId, a)}
+      onRetake={begin}
     />
   );
 }
@@ -44,8 +75,7 @@ export function CheckpointRunner({
  */
 export function ExamRunner({
   phaseSlug,
-  seed,
-  questions,
+  questionCount,
   timeLimitMin,
   alreadyPassed,
   hasDefense,
@@ -54,8 +84,7 @@ export function ExamRunner({
   checkpointsNeeded,
 }: {
   phaseSlug: string;
-  seed: number;
-  questions: QuizQuestion[];
+  questionCount: number;
   timeLimitMin: number;
   alreadyPassed: boolean;
   hasDefense: boolean;
@@ -69,28 +98,47 @@ export function ExamRunner({
   const [url, setUrl] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [taking, setTaking] = useState(!alreadyPassed);
-  const [round, setRound] = useState(0);
   const [pending, startTransition] = useTransition();
+  const sitting = useSitting("exam", phaseSlug);
+  const paper = sitting.paper;
 
   return (
     <div className="space-y-5">
-      {taking ? (
+      {taking && paper ? (
         <Quiz
-          // a retake remounts the paper unanswered, with the clock reset
-          key={round}
-          questions={questions}
-          timeLimitMin={timeLimitMin}
+          // a retake is a new sitting: new questions, and the clock starts again
+          key={paper.sessionId}
+          questions={paper.questions}
+          deadlineAt={paper.deadlineAt}
+          serverNow={paper.serverNow}
           submitLabel="submit exam"
-          onRetake={() => {
-            setRound((r) => r + 1);
-            window.scrollTo({ top: 0 });
-          }}
+          onRetake={sitting.begin}
           onSubmit={async (a) => {
-            const r = await submitExam(phaseSlug, seed, a);
+            const r = await submitQuiz(paper.sessionId, a);
             if (r.ok && r.passed) setPassed(true);
             return r;
           }}
         />
+      ) : taking ? (
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={sitting.begin}
+            disabled={sitting.pending}
+            className="ctl rounded-[3px] border border-phos px-4 py-2 text-sm text-phos transition-colors duration-[120ms] hover:bg-phos/10 disabled:opacity-50"
+          >
+            {sitting.pending ? "drawing the paper…" : "begin the exam"}
+          </button>
+          <span className="note text-lo">
+            {questionCount} questions, {timeLimitMin} minutes from the moment you begin. A
+            reload keeps the paper and the clock.
+          </span>
+          {sitting.error && (
+            <p role="alert" className="note w-full text-bad">
+              {sitting.error}
+            </p>
+          )}
+        </div>
       ) : (
         <p className="text-sm text-mid">
           You have already passed this exam.{" "}

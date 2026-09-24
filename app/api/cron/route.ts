@@ -1,9 +1,11 @@
 import { timingSafeEqual } from "node:crypto";
 import type { NextRequest } from "next/server";
 import {
+  claimSend,
   composeReminder,
   dueReminders,
   recordSends,
+  releaseSend,
   type ReminderKind,
 } from "@/lib/reminders";
 import { sendMessage, telegramConfigured } from "@/lib/telegram";
@@ -20,8 +22,9 @@ export const dynamic = "force-dynamic";
  * own; the decisions all live in here, where they share the app's types and
  * database. The worker is a clock, nothing more.
  *
- * Deliberately idempotent: a slot is keyed by (user, kind, local date), so a
- * double-fire, a worker retry, and a manual curl all collapse to one message.
+ * Deliberately idempotent: a slot is keyed by (user, kind, local date), and it
+ * is claimed before the message goes out, so a double-fire, a worker retry, a
+ * manual curl and two ticks overlapping all collapse to one message.
  */
 
 function authorised(req: NextRequest) {
@@ -64,12 +67,17 @@ async function tick(dry: boolean) {
       continue;
     }
 
+    if (!(await claimSend({ ...base, dayIndex: msg.dayIndex }))) {
+      log.push({ user: ctx.handle ?? ctx.userId, kind: ctx.kind, status: "claimed-elsewhere" });
+      continue;
+    }
+
     try {
       await sendMessage({ chatId: ctx.chatId, text: msg.text, buttons: msg.buttons });
-      records.push({ ...base, status: "sent", dayIndex: msg.dayIndex, reason: null });
       log.push({ user: ctx.handle ?? ctx.userId, kind: ctx.kind, status: "sent" });
     } catch (e) {
-      // No row is written, so the next tick inside the grace window retries.
+      // The claim is given back, so the next tick inside the grace window retries.
+      await releaseSend(base).catch(() => {});
       log.push({
         user: ctx.handle ?? ctx.userId,
         kind: ctx.kind,
@@ -79,7 +87,8 @@ async function tick(dry: boolean) {
     }
   }
 
-  // One write for the whole tick, whatever the fan-out was.
+  // The skips in one write, whatever the fan-out was; sends were claimed as
+  // they went.
   if (!dry) await recordSends(records);
 
   return {

@@ -1,4 +1,5 @@
 import { chromium } from "playwright";
+import { E2E_EMAIL } from "./e2e-account.mjs";
 import { mkdir } from "node:fs/promises";
 
 /**
@@ -22,7 +23,10 @@ import { mkdir } from "node:fs/promises";
  * error message instead.
  */
 const BASE = process.env.BASE ?? "http://localhost:3000";
-const EMAIL = process.env.SHOT_EMAIL ?? "harshareddy.bathala@gmail.com";
+// the e2e account by default: screenshots are read-only, but they are still a
+// signed-in session on the production database, and SHOT_EMAIL is there for
+// shooting a real account on purpose
+const EMAIL = process.env.SHOT_EMAIL ?? E2E_EMAIL;
 
 const PAGES = [
   ["today", "/today"],

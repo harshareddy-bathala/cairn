@@ -192,19 +192,15 @@ const storySchema = z.object({
 export async function saveStory(input: z.input<typeof storySchema>) {
   const userId = await requireUser();
   const v = storySchema.parse(input);
-  // update-or-insert in one statement: the prompts are a fixed set, so there is
-  // one story per question, and there is no unique index to lean on
+  // star_stories_user_prompt_idx makes this a real upsert: two saves racing
+  // (autosave and a click) used to be able to leave two half-stories
   await db.execute(sql`
-    with upd as (
-      update star_stories set situation = ${v.situation ?? ""}, task = ${v.task ?? ""},
-        action = ${v.action ?? ""}, result = ${v.result ?? ""}, updated_at = now()
-      where user_id = ${userId} and prompt = ${v.prompt}
-      returning id
-    )
     insert into star_stories (user_id, prompt, situation, task, action, result, updated_at)
-    select ${userId}, ${v.prompt}, ${v.situation ?? ""}, ${v.task ?? ""}, ${v.action ?? ""},
-           ${v.result ?? ""}, now()
-    where not exists (select 1 from upd)
+    values (${userId}, ${v.prompt}, ${v.situation ?? ""}, ${v.task ?? ""}, ${v.action ?? ""},
+            ${v.result ?? ""}, now())
+    on conflict (user_id, prompt) do update set
+      situation = excluded.situation, task = excluded.task, action = excluded.action,
+      result = excluded.result, updated_at = now()
   `);
   revalidatePath("/career");
   revalidatePath("/metrics");
@@ -237,7 +233,9 @@ export async function rehearseStory(prompt: string) {
 export async function setDeliverable(slug: string, done: boolean, evidenceUrl?: string) {
   const userId = await requireUser();
   const s = z.string().min(1).max(200).parse(slug);
-  const evidence = optionalSafeUrlSchema.parse(evidenceUrl) ?? null;
+  const link = optionalSafeUrlSchema.safeParse(evidenceUrl);
+  if (!link.success) return { ok: false as const, error: FIELD_ERRORS.link! };
+  const evidence = link.data ?? null;
 
   if (!done) {
     await db.execute(sql`
@@ -245,7 +243,7 @@ export async function setDeliverable(slug: string, done: boolean, evidenceUrl?: 
     `);
     revalidatePath("/projects");
     revalidatePath("/metrics");
-    return { done: false, dayIndex: null, evidenceUrl: null };
+    return { ok: true as const, done: false, dayIndex: null, evidenceUrl: null };
   }
 
   const res = await db.execute<{ day_index: number; evidence_url: string | null }>(sql`
@@ -263,6 +261,7 @@ export async function setDeliverable(slug: string, done: boolean, evidenceUrl?: 
   // the way in, and a caller that keeps the raw string holds a value its own
   // href check will reject
   return {
+    ok: true as const,
     done: true,
     dayIndex: Number(res.rows[0]!.day_index),
     evidenceUrl: res.rows[0]!.evidence_url,
@@ -279,7 +278,9 @@ export async function setDeliverable(slug: string, done: boolean, evidenceUrl?: 
 export async function acceptPledge(projectSlug: string, repoUrl?: string) {
   const userId = await requireUser();
   const s = z.string().min(1).max(120).parse(projectSlug);
-  const repo = optionalSafeUrlSchema.parse(repoUrl) ?? null;
+  const link = optionalSafeUrlSchema.safeParse(repoUrl);
+  if (!link.success) return { ok: false as const, error: FIELD_ERRORS.link! };
+  const repo = link.data ?? null;
   await db.execute(sql`
     insert into user_projects (user_id, project_slug, repo_url, pledge_accepted_at)
     values (${userId}, ${s}, ${repo}, now())
@@ -288,13 +289,15 @@ export async function acceptPledge(projectSlug: string, repoUrl?: string) {
       pledge_accepted_at = coalesce(user_projects.pledge_accepted_at, excluded.pledge_accepted_at)
   `);
   revalidatePath("/projects");
-  return { ok: true };
+  return { ok: true as const };
 }
 
 export async function setRepoUrl(projectSlug: string, repoUrl: string) {
   const userId = await requireUser();
   const s = z.string().min(1).max(120).parse(projectSlug);
-  const repo = optionalSafeUrlSchema.parse(repoUrl) ?? null;
+  const link = optionalSafeUrlSchema.safeParse(repoUrl);
+  if (!link.success) return { ok: false as const, error: FIELD_ERRORS.link! };
+  const repo = link.data ?? null;
   const res = await db.execute<{ repo_url: string | null }>(sql`
     insert into user_projects (user_id, project_slug, repo_url)
     values (${userId}, ${s}, ${repo})
@@ -302,5 +305,5 @@ export async function setRepoUrl(projectSlug: string, repoUrl: string) {
     returning repo_url
   `);
   revalidatePath("/projects");
-  return { repoUrl: res.rows[0]?.repo_url ?? null };
+  return { ok: true as const, repoUrl: res.rows[0]?.repo_url ?? null };
 }

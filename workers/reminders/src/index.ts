@@ -29,6 +29,20 @@ async function tick(env: Env): Promise<Response> {
   });
 }
 
+/** constant-time compare, via digests so the lengths never differ */
+async function sameSecret(a: string, b: string) {
+  const enc = new TextEncoder();
+  const [x, y] = await Promise.all([
+    crypto.subtle.digest("SHA-256", enc.encode(a)),
+    crypto.subtle.digest("SHA-256", enc.encode(b)),
+  ]);
+  const u = new Uint8Array(x);
+  const v = new Uint8Array(y);
+  let diff = 0;
+  for (let i = 0; i < u.length; i++) diff |= u[i]! ^ v[i]!;
+  return diff === 0;
+}
+
 export default {
   async scheduled(_event: ScheduledController, env: Env, ctx: ExecutionContext) {
     ctx.waitUntil(
@@ -45,8 +59,19 @@ export default {
     );
   },
 
-  /** Manual fire, for checking the wiring: `curl https://<worker>/` */
-  async fetch(_req: Request, env: Env): Promise<Response> {
+  /**
+   * Manual fire, for checking the wiring:
+   *   curl -H "authorization: Bearer $CRON_SECRET" https://<worker>/
+   *
+   * It needs the same secret the app does. Open, it was a public button that
+   * sent everyone's reminders on demand — the app's own check never saw the
+   * caller, because the worker attached the secret for them.
+   */
+  async fetch(req: Request, env: Env): Promise<Response> {
+    const offered = req.headers.get("authorization") ?? "";
+    if (!env.CRON_SECRET || !(await sameSecret(offered, `Bearer ${env.CRON_SECRET}`))) {
+      return new Response("not found", { status: 404 });
+    }
     const res = await tick(env);
     return new Response(await res.text(), {
       status: res.status,

@@ -1,18 +1,24 @@
 import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
-import { journeyDays, problemAttempts, unitProgress, users } from "@/db/schema";
+import {
+  certificates, hintReveals, journeyDays, problemAttempts, quizSessions, unitProgress, units, modules,
+  users,
+} from "@/db/schema";
 import { openToday, getJourneyState, streaksOf } from "@/lib/journey";
-import { getRedoQueue } from "@/lib/progress";
+import { getRedoQueue, recordAttempt, revealHintFor } from "@/lib/progress";
 import { generatePlan, getDayContext, getTodayPlan, budgetWith, cadenceDueFor } from "@/lib/planner";
 import { aptitudeTopicFor } from "@/content/aptitude";
 import { CADENCE, DSA_CURVE, dsaTargetAt } from "@/content/cadence";
 import { getMetrics } from "@/lib/sidetracks";
 import { modules as contentModules, validateContent } from "@/content";
 import { questions, questionsForModule, EXAM_SIZE, CHECKPOINT_PASS } from "@/content/checkpoints";
-import { examPaper, getCertificationState, shapeCertification } from "@/lib/certification";
+import { getCertificationState, shapeCertification } from "@/lib/certification";
+import { drawCheckpoint, drawExam, grade, keyFor, toCanonical, toDisplay } from "@/lib/quiz-paper";
+import { startSitting, submitSitting, type Paper } from "@/lib/quiz-sessions";
+import { getMisses } from "@/lib/misses";
 
 function ok(label: string, pass: boolean, detail = "") {
-  console.log(`${label.padEnd(23)}-> ${detail.padEnd(28)} ${pass ? "PASS" : "FAIL"}`);
+  console.log(`${label.padEnd(28)}-> ${detail.padEnd(28)} ${pass ? "PASS" : "FAIL"}`);
   if (!pass) process.exitCode = 1;
 }
 
@@ -23,13 +29,27 @@ async function main() {
   const [old] = await db.select().from(users).where(eq(users.email, EMAIL));
   if (old) await db.delete(users).where(eq(users.id, old.id));
   const [u] = await db.insert(users).values({ email: EMAIL, timezone: "Asia/Kolkata" }).returning();
+  try {
+    await checks(u);
+  } finally {
+    await db.delete(users).where(eq(users.id, u.id));
+    console.log("cleaned up");
+  }
+  // the exit code is the result: CI and deploy scripts read it, not the log
+  process.exit(process.exitCode ?? 0);
+}
 
-  // day 1
-  const d1 = await openToday(u.id);
-  console.log(`open day               -> day_index ${d1}  ${d1 === 1 ? "PASS" : "FAIL"}`);
+async function checks(u: typeof users.$inferSelect) {
+  // day 1 — opened by twenty requests at once, the way a page load, a
+  // prefetch and a tap on a second tab arrive together. Each used to be able
+  // to lose the insert race and come back with no day at all.
+  const opened = await Promise.all(Array.from({ length: 20 }, () => openToday(u.id)));
+  const d1 = opened[0]!;
+  ok("open day", d1 === 1, `day_index ${d1}`);
+  ok("20 concurrent opens", opened.every((d) => d === 1), `${new Set(opened).size} distinct day`);
 
   const again = await openToday(u.id);
-  console.log(`open twice same day    -> day_index ${again}  ${again === 1 ? "PASS (no drift)" : "FAIL"}`);
+  ok("open twice same day", again === 1, `day_index ${again}, no drift`);
 
   // an editorial schedules a redo 3 ACTIVE days out
   await db.insert(problemAttempts).values({
@@ -37,11 +57,11 @@ async function main() {
     redoDueDay: d1 + 3,
   });
   let q = await getRedoQueue(u.id, d1);
-  console.log(`redo on day 1          -> ${q.length} due  ${q.length === 0 ? "PASS (not yet)" : "FAIL"}`);
+  ok("redo on day 1", q.length === 0, `${q.length} due, not yet`);
   q = await getRedoQueue(u.id, d1 + 2);
-  console.log(`redo on day 3          -> ${q.length} due  ${q.length === 0 ? "PASS (not yet)" : "FAIL"}`);
+  ok("redo on day 3", q.length === 0, `${q.length} due, not yet`);
   q = await getRedoQueue(u.id, d1 + 3);
-  console.log(`redo on day 4          -> ${q.length} due  ${q.length === 1 ? "PASS (surfaced)" : "FAIL"}`);
+  ok("redo on day 4", q.length === 1, `${q.length} due, surfaced`);
 
   // simulate skipping 5 calendar days: close day 1, then fake days 2 and 3
   await db.update(journeyDays).set({ closedAt: new Date() })
@@ -51,7 +71,7 @@ async function main() {
     { userId: u.id, dayIndex: 3, calendarDate: "2026-09-22", closedAt: new Date() },
   ]);
   const s = await getJourneyState(u.id);
-  console.log(`after 2 skipped weeks  -> day_index ${s.dayIndex}, ${s.stones.length} stones  ${s.dayIndex === 3 ? "PASS (no drift)" : "FAIL"}`);
+  ok("after 2 skipped weeks", s.dayIndex === 3, `day_index ${s.dayIndex}, ${s.stones.length} stones`);
 
   // a clean re-solve clears the redo
   await db.update(problemAttempts).set({ redoClearedAt: new Date() })
@@ -61,14 +81,15 @@ async function main() {
     redoClearedAt: new Date(),
   });
   q = await getRedoQueue(u.id, 99);
-  console.log(`after clean re-solve   -> ${q.length} due  ${q.length === 0 ? "PASS (cleared)" : "FAIL"}`);
+  ok("after clean re-solve", q.length === 0, `${q.length} due, cleared`);
 
   // unit completion moves the trail
   await db.insert(unitProgress).values({
     userId: u.id, unitSlug: "dsa-bs-answer-space", state: "done", completedOnDayIndex: 3,
   });
   const s2 = await getJourneyState(u.id);
-  console.log(`unit done              -> ${s2.unitsDone}/${s2.unitsTotal} units, velocity ${s2.velocity.toFixed(2)} u/d  ${s2.unitsDone === 1 ? "PASS" : "FAIL"}`);
+  ok("unit done", s2.unitsDone === 1,
+    `${s2.unitsDone}/${s2.unitsTotal} units, ${s2.velocity.toFixed(2)} u/d`);
   // an early day with little finished must not read as a failure state
   ok("pace budget has slack", s2.paceBudget > 0.5,
     `${(s2.paceBudget * 100).toFixed(1)}% after 3 days, 1 unit`);
@@ -264,6 +285,22 @@ async function main() {
     metrics.deliverablesTotal > 0 && Array.isArray(metrics.aptitude),
     `${metrics.deliverablesTotal} deliverables, ${metrics.dsaSolved} dsa`);
 
+  // Opening a hint used to insert a `hinted` attempt, and every solved-count
+  // reads `hinted` as solved — so the reveal alone was a solve.
+  await revealHintFor(u.id, "lc-two-sum");
+  const afterReveal = await getMetrics(u.id, 1);
+  ok("a reveal is not a solve", afterReveal.dsaSolved === metrics.dsaSolved,
+    `${afterReveal.dsaSolved} solved after revealing`);
+  const claimedClean = await recordAttempt(u.id, "lc-two-sum", "clean", 12);
+  const pendingReveals = await db.select().from(hintReveals).where(eq(hintReveals.userId, u.id));
+  ok("reveal downgrades clean", claimedClean?.outcome === "hinted" && pendingReveals.length === 0,
+    `recorded ${claimedClean?.outcome}, ${pendingReveals.length} pending`);
+  const afterSolve = await getMetrics(u.id, 1);
+  ok("the outcome is the solve", afterSolve.dsaSolved === metrics.dsaSolved + 1,
+    `${afterSolve.dsaSolved} solved`);
+  const second = await recordAttempt(u.id, "lc-two-sum", "clean", 5);
+  ok("a reveal is spent once", second?.outcome === "clean", `recorded ${second?.outcome}`);
+
   /* ---------------- certification ---------------- */
   console.log("");
 
@@ -272,9 +309,9 @@ async function main() {
     `${questions.length} questions over ${contentModules.length} modules`);
 
   const p1Modules = contentModules.filter((m) => m.phaseSlug === "foundations").map((m) => m.slug);
-  const paperA = examPaper("foundations", p1Modules, 1234);
-  const paperB = examPaper("foundations", p1Modules, 1234);
-  const paperC = examPaper("foundations", p1Modules, 9999);
+  const paperA = drawExam(p1Modules, 1234);
+  const paperB = drawExam(p1Modules, 1234);
+  const paperC = drawExam(p1Modules, 9999);
   ok("exam paper is deterministic",
     paperA.map((q) => q.id).join() === paperB.map((q) => q.id).join(), "same seed, same paper");
   ok("exam paper varies by seed",
@@ -285,6 +322,50 @@ async function main() {
     `${new Set(paperA.map((q) => q.moduleSlug)).size} modules represented`);
   ok("exam has no repeats",
     new Set(paperA.map((q) => q.id)).size === paperA.length, "");
+
+  // The bank was authored with the answer in position b 80 times in 86. Over
+  // many sittings, where the right answer is displayed must be uniform.
+  const probe = questions[0]!;
+  const seen = [0, 0, 0, 0];
+  let roundTrip = true;
+  for (let seed = 1; seed <= 10_000; seed++) {
+    const d = toDisplay(seed, probe.id, probe.answer);
+    seen[d]!++;
+    if (toCanonical(seed, probe.id, d) !== probe.answer) roundTrip = false;
+  }
+  ok("answer position uniform",
+    seen.every((n) => Math.abs(n / 10_000 - 0.25) <= 0.02),
+    seen.map((n) => `${(n / 100).toFixed(1)}%`).join(" "));
+  ok("display maps back", roundTrip, "toCanonical(toDisplay(x)) = x");
+
+  // "always the second option" across every checkpoint, one sitting each
+  let alwaysB = 0;
+  let passedByB = 0;
+  for (const m of contentModules) {
+    const seed = 7000 + m.order * 31 + m.slug.length;
+    const paper = drawCheckpoint(m.slug, seed);
+    const g = grade(paper, seed, Object.fromEntries(paper.map((q) => [q.id, 1])));
+    alwaysB += g.score;
+    if (g.score / g.total >= CHECKPOINT_PASS) passedByB++;
+  }
+  ok("always-b no longer passes", passedByB <= 1,
+    `${passedByB}/${contentModules.length} passed, ${alwaysB}/${questions.length} right`);
+
+  const keyed = drawCheckpoint("dsa-linked-lists", 42);
+  const { key } = keyFor(keyed, 42);
+  const perfect = grade(keyed, 42, key);
+  ok("the key grades perfect", perfect.score === perfect.total && perfect.wrong.length === 0,
+    `${perfect.score}/${perfect.total}, stored canonically`);
+  ok("attempts store canonical",
+    keyed.every((q) => perfect.canonical[q.id] === q.answer), "misses keep working");
+
+  // a double click on "issue" must not mint a second certificate
+  const certRow = { userId: u.id, phaseSlug: "foundations", snapshot: {} };
+  await db.insert(certificates).values(certRow).onConflictDoNothing();
+  await db.insert(certificates).values(certRow).onConflictDoNothing();
+  const certs = await db.select().from(certificates).where(eq(certificates.userId, u.id));
+  ok("one certificate a phase", certs.length === 1, `${certs.length} after two issues`);
+  await db.delete(certificates).where(eq(certificates.userId, u.id));
 
   // the exam is gated on progress; progress is never gated on the exam
   const certRaw = await getCertificationState(u.id);
@@ -315,8 +396,93 @@ async function main() {
   ok("open day keeps streak",
     streaksOf(["2026-09-08"], "2026-09-09").current === 1, "yesterday still counts");
 
-  await db.delete(users).where(eq(users.id, u.id));
-  console.log("cleaned up");
-  process.exit(0);
+  await sittings(u.id);
+}
+
+/**
+ * The rules a checkpoint or exam sitting is held to, exercised through the
+ * same functions the server actions call. Last, because it banks units and
+ * advances the day — both of which the checks above assume have not happened.
+ */
+async function sittings(userId: string) {
+  console.log("");
+  const byId = new Map(questions.map((q) => [q.id, q]));
+  /** answers by option *text*, the way a person who knows the material answers */
+  const answer = (paper: Paper, right: boolean) =>
+    Object.fromEntries(paper.questions.map((q) => {
+      const correct = byId.get(q.id)!.options[byId.get(q.id)!.answer];
+      const i = q.options.findIndex((o) => (o === correct) === right);
+      return [q.id, i];
+    }));
+
+  const lockedExam = await startSitting(userId, "exam", "foundations");
+  ok("locked exam is refused", !lockedExam.ok, lockedExam.ok ? "served a paper" : lockedExam.error.slice(0, 28));
+
+  const cp = await startSitting(userId, "checkpoint", "dsa-linked-lists");
+  if (!cp.ok) return ok("checkpoint sitting starts", false, cp.error);
+  ok("paper carries no key",
+    cp.questions.every((q) => !("answer" in q) && !("why" in q)), `${cp.questions.length} questions`);
+  const resumed = await startSitting(userId, "checkpoint", "dsa-linked-lists");
+  ok("open sitting resumes", resumed.ok && resumed.sessionId === cp.sessionId, "same paper on reload");
+
+  const failed = await submitSitting(userId, cp.sessionId, answer(cp, false));
+  ok("failed checkpoint: no key",
+    failed.ok && !failed.passed && !failed.key && !failed.why && failed.wrong?.length === cp.questions.length,
+    failed.ok ? `${failed.score}/${failed.total}, ${failed.wrong?.length} marked` : failed.error);
+  const again = await submitSitting(userId, cp.sessionId, answer(cp, true));
+  ok("a sitting grades once", !again.ok, again.ok ? "graded twice" : "second submit refused");
+
+  const misses = await getMisses(userId);
+  ok("today's misses wait", misses.length === 0, `${misses.length} shown the same day`);
+
+  const cp2 = await startSitting(userId, "checkpoint", "dsa-linked-lists");
+  if (!cp2.ok) return ok("retake starts", false, cp2.error);
+  ok("a retake is a new sitting", cp2.sessionId !== cp.sessionId, "fresh seed");
+  const passed = await submitSitting(userId, cp2.sessionId, answer(cp2, true));
+  ok("pass returns the key", passed.ok && passed.passed && Boolean(passed.key && passed.why),
+    passed.ok ? `${passed.score}/${passed.total}` : passed.error);
+
+  // a paper that arrives after its clock (and the grace) is spent, not graded
+  const cp3 = await startSitting(userId, "checkpoint", "dsa-strings");
+  if (!cp3.ok) return ok("late sitting starts", false, cp3.error);
+  await db.update(quizSessions).set({ deadlineAt: new Date(Date.now() - 5 * 60_000) })
+    .where(eq(quizSessions.id, cp3.sessionId));
+  const late = await submitSitting(userId, cp3.sessionId, answer(cp3, true));
+  const lateAgain = await submitSitting(userId, cp3.sessionId, answer(cp3, true));
+  ok("late paper is refused", !late.ok && !lateAgain.ok, late.ok ? "graded" : late.error.slice(0, 28));
+
+  // an exam session conjured past the lock is still refused at grading
+  const forged = drawExam(contentModules.filter((m) => m.phaseSlug === "foundations").map((m) => m.slug), 5);
+  const [fs] = await db.insert(quizSessions).values({
+    userId, kind: "exam", subjectSlug: "foundations", seed: 5, questionIds: forged.map((q) => q.id),
+  }).returning();
+  const forgedGrade = await submitSitting(userId, fs!.id, {});
+  ok("lock re-checked at grading", !forgedGrade.ok, forgedGrade.ok ? "graded" : "refused");
+
+  // bank the phase, then fail the exam on purpose
+  const p1Units = await db.select({ slug: units.slug }).from(units)
+    .innerJoin(modules, eq(modules.slug, units.moduleSlug)).where(eq(modules.phaseSlug, "foundations"));
+  await db.insert(unitProgress)
+    .values(p1Units.map((x) => ({ userId, unitSlug: x.slug, state: "done" as const, completedOnDayIndex: 0 })))
+    .onConflictDoNothing();
+  const exam = await startSitting(userId, "exam", "foundations");
+  if (!exam.ok) return ok("unlocked exam starts", false, exam.error);
+  const minutesLeft = exam.deadlineAt ? (exam.deadlineAt - exam.serverNow) / 60_000 : 0;
+  ok("exam clock is the server's", minutesLeft > 29 && minutesLeft <= 30, `${minutesLeft.toFixed(1)} min`);
+  const examFail = await submitSitting(userId, exam.sessionId, answer(exam, false));
+  ok("failed exam: no key",
+    examFail.ok && !examFail.passed && !examFail.key && !examFail.why && (examFail.byModule?.length ?? 0) > 0,
+    examFail.ok ? `${examFail.score}/${examFail.total}, ${examFail.byModule?.length} modules` : examFail.error);
+  const exam2 = await startSitting(userId, "exam", "foundations");
+  ok("exam retake is a new paper",
+    exam2.ok && exam2.questions.map((q) => q.id).join() !== exam.questions.map((q) => q.id).join(),
+    "different questions");
+
+  // a miss that is not followed by a pass, then the next active day
+  const cp4 = await startSitting(userId, "checkpoint", "dsa-bit-manipulation");
+  if (cp4.ok) await submitSitting(userId, cp4.sessionId, answer(cp4, false));
+  await db.insert(journeyDays).values({ userId, dayIndex: 4, calendarDate: "2026-09-23" });
+  const tomorrow = await getMisses(userId);
+  ok("misses open the next day", tomorrow.length > 0, `${tomorrow.length} with explanations`);
 }
 main().catch((e) => { console.error(e); process.exit(1); });

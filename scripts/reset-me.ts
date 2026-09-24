@@ -4,19 +4,26 @@ import { users } from "@/db/schema";
 import { progressTables } from "@/lib/progress-tables";
 
 /**
- * Wipes your own progress from the command line, keeping the curriculum.
+ * Wipes one account's progress from the command line, keeping the curriculum.
+ *
+ *   npm run reset-me                          the owner's account
+ *   npm run reset-me -- --email x@cairn.local another one (the e2e account)
  *
  * The table list comes from `lib/progress-tables`, shared with the reset button
  * in Settings so the two cannot disagree about what "progress" means.
  */
+function emailArg() {
+  const i = process.argv.indexOf("--email");
+  return (i >= 0 ? process.argv[i + 1] : undefined) ?? "harshareddy.bathala@gmail.com";
+}
+
 async function main() {
-  const [u] = await db
-    .select()
-    .from(users)
-    .where(eq(users.email, "harshareddy.bathala@gmail.com"));
+  const email = emailArg().toLowerCase();
+  const [u] = await db.select().from(users).where(eq(users.email, email));
   if (!u) {
-    console.error("no such user");
-    process.exit(1);
+    // an account that has never signed in has nothing to reset
+    console.log(`reset: ${email} has not signed in yet — nothing to reset`);
+    process.exit(0);
   }
 
   const tables = progressTables();
@@ -29,7 +36,7 @@ async function main() {
   // that claims a handle should not leave it claimed
   await db.update(users).set({ handle: null, onboardedAt: null }).where(eq(users.id, u.id));
 
-  console.log(`reset (${tables.length} tables)`);
+  console.log(`reset ${email} (${tables.length} tables)`);
   process.exit(0);
 }
 

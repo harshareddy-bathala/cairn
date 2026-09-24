@@ -2,6 +2,12 @@ import {
   pgTable, text, integer, boolean, timestamp, jsonb, primaryKey,
   uniqueIndex, index, real, serial,
 } from "drizzle-orm/pg-core";
+
+/*
+ * Applying a change here to a database that already has data goes through
+ * scripts/migrate.ts (`npm run migrate`) — additive, idempotent SQL that
+ * mirrors what is declared below. `npm run db:check` fails when they drift.
+ */
 import type { AdapterAccountType } from "next-auth/adapters";
 
 /* ------------------------------------------------------------------ *
@@ -225,6 +231,24 @@ export const problemAttempts = pgTable(
 
 export type Outcome = "clean" | "hinted" | "editorial" | "failed";
 
+/**
+ * A hint opened before any outcome was logged.
+ *
+ * Revealing used to insert a `hinted` attempt on its own, and every count of
+ * solved problems reads `hinted` as solved — so opening the hint *was* solving
+ * it. A reveal is now held here until an outcome arrives, which consumes it and
+ * downgrades a claimed "clean" to "hinted".
+ */
+export const hintReveals = pgTable(
+  "hint_reveals",
+  {
+    userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    problemSlug: text("problem_slug").notNull().references(() => problems.slug, { onDelete: "cascade" }),
+    revealedAt: timestamp("revealed_at", { mode: "date" }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.problemSlug] })],
+);
+
 /** one row per day you actually showed up — the spine of the whole product */
 export const journeyDays = pgTable(
   "journey_days",
@@ -317,17 +341,22 @@ export const mockSessions = pgTable("mock_sessions", {
 
 export type MockKind = "dsa_pair" | "tech_mcq" | "coding_round" | "full_mock" | "hr" | "system_design";
 
-export const starStories = pgTable("star_stories", {
-  id: serial("id").primaryKey(),
-  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  prompt: text("prompt").notNull(),
-  situation: text("situation").notNull().default(""),
-  task: text("task").notNull().default(""),
-  action: text("action").notNull().default(""),
-  result: text("result").notNull().default(""),
-  rehearsedCount: integer("rehearsed_count").notNull().default(0),
-  updatedAt: timestamp("updated_at", { mode: "date" }).notNull().defaultNow(),
-});
+export const starStories = pgTable(
+  "star_stories",
+  {
+    id: serial("id").primaryKey(),
+    userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    prompt: text("prompt").notNull(),
+    situation: text("situation").notNull().default(""),
+    task: text("task").notNull().default(""),
+    action: text("action").notNull().default(""),
+    result: text("result").notNull().default(""),
+    rehearsedCount: integer("rehearsed_count").notNull().default(0),
+    updatedAt: timestamp("updated_at", { mode: "date" }).notNull().defaultNow(),
+  },
+  // one story per prompt: two saves racing must not leave two half-stories
+  (t) => [uniqueIndex("star_stories_user_prompt_idx").on(t.userId, t.prompt)],
+);
 
 export const projects = pgTable("projects", {
   slug: text("slug").primaryKey(),
@@ -417,13 +446,46 @@ export const examAttempts = pgTable("exam_attempts", {
   createdAt: timestamp("created_at", { mode: "date" }).notNull().defaultNow(),
 });
 
-export const certificates = pgTable("certificates", {
-  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
-  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  phaseSlug: text("phase_slug").notNull().references(() => phases.slug),
-  issuedOn: timestamp("issued_on", { mode: "date" }).notNull().defaultNow(),
-  snapshot: jsonb("snapshot").$type<Record<string, unknown>>().notNull(),
-});
+export const certificates = pgTable(
+  "certificates",
+  {
+    id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+    userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    phaseSlug: text("phase_slug").notNull().references(() => phases.slug),
+    issuedOn: timestamp("issued_on", { mode: "date" }).notNull().defaultNow(),
+    snapshot: jsonb("snapshot").$type<Record<string, unknown>>().notNull(),
+  },
+  (t) => [uniqueIndex("certificates_user_phase_idx").on(t.userId, t.phaseSlug)],
+);
+
+/**
+ * One sitting of a checkpoint or an exam — the paper, as the server drew it.
+ *
+ * The seed decides which questions appear and in what option order, and it is
+ * random per sitting: a retake is a new paper, so "the answer was b last time"
+ * is worth nothing. Grading reads the paper from here rather than trusting what
+ * the browser says it was shown, a session can be submitted exactly once, and
+ * an exam's clock is `deadline_at` on the server, not a countdown in the tab.
+ */
+export const quizSessions = pgTable(
+  "quiz_sessions",
+  {
+    id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+    userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    kind: text("kind").$type<QuizKind>().notNull(),
+    /** module slug for a checkpoint, phase slug for an exam */
+    subjectSlug: text("subject_slug").notNull(),
+    seed: integer("seed").notNull(),
+    /** the paper, in the order it was shown */
+    questionIds: jsonb("question_ids").$type<string[]>().notNull(),
+    startedAt: timestamp("started_at", { mode: "date" }).notNull().defaultNow(),
+    deadlineAt: timestamp("deadline_at", { mode: "date" }),
+    submittedAt: timestamp("submitted_at", { mode: "date" }),
+  },
+  (t) => [index("quiz_sessions_user_idx").on(t.userId, t.kind, t.subjectSlug)],
+);
+
+export type QuizKind = "checkpoint" | "exam";
 
 /* ------------------------------------------------------------------ *
  * reminders

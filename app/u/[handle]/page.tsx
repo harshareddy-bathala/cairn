@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { sql } from "drizzle-orm";
 import { db } from "@/db";
+import { dsaSolvedSql } from "@/lib/progress";
 import { Panel } from "@/components/instrument/panel";
 import { Readout } from "@/components/instrument/readout";
 import { Cairn } from "@/components/instrument/cairn";
@@ -50,14 +51,8 @@ export default async function ProfilePage({
           where user_id = u.id and state = 'done'
         ),
         'unitsTotal', (select count(*)::int from units),
-        'problemsClean', (
-          select count(distinct problem_slug)::int from problem_attempts
-          where user_id = u.id and outcome = 'clean'
-        ),
-        'problemsSolved', (
-          select count(distinct problem_slug)::int from problem_attempts
-          where user_id = u.id and outcome in ('clean', 'hinted')
-        ),
+        'problemsClean', ${dsaSolvedSql(sql`u.id`, "clean")},
+        'problemsSolved', ${dsaSolvedSql(sql`u.id`)},
         'deliverables', (
           select count(*)::int from deliverable_done where user_id = u.id
         ),

@@ -107,15 +107,19 @@ export function DayClose({
           setJustClosed(true);
           // the stone lands optimistically; if the write does not, it is taken
           // back and the two sentences stay in their fields
-          await closeDay({
+          const r = await closeDay({
             learned: learned.trim() || undefined,
             tomorrowFirstTask: task.trim() || undefined,
             minutes: minutes ? Math.min(Number(minutes), 1440) : undefined,
-          }).catch(() => {
+          }).catch(() => ({
+            ok: false as const,
+            error: "The day did not close — nothing was lost. Try again.",
+          }));
+          if (!r.ok) {
             setClosed(false);
             setJustClosed(false);
-            setError("The day did not close — nothing was lost. Try again.");
-          });
+            setError(r.error);
+          }
         })
       }
       className="space-y-3"
@@ -125,6 +129,7 @@ export function DayClose({
         <textarea
           value={learned}
           onChange={(e) => setLearned(e.target.value)}
+          required
           rows={2}
           maxLength={2000}
           placeholder="one honest sentence — not a summary of what you read"

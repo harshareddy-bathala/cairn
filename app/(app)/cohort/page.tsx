@@ -3,6 +3,7 @@ import Link from "next/link";
 import { sql } from "drizzle-orm";
 import { auth } from "@/auth";
 import { db } from "@/db";
+import { dsaSolvedSql } from "@/lib/progress";
 import { Panel } from "@/components/instrument/panel";
 import { Boot, BootItem } from "@/components/instrument/boot";
 import { Cairn } from "@/components/instrument/cairn";
@@ -12,6 +13,13 @@ export const metadata = { title: "Cohort" };
 
 type Member = {
   id: string | null;
+  /** stable per invite, without being the address */
+  key: string;
+  /**
+   * Masked unless it is your own row. Everyone on the page is invited, but an
+   * invite is not consent to have your address shown to the others — and a
+   * name or handle is what identifies someone here anyway.
+   */
   email: string;
   name: string | null;
   handle: string | null;
@@ -51,14 +59,15 @@ export default async function CohortPage() {
         coalesce((select count(*)::int from journey_days
           where user_id = u.id and closed_at is not null), 0) as active_days,
         json_build_object(
-          'id', u.id, 'email', a.email, 'name', u.name, 'handle', u.handle,
+          'id', u.id, 'key', md5(lower(a.email)),
+          'email', case when u.id = ${session.user.id} then a.email
+                   else left(a.email, 1) || '•••@' || split_part(a.email, '@', 2) end,
+          'name', u.name, 'handle', u.handle,
           'activeDays', coalesce((select count(*)::int from journey_days
             where user_id = u.id and closed_at is not null), 0),
           'unitsDone', coalesce((select count(*)::int from unit_progress
             where user_id = u.id and state = 'done'), 0),
-          'problemsSolved', coalesce((select count(distinct problem_slug)::int
-            from problem_attempts
-            where user_id = u.id and outcome in ('clean', 'hinted')), 0),
+          'problemsSolved', coalesce(${dsaSolvedSql(sql`u.id`)}, 0),
           'lastDate', (select max(calendar_date) from journey_days
             where user_id = u.id and closed_at is not null),
           'stones', coalesce((
@@ -69,6 +78,8 @@ export default async function CohortPage() {
         ) as m
       from allowed_emails a
       left join users u on lower(u.email) = lower(a.email)
+      -- the e2e account (scripts/e2e-account.mjs) is not a person
+      where a.email not like '%@cairn.local'
     ) t
   `);
 
@@ -108,7 +119,7 @@ export default async function CohortPage() {
                  * opacity took their status line to 2.4:1.
                  */
                 <li
-                  key={m.email}
+                  key={m.key}
                   className="flex items-start gap-3 px-4 py-3 sm:items-center sm:gap-4"
                 >
                   <div className="w-8 shrink-0 pt-1.5 sm:pt-0">

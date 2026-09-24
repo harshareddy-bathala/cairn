@@ -59,10 +59,17 @@ export async function setBadDay(on: boolean) {
   return regenerate(userId, { mode: on ? "bad_day" : "normal", multiplier: on ? 1 : undefined });
 }
 
-/** ticks a block that has no natural completion signal (the aptitude drill) */
+/**
+ * Ticks a block that has no natural completion signal (the aptitude drill).
+ *
+ * Only a block that is actually on today's plan can be ticked — the id is
+ * checked against the stored plan's blocks, so `ticked` cannot fill up with
+ * whatever strings a request cares to send.
+ */
 export async function tickBlock(blockId: string, done: boolean) {
   const userId = await requireUser();
   const id = z.string().min(1).max(200).parse(blockId);
+  const on = z.boolean().parse(done);
 
   const res = await db.execute<{ day_index: number }>(sql`
     with d as (
@@ -73,20 +80,23 @@ export async function tickBlock(blockId: string, done: boolean) {
       update journey_days j set plan = jsonb_set(
         d.plan,
         '{ticked}',
-        case when ${done}
+        case when ${on}
           then (coalesce(d.plan->'ticked', '[]'::jsonb) - ${id}) || to_jsonb(array[${id}])
           else coalesce(d.plan->'ticked', '[]'::jsonb) - ${id}
         end
       )
       from d
       where j.user_id = ${userId} and j.day_index = d.day_index and d.plan is not null
+        and exists (
+          select 1 from jsonb_array_elements(d.plan->'blocks') b where b->>'id' = ${id}
+        )
       returning j.day_index
     )
     select day_index from upd
   `);
 
   revalidatePath("/today");
-  return { done, dayIndex: res.rows[0] ? Number(res.rows[0].day_index) : null };
+  return { done: on, dayIndex: res.rows[0] ? Number(res.rows[0].day_index) : null };
 }
 
 const closeSchema = z.object({
@@ -100,13 +110,22 @@ const closeSchema = z.object({
  * accountability the roadmap was missing: the day does not count until you say
  * what you learned and what you will open first tomorrow.
  *
+ * "What you learned" is required — here, not only in the form. A day closed
+ * with nothing written is a stone with nothing under it. A day reopened keeps
+ * the sentence it was closed with, so closing it again needs nothing new.
+ *
  * Returns the new stone count so the cairn can be animated.
  */
-export async function closeDay(input: z.input<typeof closeSchema>) {
+export async function closeDay(
+  input: z.input<typeof closeSchema>,
+): Promise<{ ok: true; dayIndex: number; stones: number } | { ok: false; error: string }> {
   const userId = await requireUser();
-  const v = closeSchema.parse(input);
+  const parsed = closeSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "Some of that could not be saved — check the fields." };
+  const v = parsed.data;
+  const learned = v.learned?.trim() || null;
 
-  const res = await db.execute<{ day_index: number; stones: number }>(sql`
+  const res = await db.execute<{ day_index: number | null; closed: boolean; stones: number }>(sql`
     with d as (
       select day_index from journey_days
       where user_id = ${userId} order by day_index desc limit 1
@@ -114,25 +133,29 @@ export async function closeDay(input: z.input<typeof closeSchema>) {
     upd as (
       update journey_days j set
         closed_at = coalesce(j.closed_at, now()),
-        learned_md = coalesce(${v.learned ?? null}, j.learned_md),
+        learned_md = coalesce(${learned}, j.learned_md),
         tomorrow_first_task = coalesce(${v.tomorrowFirstTask ?? null}, j.tomorrow_first_task),
         minutes_total = coalesce(${v.minutes ?? null}, j.minutes_total)
       from d
       where j.user_id = ${userId} and j.day_index = d.day_index
-      returning j.day_index
+        and coalesce(${learned}, nullif(trim(j.learned_md), '')) is not null
+      returning j.day_index, (j.closed_at is not null) as was_closed
     )
-    select upd.day_index,
+    select (select day_index from d) as day_index,
+      exists (select 1 from upd) as closed,
+      -- the statement cannot see its own update, so today's stone is added here
       (select count(*)::int from journey_days
-        where user_id = ${userId} and closed_at is not null) as stones
-    from upd
+        where user_id = ${userId} and closed_at is not null)
+        + (select count(*)::int from upd where not was_closed) as stones
   `);
 
   const row = res.rows[0];
-  if (!row) throw new Error("no open day to close");
+  if (row?.day_index == null) return { ok: false, error: "There is no open day to close." };
+  if (!row.closed) return { ok: false, error: "Write one thing you learned — the day does not count until you do." };
 
   revalidatePath("/today");
   revalidatePath("/roadmap");
-  return { dayIndex: Number(row.day_index), stones: Number(row.stones) };
+  return { ok: true, dayIndex: Number(row.day_index), stones: Number(row.stones) };
 }
 
 /** reopens the day — closing early by accident should not cost you the evening */

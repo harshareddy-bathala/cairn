@@ -43,6 +43,7 @@ export function ProjectBoard({ project }: { project: ProjectView }) {
       // unticking deletes the row, and the evidence with it — so the local copy
       // has to drop it too, or a re-tick would show a link that no longer exists
       const res = await setDeliverable(slug, next);
+      if (!res.ok) return;
       setState((s) => ({
         ...s,
         deliverables: s.deliverables.map((d) =>
@@ -55,7 +56,7 @@ export function ProjectBoard({ project }: { project: ProjectView }) {
   /** Attaches a link to something already ticked. Null means it was rejected. */
   async function saveEvidence(slug: string, url: string): Promise<string | null> {
     const res = await setDeliverable(slug, true, url).catch(() => null);
-    if (!res) return null;
+    if (!res?.ok) return null;
     setState((s) => ({
       ...s,
       deliverables: s.deliverables.map((d) =>
@@ -116,8 +117,8 @@ export function ProjectBoard({ project }: { project: ProjectView }) {
                   // is not http(s); a rejection has to land somewhere the eye goes,
                   // not in an unhandled promise
                   const res = await setRepoUrl(state.slug, repo).catch(() => null);
-                  setRepoErr(res === null);
-                  if (res) {
+                  setRepoErr(!res?.ok);
+                  if (res?.ok) {
                     setState((st) => ({ ...st, repoUrl: res.repoUrl }));
                     setRepo(res.repoUrl ?? "");
                   }

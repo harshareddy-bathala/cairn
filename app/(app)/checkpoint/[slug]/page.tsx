@@ -22,14 +22,6 @@ export default async function CheckpointPage({
   const qs = questionsForModule(slug);
   if (!mod || qs.length === 0) notFound();
 
-  // the answer key never reaches the browser
-  const stripped = qs.map((q) => ({
-    id: q.id,
-    moduleSlug: q.moduleSlug,
-    prompt: q.prompt,
-    options: q.options,
-  }));
-
   return (
     <Boot className="mx-auto max-w-3xl space-y-6 px-4 py-8 sm:px-6 sm:py-10">
       <BootItem>
@@ -51,7 +43,7 @@ export default async function CheckpointPage({
 
       <BootItem>
         <Panel legend="paper" active>
-          <CheckpointRunner moduleSlug={slug} questions={stripped} />
+          <CheckpointRunner moduleSlug={slug} count={qs.length} />
         </Panel>
       </BootItem>
     </Boot>

@@ -169,8 +169,10 @@ npx wrangler secret put CRON_SECRET      # same value as the app's
 npm run deploy
 ```
 
-Confirm by firing one tick by hand — `curl https://cairn-reminders.<subdomain>.workers.dev`
-returns the tick's own report (`due`, `sent`, `skipped`). `npm run tail` watches
+Confirm by firing one tick by hand —
+`curl -H "authorization: Bearer $CRON_SECRET" https://cairn-reminders.<subdomain>.workers.dev`
+returns the tick's own report (`due`, `sent`, `skipped`). Without the header it is a 404:
+the worker attaches the secret for the app, so it has to check the caller itself. `npm run tail` watches
 the five-minute ticks land. A tick is keyed by (user, kind, local date), so
 firing it by hand costs nothing.
 

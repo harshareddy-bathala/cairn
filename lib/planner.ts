@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import { db } from "@/db";
+import { openTodayCte, retryUnopened } from "@/lib/open-today";
 import type { DayMode, Difficulty, Outcome } from "@/db/schema";
 import { aptitudeTopicFor } from "@/content/aptitude";
 import { CADENCE } from "@/content/cadence";
@@ -492,47 +493,8 @@ export type DayContext = {
  * feeling like a website.
  */
 export async function getDayContext(userId: string): Promise<DayContext> {
-  const res = await db.execute<{ data: DayContext }>(sql`
-    with tz as (
-      select coalesce(timezone, 'Asia/Kolkata') as tz from users where id = ${userId}
-    ),
-    today as (
-      select to_char((now() at time zone (select tz from tz))::date, 'YYYY-MM-DD') as d,
-             extract(isodow from (now() at time zone (select tz from tz))::date) as dow
-    ),
-    existing as (
-      select day_index, mode, multiplier, closed_at, learned_md, tomorrow_first_task,
-             minutes_total, plan
-      from journey_days
-      where user_id = ${userId} and calendar_date = (select d from today)
-    ),
-    started as (
-      update users set started_at = now() where id = ${userId} and started_at is null returning 1
-    ),
-    ins as (
-      insert into journey_days (user_id, day_index, calendar_date)
-      select ${userId},
-        (select coalesce(max(day_index), 0) + 1 from journey_days where user_id = ${userId}),
-        (select d from today)
-      where not exists (select 1 from existing)
-      on conflict do nothing
-      returning day_index
-    ),
-    -- A row inserted by a sibling CTE is invisible to the rest of this statement,
-    -- so a freshly opened day has to carry the column defaults itself. Reading it
-    -- back from the table would return nothing on the first load of the day and
-    -- plan the whole day against a null budget.
-    day as (
-      select day_index, 'normal'::text as mode, 1::real as multiplier,
-             null::timestamptz as closed_at, null::text as learned_md,
-             null::text as tomorrow_first_task, 0 as minutes_total, null::jsonb as plan
-      from ins
-      union all
-      select day_index, mode, multiplier, closed_at, learned_md, tomorrow_first_task,
-             minutes_total, plan
-      from existing
-      limit 1
-    ),
+  const run = () => db.execute<{ data: DayContext }>(sql`
+    with ${openTodayCte(userId)},
     prog as (select unit_slug, state from unit_progress where user_id = ${userId}),
     cand as (
       select un.slug, un.title, un.objective, un.est_minutes, m.slug as module_slug,
@@ -606,9 +568,9 @@ export async function getDayContext(userId: string): Promise<DayContext> {
       'mocksThisWeek', coalesce((
         select json_agg(json_build_object('kind', kind, 'n', n))
         from (
-          select kind, count(*)::int as n from mock_sessions, day d
-          where user_id = ${userId} and journey_week = ceil(d.day_index / 7.0)::int
-          group by kind
+          select ms.kind, count(*)::int as n from mock_sessions ms, day d
+          where ms.user_id = ${userId} and ms.journey_week = ceil(d.day_index / 7.0)::int
+          group by ms.kind
         ) mk
       ), '[]'::json),
       'learned', (select learned_md from day),
@@ -653,8 +615,9 @@ export async function getDayContext(userId: string): Promise<DayContext> {
     ) as data
   `);
 
+  const res = await retryUnopened(run, (r) => r.rows[0]?.data?.dayIndex != null);
   const data = res.rows[0]?.data;
-  if (!data) throw new Error("could not open today");
+  if (!data || data.dayIndex == null) throw new Error("could not open today");
   return data;
 }
 

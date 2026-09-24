@@ -1,5 +1,8 @@
 // Day 6 end-to-end: aptitude log, project deliverables, applications, STAR bank.
 import { chromium } from "playwright";
+import { loginPath, prepareAccount, reporter } from "./e2e-account.mjs";
+
+prepareAccount();
 // CHROME_PATH overrides the browser binary, for images that ship Chromium
 // somewhere other than where Playwright expects it. Pinning a path here is
 // what silently broke every one of these scripts once the version moved.
@@ -12,14 +15,14 @@ p.setDefaultTimeout(60000);
 p.setDefaultNavigationTimeout(90000);
 p.on("console", m => { if (m.type() === "error") console.log("  console error:", m.text().slice(0, 140)); });
 
-const say = (l, ok) => console.log(`${l.padEnd(28)} ${ok ? "PASS" : "FAIL"}`);
+const say = reporter(28);
 const go = async (path) => {
   await p.goto("http://localhost:3000" + path, { waitUntil: "domcontentloaded" });
   await p.waitForLoadState("load");
   await p.waitForTimeout(2000);
 };
 
-await go("/api/dev-login?email=harshareddy.bathala@gmail.com");
+await go(loginPath());
 
 // --- metrics + aptitude -------------------------------------------------
 await go("/metrics");

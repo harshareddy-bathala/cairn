@@ -3,10 +3,12 @@ import { db } from "@/db";
 import { journeyDays, reminderSends, users } from "@/db/schema";
 import {
   DEFAULT_SLOTS,
+  claimSend,
   composeReminder,
   dueReminders,
   normaliseSlots,
   recordSends,
+  releaseSend,
   type ReminderContext,
 } from "@/lib/reminders";
 
@@ -140,6 +142,13 @@ async function main() {
 
   const sends = await db.select().from(reminderSends).where(eq(reminderSends.userId, u.id));
   check("the send is recorded once", sends.length === 1, `${sends.length} rows`);
+
+  // two ticks overlapping: the slot is claimed before the send, so only one sends
+  const slot = { userId: u.id, kind: "evening_block" as const, localDate: "2026-09-01", dayIndex: null };
+  const [first, second] = await Promise.all([claimSend(slot), claimSend(slot)]);
+  check("overlapping ticks claim once", first !== second, `${[first, second].filter(Boolean).length} claimed`);
+  await releaseSend(slot);
+  check("a failed send is retried", await claimSend(slot), "released, then claimed again");
 
   await db.delete(users).where(eq(users.id, u.id));
   const orphans = await db.select().from(reminderSends).where(eq(reminderSends.userId, u.id));

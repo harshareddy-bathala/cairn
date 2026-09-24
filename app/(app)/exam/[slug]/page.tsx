@@ -3,19 +3,18 @@ import { auth } from "@/auth";
 import { Panel } from "@/components/instrument/panel";
 import { Boot, BootItem } from "@/components/instrument/boot";
 import { ExamRunner } from "@/components/instrument/quiz-runner";
+import { getCertificationState, shapeCertification } from "@/lib/certification";
+import { examMinutes } from "@/lib/quiz-paper";
 import {
-  examPaper,
-  examSeed,
-  getCertificationState,
-  shapeCertification,
-} from "@/lib/certification";
-import { CERT_CHECKPOINTS, EXAM_PASS, EXAM_UNLOCK } from "@/content/checkpoints";
+  CERT_CHECKPOINTS,
+  EXAM_PASS,
+  EXAM_SIZE,
+  EXAM_UNLOCK,
+  questions,
+} from "@/content/checkpoints";
 import { modules, phases } from "@/content";
 
 export const metadata = { title: "Phase exam" };
-
-/** one minute per question, which is tight enough to matter and fair enough to pass */
-const MINUTES_PER_QUESTION = 1.5;
 
 export default async function ExamPage({ params }: { params: Promise<{ slug: string }> }) {
   const session = await auth();
@@ -55,10 +54,11 @@ export default async function ExamPage({ params }: { params: Promise<{ slug: str
     );
   }
 
-  // Deterministic per user and phase: reloading must not reroll the paper.
-  const seed = examSeed(session.user.id, slug);
-  const moduleSlugs = modules.filter((m) => m.phaseSlug === slug).map((m) => m.slug);
-  const qs = examPaper(slug, moduleSlugs, seed);
+  // Only the size is known here. The paper itself is drawn when you begin, with
+  // a fresh seed per sitting — rendering this page writes nothing.
+  const moduleSlugs = new Set(modules.filter((m) => m.phaseSlug === slug).map((m) => m.slug));
+  const count = Math.min(EXAM_SIZE, questions.filter((q) => moduleSlugs.has(q.moduleSlug)).length);
+  const minutes = examMinutes(count);
 
   return (
     <Boot className="mx-auto max-w-3xl space-y-6 px-4 py-8 sm:px-6 sm:py-10">
@@ -67,10 +67,9 @@ export default async function ExamPage({ params }: { params: Promise<{ slug: str
           <p className="legend">{phase.title} · phase exam</p>
           <h1 className="mt-1 text-2xl text-hi">{phase.title}</h1>
           <p className="mt-1 max-w-xl note text-lo">
-            {qs.length} questions drawn across every module in the phase,{" "}
-            {Math.round(qs.length * MINUTES_PER_QUESTION)} minutes,{" "}
+            {count} questions drawn across every module in the phase, {minutes} minutes,{" "}
             {Math.round(EXAM_PASS * 100)}% to pass. When the clock runs out the paper
-            submits itself.
+            submits itself. Every sitting is a new paper.
           </p>
         </header>
       </BootItem>
@@ -79,14 +78,8 @@ export default async function ExamPage({ params }: { params: Promise<{ slug: str
         <Panel legend="paper" active>
           <ExamRunner
             phaseSlug={slug}
-            seed={seed}
-            timeLimitMin={Math.round(qs.length * MINUTES_PER_QUESTION)}
-            questions={qs.map((q) => ({
-              id: q.id,
-              moduleSlug: q.moduleSlug,
-              prompt: q.prompt,
-              options: q.options,
-            }))}
+            questionCount={count}
+            timeLimitMin={minutes}
             alreadyPassed={Boolean(standing.bestExam?.passed)}
             hasDefense={standing.hasDefense}
             certificateId={standing.certificateId}

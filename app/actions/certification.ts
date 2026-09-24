@@ -5,11 +5,11 @@ import { sql } from "drizzle-orm";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { db } from "@/db";
-import { questionsForModule } from "@/content/checkpoints";
-import { CERT_CHECKPOINTS, CHECKPOINT_PASS, EXAM_PASS } from "@/content/checkpoints";
-import { examPaper, examSeed } from "@/lib/certification";
-import { modules as contentModules } from "@/content";
+import { CERT_CHECKPOINTS } from "@/content/checkpoints";
+import { startSitting, submitSitting, type Paper, type QuizGrade } from "@/lib/quiz-sessions";
+import type { QuizKind } from "@/db/schema";
 import { safeUrlSchema } from "@/lib/safe-url";
+import { dsaSolvedSql } from "@/lib/progress";
 
 async function requireUser() {
   const session = await auth();
@@ -28,99 +28,31 @@ async function requireUser() {
 type Refusal = { ok: false; error: string };
 const refuse = (error: string): Refusal => ({ ok: false, error });
 
-const answersSchema = z.record(z.string().max(60), z.number().int().min(0).max(3));
-
-const CURRENT_DAY = (userId: string) => sql`
-  coalesce((select max(day_index) from journey_days where user_id = ${userId}), 1)
-`;
-
 /**
- * Grades a module checkpoint.
- *
- * Grading happens here, never in the browser: the client is handed questions
- * with the answer key stripped, so the only way to score is to submit.
+ * Sits down to a checkpoint or an exam and returns the paper — see
+ * lib/quiz-sessions.ts for the rules a sitting is held to.
  */
-export async function submitCheckpoint(moduleSlug: string, given: Record<string, number>) {
+export async function startQuiz(kind: QuizKind, subjectSlug: string): Promise<Paper | Refusal> {
   const userId = await requireUser();
-  const slug = z.string().min(1).max(200).parse(moduleSlug);
-  const answers = answersSchema.parse(given);
-
-  const qs = questionsForModule(slug);
-  if (qs.length === 0) throw new Error("no checkpoint for this module");
-
-  const score = qs.filter((q) => answers[q.id] === q.answer).length;
-  const passed = score / qs.length >= CHECKPOINT_PASS;
-
-  await db.execute(sql`
-    insert into checkpoint_attempts
-      (user_id, module_slug, score, total, passed, answers, day_index)
-    values (${userId}, ${slug}, ${score}, ${qs.length}, ${passed},
-            ${JSON.stringify(answers)}::jsonb, ${CURRENT_DAY(userId)})
-  `);
-
-  revalidatePath(`/module/${slug}`);
-  revalidatePath("/certification");
-  return {
-    ok: true as const,
-    score,
-    total: qs.length,
-    passed,
-    key: Object.fromEntries(qs.map((q) => [q.id, q.answer])),
-    why: Object.fromEntries(qs.map((q) => [q.id, q.why])),
-  };
+  return startSitting(userId, kind, subjectSlug);
 }
 
-/**
- * Grades a phase exam against the same deterministic paper the page served.
- *
- * The seed still travels with the submission, but it is checked against the
- * one the page is drawn from rather than taken on trust — otherwise a crafted
- * request could be graded against any paper it liked.
- */
-export async function submitExam(
-  phaseSlug: string,
-  seed: number,
+/** Grades a sitting, once. */
+export async function submitQuiz(
+  sessionId: string,
   given: Record<string, number>,
 ): Promise<QuizGrade | Refusal> {
   const userId = await requireUser();
-  const slug = z.string().min(1).max(120).parse(phaseSlug);
-  const s = z.number().int().parse(seed);
-  const answers = answersSchema.parse(given);
-
-  const expected = examSeed(userId, slug);
-  if (s !== expected) return refuse("This paper does not match your exam. Reload the page and submit again.");
-
-  const moduleSlugs = contentModules.filter((m) => m.phaseSlug === slug).map((m) => m.slug);
-  const qs = examPaper(slug, moduleSlugs, expected);
-  if (qs.length === 0) throw new Error("no exam for this phase");
-
-  const score = qs.filter((q) => answers[q.id] === q.answer).length;
-  const passed = score / qs.length >= EXAM_PASS;
-
-  await db.execute(sql`
-    insert into exam_attempts (user_id, phase_slug, score, total, passed, day_index)
-    values (${userId}, ${slug}, ${score}, ${qs.length}, ${passed}, ${CURRENT_DAY(userId)})
-  `);
-
+  const r = await submitSitting(userId, sessionId, given);
+  if (!r.ok) return r;
+  const { kind, subjectSlug, ...graded } = r;
+  if (kind === "checkpoint") {
+    revalidatePath(`/module/${subjectSlug}`);
+    revalidatePath("/review");
+  }
   revalidatePath("/certification");
-  return {
-    ok: true,
-    score,
-    total: qs.length,
-    passed,
-    key: Object.fromEntries(qs.map((q) => [q.id, q.answer])),
-    why: Object.fromEntries(qs.map((q) => [q.id, q.why])),
-  };
+  return graded;
 }
-
-type QuizGrade = {
-  ok: true;
-  score: number;
-  total: number;
-  passed: boolean;
-  key: Record<string, number>;
-  why: Record<string, string>;
-};
 
 /**
  * Attaches the out-loud defense recording to your best passing attempt.
@@ -208,10 +140,7 @@ export async function issueCertificate(
           join modules m on m.slug = ca.module_slug
           where ca.user_id = ${userId} and ca.passed and m.phase_slug = ${slug}
         ),
-        'problemsSolved', (
-          select count(distinct problem_slug)::int from problem_attempts
-          where user_id = ${userId} and outcome in ('clean', 'hinted')
-        ),
+        'problemsSolved', ${dsaSolvedSql(userId)},
         'activeDays', (
           select count(*)::int from journey_days
           where user_id = ${userId} and closed_at is not null
@@ -220,12 +149,12 @@ export async function issueCertificate(
       ) as s
       from exam e
     ),
+    -- certificates_user_phase_idx: a double click or a second tab gets the
+    -- certificate that already exists, never a second one
     ins as (
       insert into certificates (id, user_id, phase_slug, snapshot)
       select ${newId}, ${userId}, ${slug}, snap.s from snap
-      where not exists (
-        select 1 from certificates where user_id = ${userId} and phase_slug = ${slug}
-      )
+      on conflict (user_id, phase_slug) do nothing
       returning id
     )
     select id from ins

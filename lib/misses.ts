@@ -13,6 +13,10 @@ import { questions } from "@/content/checkpoints";
  * A miss clears itself: answering the same question correctly on any later
  * attempt removes it. So the list is what you currently get wrong, not a
  * permanent record of every mistake, which would only grow and be ignored.
+ *
+ * A miss from today is held back until the next active day. A failed
+ * checkpoint no longer hands back its key, and an explanation available the
+ * same minute would hand it back anyway — to a retake that is one click away.
  */
 
 export type Miss = {
@@ -29,7 +33,7 @@ export type Miss = {
   times: number;
 };
 
-type Row = { question_id: string; chose: number; attempt_id: number };
+type Row = { question_id: string; chose: number; attempt_id: number; today: boolean };
 
 export async function getMisses(userId: string): Promise<Miss[]> {
   // One statement, unrolling every attempt's answers map into rows. The
@@ -40,7 +44,10 @@ export async function getMisses(userId: string): Promise<Miss[]> {
     select
       kv.key as question_id,
       (kv.value #>> '{}')::int as chose,
-      a.id as attempt_id
+      a.id as attempt_id,
+      a.day_index >= coalesce(
+        (select max(day_index) from journey_days where user_id = ${userId}), 1
+      ) as today
     from checkpoint_attempts a, jsonb_each(a.answers) kv
     where a.user_id = ${userId}
     order by a.id
@@ -51,10 +58,13 @@ export async function getMisses(userId: string): Promise<Miss[]> {
 
   /** question id -> every choice made for it, oldest attempt first */
   const history = new Map<string, number[]>();
+  /** question id -> whether its most recent answer was given today */
+  const lastToday = new Map<string, boolean>();
   for (const row of res.rows) {
     const list = history.get(row.question_id) ?? [];
     list.push(Number(row.chose));
     history.set(row.question_id, list);
+    lastToday.set(row.question_id, Boolean(row.today));
   }
 
   const misses: Miss[] = [];
@@ -65,6 +75,7 @@ export async function getMisses(userId: string): Promise<Miss[]> {
 
     const latest = choices[choices.length - 1];
     if (latest === q.answer) continue;
+    if (lastToday.get(id)) continue;
 
     misses.push({
       id: q.id,

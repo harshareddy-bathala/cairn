@@ -50,7 +50,9 @@ export function ProblemList({ problems }: { problems: ProblemRowData[] }) {
         ...r,
         [slug]: {
           ...r[slug],
-          outcome,
+          // the server's word, not the click: "clean" after opening the hint
+          // is recorded as "hinted"
+          outcome: res.outcome,
           redoDueDay: res.redoDueDay,
           redoPending: res.redoDueDay != null,
         },

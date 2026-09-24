@@ -214,6 +214,34 @@ export async function recordSends(
   `);
 }
 
+/**
+ * Claims one slot before its message is sent.
+ *
+ * Recording after the send left a window: a tick that ran long overlapped the
+ * next one, both found the slot unrecorded, and both sent. The claim is the
+ * same (user, kind, local date) row the send would have written, so the second
+ * tick's insert conflicts and it moves on. Returns false when another tick
+ * already holds the slot.
+ */
+export async function claimSend(key: { userId: string; kind: ReminderKind; localDate: string; dayIndex: number | null }) {
+  const res = await db.execute(sql`
+    insert into reminder_sends (user_id, kind, local_date, status, day_index)
+    values (${key.userId}, ${key.kind}, ${key.localDate}, 'sent', ${key.dayIndex})
+    on conflict (user_id, kind, local_date) do nothing
+    returning 1
+  `);
+  return res.rows.length > 0;
+}
+
+/** gives a claimed slot back after a failed send, so the next tick retries it */
+export async function releaseSend(key: { userId: string; kind: ReminderKind; localDate: string }) {
+  await db.execute(sql`
+    delete from reminder_sends
+    where user_id = ${key.userId} and kind = ${key.kind} and local_date = ${key.localDate}
+      and status = 'sent'
+  `);
+}
+
 /* ------------------------------------------------------------------ *
  * the messages
  * ------------------------------------------------------------------ */

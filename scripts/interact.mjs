@@ -1,4 +1,7 @@
 import { chromium } from "playwright";
+import { loginPath, prepareAccount } from "./e2e-account.mjs";
+
+prepareAccount();
 // CHROME_PATH overrides the browser binary, for images that ship Chromium
 // somewhere other than where Playwright expects it. Pinning a path here is
 // what silently broke every one of these scripts once the version moved.
@@ -11,14 +14,17 @@ p.setDefaultTimeout(60000);
 p.setDefaultNavigationTimeout(90000);
 p.on("console", m => { if (m.type() === "error") console.log("  console error:", m.text().slice(0,120)); });
 
-await p.goto("http://localhost:3000/api/dev-login?email=harshareddy.bathala@gmail.com", { waitUntil: "domcontentloaded" });
+await p.goto("http://localhost:3000" + loginPath(), { waitUntil: "domcontentloaded" });
 await p.goto("http://localhost:3000/unit/dsa-bs-answer-space", { waitUntil: "domcontentloaded" });
 await p.waitForLoadState("load"); await p.waitForTimeout(1200);
 
 // A reveal is permanent by design — it is recorded, which is the whole point of
-// the mask. So these two checks are only meaningful on a cold user, and say so
-// rather than reporting a stale run as a failure.
-const say = (l, r) => console.log(`${l.padEnd(26)} ${r}`);
+// the mask. The account is reset at the start of every run, so these checks
+// always see a cold user.
+const say = (l, r) => {
+  console.log(`${l.padEnd(26)} ${r}`);
+  if (r === "FAIL") process.exitCode = 1;
+};
 
 // Expand the first problem.
 //

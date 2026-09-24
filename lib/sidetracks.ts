@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import { db } from "@/db";
+import { dsaSolvedSql } from "@/lib/progress";
 import type { AppStatus, MockKind } from "@/db/schema";
 
 /**
@@ -31,14 +32,8 @@ export type Metrics = {
 export async function getMetrics(userId: string, journeyWeek: number): Promise<Metrics> {
   const res = await db.execute<{ data: Metrics }>(sql`
     select json_build_object(
-      'dsaSolved', (
-        select count(distinct problem_slug)::int from problem_attempts
-        where user_id = ${userId} and outcome in ('clean', 'hinted')
-      ),
-      'dsaClean', (
-        select count(distinct problem_slug)::int from problem_attempts
-        where user_id = ${userId} and outcome = 'clean'
-      ),
+      'dsaSolved', ${dsaSolvedSql(userId)},
+      'dsaClean', ${dsaSolvedSql(userId, "clean")},
       'redoOpen', (
         select count(*)::int from problem_attempts
         where user_id = ${userId} and redo_cleared_at is null and redo_due_day is not null

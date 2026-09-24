@@ -1,5 +1,8 @@
 // Day 4 end-to-end: the plan, catch-up, bad day, and closing the day.
 import { chromium } from "playwright";
+import { loginPath, prepareAccount, reporter } from "./e2e-account.mjs";
+
+prepareAccount();
 // CHROME_PATH overrides the browser binary, for images that ship Chromium
 // somewhere other than where Playwright expects it. Pinning a path here is
 // what silently broke every one of these scripts once the version moved.
@@ -12,9 +15,9 @@ p.setDefaultTimeout(60000);
 p.setDefaultNavigationTimeout(90000);
 p.on("console", m => { if (m.type() === "error") console.log("  console error:", m.text().slice(0, 140)); });
 
-const say = (label, pass) => console.log(`${label.padEnd(26)} ${pass ? "PASS" : "FAIL"}`);
+const say = reporter(26);
 
-await p.goto("http://localhost:3000/api/dev-login?email=harshareddy.bathala@gmail.com", { waitUntil: "domcontentloaded" });
+await p.goto("http://localhost:3000" + loginPath(), { waitUntil: "domcontentloaded" });
 await p.goto("http://localhost:3000/today", { waitUntil: "domcontentloaded" });
 await p.waitForLoadState("load");
 await p.waitForTimeout(2000);

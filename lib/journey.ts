@@ -1,6 +1,7 @@
 import { cache } from "react";
 import { and, asc, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
+import { openTodayCte, retryUnopened } from "@/lib/open-today";
 import { journeyDays, unitProgress, units, modules } from "@/db/schema";
 
 /** 13 weeks of curriculum, paced against ~90 active days. No calendar anywhere. */
@@ -188,47 +189,15 @@ export function localDate(timezone: string, at = new Date()) {
 
 /**
  * Opens today if it is not already open, and returns its day_index.
- *
- * This is the one place day_index advances, and it advances on *showing up* —
- * not on the calendar turning over. Skip five days and the next day you open
- * is still the very next day_index; only the streak notices the gap.
+ * See lib/open-today.ts for why day_index advances on showing up.
  */
 export async function openToday(userId: string): Promise<number> {
-  // One round trip. The user's local date is computed in Postgres from their
-  // stored timezone, the day_index is derived, the row is inserted if today is
-  // not already open, and started_at is stamped on the first ever day.
-  const res = await db.execute<{ day_index: number }>(sql`
-    with tz as (
-      select coalesce(timezone, 'Asia/Kolkata') as tz from users where id = ${userId}
-    ),
-    today as (
-      select to_char((now() at time zone (select tz from tz))::date, 'YYYY-MM-DD') as d
-    ),
-    existing as (
-      select day_index from journey_days
-      where user_id = ${userId} and calendar_date = (select d from today)
-    ),
-    started as (
-      update users set started_at = now()
-      where id = ${userId} and started_at is null
-      returning 1
-    ),
-    ins as (
-      insert into journey_days (user_id, day_index, calendar_date)
-      select
-        ${userId},
-        (select coalesce(max(day_index), 0) + 1 from journey_days where user_id = ${userId}),
-        (select d from today)
-      where not exists (select 1 from existing)
-      on conflict do nothing
-      returning day_index
-    )
-    select day_index from ins
-    union all
-    select day_index from existing
-    limit 1
-  `);
-
+  const run = () =>
+    db.execute<{ day_index: number }>(sql`
+      with ${openTodayCte(userId)}
+      select day_index from day
+    `);
+  const res = await retryUnopened(run, (r) => r.rows.length > 0);
   const row = res.rows[0];
   if (!row) throw new Error("could not open today");
   return Number(row.day_index);
