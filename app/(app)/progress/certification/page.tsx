@@ -1,12 +1,8 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { eq } from "drizzle-orm";
 import { auth } from "@/auth";
-import { db } from "@/db";
-import { users } from "@/db/schema";
 import { Panel } from "@/components/instrument/panel";
 import { Boot, BootItem } from "@/components/instrument/boot";
-import { HandleClaim } from "@/components/instrument/handle-claim";
 import { getCertificationState, shapeCertification } from "@/lib/certification";
 import { CERT_CHECKPOINTS, CHECKPOINT_PASS, EXAM_UNLOCK } from "@/content/checkpoints";
 import { cn } from "@/lib/cn";
@@ -19,13 +15,9 @@ export default async function CertificationPage() {
 
   const raw = await getCertificationState(session.user.id);
   const { modules, standings } = shapeCertification(raw);
-  const [me] = await db
-    .select({ handle: users.handle })
-    .from(users)
-    .where(eq(users.id, session.user.id));
 
   return (
-    <Boot className="mx-auto max-w-3xl space-y-6 px-4 py-8 sm:px-6 sm:py-10">
+    <Boot className="mx-auto max-w-3xl space-y-6 px-4 pt-6 pb-8 sm:px-6 sm:pt-8 sm:pb-10">
       <BootItem>
         <header>
           <p className="legend">checkpoints · exams · certificates</p>
@@ -113,12 +105,6 @@ export default async function CertificationPage() {
             </Panel>
           </BootItem>
         ))}
-
-      <BootItem>
-        <Panel legend="public profile">
-          <HandleClaim handle={me?.handle ?? null} />
-        </Panel>
-      </BootItem>
     </Boot>
   );
 }

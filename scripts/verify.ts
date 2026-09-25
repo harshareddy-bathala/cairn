@@ -19,6 +19,10 @@ import { getCertificationState, shapeCertification } from "@/lib/certification";
 import { drawCheckpoint, drawExam, grade, keyFor, toCanonical, toDisplay } from "@/lib/quiz-paper";
 import { startSitting, submitSitting, type Paper } from "@/lib/quiz-sessions";
 import { getMisses } from "@/lib/misses";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { join } from "node:path";
+import { ROUTES, MOVED, PROGRESS_PAGES, DESK_PAGES } from "@/lib/routes";
+import { NAV, SETTINGS, activeHref } from "@/lib/nav";
 
 function ok(label: string, pass: boolean, detail = "") {
   console.log(`${label.padEnd(28)}-> ${detail.padEnd(28)} ${pass ? "PASS" : "FAIL"}`);
@@ -292,6 +296,7 @@ async function checks(u: typeof users.$inferSelect) {
   ok("content validates", validateContent().length === 0, `${CADENCE.length} quotas defined`);
   validatorBites();
   everyBlockFinishes();
+  routesResolve();
 
   const metrics = await getMetrics(u.id, 1);
   ok("metrics read in one trip",
@@ -545,6 +550,45 @@ function everyBlockFinishes() {
  * spliced into the registry, validated, and taken back out — nothing touches
  * the database.
  */
+/**
+ * Every named route has a page, the nav names only those, and no source file
+ * still types out a path that moved. A revalidatePath pointed at a dead path
+ * never errors — it just stops refreshing — so this is the only place a
+ * missed one shows up.
+ */
+function routesResolve() {
+  const page = (href: string) => existsSync(join("app/(app)", href, "page.tsx"));
+  const known = new Set<string>(Object.values(ROUTES));
+  const missing = [...known].filter((r) => !page(r));
+  ok("every route has a page", missing.length === 0, missing.join(", ") || `${known.size} routes`);
+
+  const listed = [...NAV, SETTINGS, ...PROGRESS_PAGES, ...DESK_PAGES].map((n) => n.href);
+  ok("nav links are routes", NAV.length === 5 && listed.every((h) => known.has(h)),
+    `${NAV.length} destinations`);
+
+  const badMoves = MOVED.filter(([from, to]) => page(from) || !known.has(to));
+  ok("moved paths redirect", badMoves.length === 0, badMoves.map(([f]) => f).join(", ") || `${MOVED.length} redirects`);
+
+  const lit = [
+    [ROUTES.certification, ROUTES.progress], ["/exam/foundations", ROUTES.progress],
+    [ROUTES.aptitude, ROUTES.desk], ["/unit/x", ROUTES.trail], [ROUTES.settings, ROUTES.settings],
+  ] as const;
+  ok("sub-pages light their section", lit.every(([path, want]) => activeHref(path) === want));
+
+  const old = new RegExp(`["'\`](${MOVED.map(([f]) => f.replace("/", "\\/")).join("|")})(?=[/"'\`#?])`);
+  const stale: string[] = [];
+  const walk = (dir: string) => {
+    for (const f of readdirSync(dir)) {
+      const full = join(dir, f);
+      if (statSync(full).isDirectory()) walk(full);
+      else if (/\.tsx?$/.test(f) && full !== join("lib", "routes.ts") && old.test(readFileSync(full, "utf8")))
+        stale.push(full);
+    }
+  };
+  ["app", "lib", "components"].forEach(walk);
+  ok("no old paths in source", stale.length === 0, stale.join(", ") || "none");
+}
+
 function validatorBites() {
   const base = contentModules.find((m) => m.slug === "dsa-linked-lists")!;
   const unit = (slug: string, over: Partial<(typeof base.units)[number]> = {}) => ({

@@ -6,6 +6,7 @@ import { z } from "zod";
 import { auth } from "@/auth";
 import { db } from "@/db";
 import { generatePlan, getDayContext, planInputFrom } from "@/lib/planner";
+import { ROUTES } from "@/lib/routes";
 
 async function requireUser() {
   const session = await auth();
@@ -32,7 +33,7 @@ async function regenerate(userId: string, over: { mode?: "normal" | "bad_day"; m
     set mode = ${resolvedMode}, multiplier = ${nextMultiplier}, plan = ${JSON.stringify(plan)}::jsonb
     where user_id = ${userId} and day_index = ${ctx.dayIndex}
   `);
-  revalidatePath("/today");
+  revalidatePath(ROUTES.today);
   return { dayIndex: ctx.dayIndex, mode: resolvedMode, multiplier: nextMultiplier };
 }
 
@@ -95,7 +96,7 @@ export async function tickBlock(blockId: string, done: boolean) {
     select day_index from upd
   `);
 
-  revalidatePath("/today");
+  revalidatePath(ROUTES.today);
   return { done: on, dayIndex: res.rows[0] ? Number(res.rows[0].day_index) : null };
 }
 
@@ -153,8 +154,8 @@ export async function closeDay(
   if (row?.day_index == null) return { ok: false, error: "There is no open day to close." };
   if (!row.closed) return { ok: false, error: "Write one thing you learned — the day does not count until you do." };
 
-  revalidatePath("/today");
-  revalidatePath("/roadmap");
+  revalidatePath(ROUTES.today);
+  revalidatePath(ROUTES.trail);
   return { ok: true, dayIndex: Number(row.day_index), stones: Number(row.stones) };
 }
 
@@ -169,6 +170,6 @@ export async function reopenDay() {
     update journey_days j set closed_at = null
     from d where j.user_id = ${userId} and j.day_index = d.day_index
   `);
-  revalidatePath("/today");
+  revalidatePath(ROUTES.today);
   return { ok: true };
 }

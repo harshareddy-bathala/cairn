@@ -30,7 +30,7 @@ export default async function CareerPage() {
   const starReady = c.stories.filter((s) => s.result.trim()).length;
 
   return (
-    <Boot className="mx-auto max-w-3xl space-y-6 px-4 py-8 sm:px-6 sm:py-10">
+    <Boot className="mx-auto max-w-3xl space-y-6 px-4 pt-6 pb-8 sm:px-6 sm:pt-8 sm:pb-10">
       <BootItem>
         <header>
           <p className="legend">{fmtWeek(journey.journeyWeek)}</p>

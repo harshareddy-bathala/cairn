@@ -16,6 +16,7 @@ import {
   normaliseSlots,
 } from "@/lib/reminders";
 import { sendMessage, telegramConfigured } from "@/lib/telegram";
+import { ROUTES } from "@/lib/routes";
 
 async function requireUser() {
   const session = await auth();
@@ -56,7 +57,7 @@ export async function saveReminderSchedule(input: {
     .set({ reminderSlots: slots, ...(tz ? { timezone: tz } : {}) })
     .where(eq(users.id, userId));
 
-  revalidatePath("/settings");
+  revalidatePath(ROUTES.settings);
   return { ok: true, slots };
 }
 
@@ -89,7 +90,7 @@ export async function startTelegramLink() {
       })
     : null;
 
-  revalidatePath("/settings");
+  revalidatePath(ROUTES.settings);
   return { token, url, qr };
 }
 
@@ -99,7 +100,7 @@ export async function unlinkTelegram() {
     .update(users)
     .set({ telegramChatId: null, telegramLinkToken: null })
     .where(eq(users.id, userId));
-  revalidatePath("/settings");
+  revalidatePath(ROUTES.settings);
   return { ok: true };
 }
 
@@ -136,6 +137,6 @@ export async function useDefaultSchedule() {
   await db.execute(sql`
     update users set reminder_slots = ${JSON.stringify(DEFAULT_SLOTS)}::jsonb where id = ${userId}
   `);
-  revalidatePath("/settings");
+  revalidatePath(ROUTES.settings);
   return { ok: true, slots: DEFAULT_SLOTS };
 }

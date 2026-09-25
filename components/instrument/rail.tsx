@@ -12,13 +12,13 @@ import { fmtDay } from "@/lib/format";
 /**
  * The desktop rail. Hidden below `sm` — see `tab-bar.tsx` for the phone.
  *
- * A 48px fixed rail costs 12% of a 390px screen and gives back nine unlabelled
+ * A 48px fixed rail costs 12% of a 390px screen and gives back five unlabelled
  * glyphs, so on a phone it is replaced rather than shrunk.
  *
  * Between `sm` and `lg` it stays a 48px column of glyphs, each with a label
  * that appears on hover *and* on keyboard focus — `title` only ever served the
  * mouse. From `lg` there is room to spare beside a 768px page, so the labels
- * are simply written out: nine glyphs are a memory test on a desktop too.
+ * are simply written out: glyphs alone are a memory test on a desktop too.
  */
 export function Rail({
   stones,

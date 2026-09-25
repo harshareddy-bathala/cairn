@@ -7,6 +7,7 @@ import { db } from "@/db";
 import { users } from "@/db/schema";
 import { progressTables } from "@/lib/progress-tables";
 import { RESET_PHRASE } from "@/lib/reset-phrase";
+import { ROUTES } from "@/lib/routes";
 
 /**
  * Wiping your own progress, from the app.
@@ -67,7 +68,7 @@ export async function resetProgress(confirmation: string) {
     .set({ startedAt: null, onboardedAt: null, catchupMode: 1 })
     .where(eq(users.id, userId));
 
-  for (const p of ["/today", "/roadmap", "/review", "/metrics", "/projects", "/career", "/certification", "/settings", "/start"]) {
+  for (const p of Object.values(ROUTES)) {
     revalidatePath(p);
   }
 

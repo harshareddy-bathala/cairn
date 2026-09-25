@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { signOutAction } from "@/app/actions/auth";
 import { cn } from "@/lib/cn";
+import { ROUTES } from "@/lib/routes";
 
 export type AccountInfo = {
   email: string;
@@ -100,7 +101,7 @@ export function AccountMenu({ account }: { account: AccountInfo }) {
 
           <div className="mt-3 flex items-center justify-between border-t border-line-soft pt-3">
             <Link
-              href="/settings"
+              href={ROUTES.settings}
               onClick={() => setOpen(false)}
               className="tap text-xs text-mid transition-colors duration-[120ms] hover:text-hi"
             >

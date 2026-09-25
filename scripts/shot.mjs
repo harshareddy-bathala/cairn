@@ -34,12 +34,13 @@ const PAGES = [
   ["trail", "/roadmap"],
   ["module", "/module/dsa-binary-search"],
   ["unit", "/unit/dsa-bs-answer-space"],
-  ["metrics", "/metrics"],
-  ["projects", "/projects"],
-  ["career", "/career"],
-  ["certification", "/certification"],
+  ["progress", "/progress"],
+  ["certification", "/progress/certification"],
+  ["cohort", "/progress/cohort"],
   ["checkpoint", "/checkpoint/dsa-cpp-stl"],
-  ["cohort", "/cohort"],
+  ["projects", "/desk"],
+  ["career", "/desk/career"],
+  ["aptitude", "/desk/aptitude"],
   ["settings", "/settings"],
 ];
 

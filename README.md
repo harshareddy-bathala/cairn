@@ -151,11 +151,13 @@ lib/         planner.ts (the daily plan), journey.ts (day math + streak),
              misses.ts (checkpoint questions you still get wrong),
              reminders.ts (what a nudge says), reminder-slots.ts (the schedule),
              telegram.ts, motion.ts (the motion budget), nav.ts (both shells),
+             routes.ts (every in-app path, and where the old ones moved),
              theme.ts, format.ts, cn.ts
 components/instrument/   Panel, Readout, Sparkline, Cairn, BurnGauge, Rail,
              TabBar, Boot, RecallDeck, SelfCheck
-app/(app)/   authenticated surfaces: today, roadmap, review, metrics, projects,
-             career, certification, checkpoint, exam, cohort, start
+app/(app)/   authenticated surfaces, five in the nav: today, roadmap (Trail),
+             review, progress/{certification,cohort}, desk/{career,aptitude};
+             plus settings, module, unit, checkpoint, exam, start
 app/c/ app/u/  public: certificates and profiles, no sign-in, settings
 app/api/     cron (the reminder tick), telegram (the bot webhook)
 workers/reminders/   the Cloudflare Worker cron trigger — a clock, no logic
@@ -205,7 +207,7 @@ have already paid for.
 
 **Why the side tracks are counted.** Aptitude has no repo and five applications
 leave no commit, so they are the lanes that vanish first and are only missed in
-November. `/metrics` exists to make them visible: the DSA count against the
+November. `/progress` exists to make them visible: the DSA count against the
 95/165/230 curve, the redo queue's size, the aptitude trend, minutes logged, and
 applications flagged red at zero once that lane opens.
 

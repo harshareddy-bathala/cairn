@@ -5,6 +5,7 @@ import { sql } from "drizzle-orm";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { db } from "@/db";
+import { ROUTES } from "@/lib/routes";
 
 async function requireUser() {
   const session = await auth();
@@ -31,7 +32,7 @@ export async function bankUnits(unitSlugs: string[]) {
     await db.execute(sql`
       update users set onboarded_at = now() where id = ${userId} and onboarded_at is null
     `);
-    revalidatePath("/roadmap");
+    revalidatePath(ROUTES.trail);
     return { banked: 0 };
   }
 
@@ -57,9 +58,9 @@ export async function bankUnits(unitSlugs: string[]) {
     select count(*)::int as n from ins
   `);
 
-  revalidatePath("/roadmap");
-  revalidatePath("/today");
-  revalidatePath("/certification");
+  revalidatePath(ROUTES.trail);
+  revalidatePath(ROUTES.today);
+  revalidatePath(ROUTES.certification);
   revalidatePath("/module/[slug]", "page");
   return { banked: Number(res.rows[0]?.n ?? 0) };
 }

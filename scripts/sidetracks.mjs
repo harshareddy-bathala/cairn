@@ -24,12 +24,20 @@ const go = async (path) => {
 
 await go(loginPath());
 
-// --- metrics + aptitude -------------------------------------------------
-await go("/metrics");
-say("metrics renders", await p.getByRole("heading", { name: "Metrics" }).isVisible());
+// --- progress + aptitude ------------------------------------------------
+await go("/progress");
+say("progress renders", await p.getByRole("heading", { name: "Progress" }).isVisible());
 say("dsa curve shown", await p.getByText(/(target|first mark) ~\d+ by day/).first().isVisible());
 say("cadence listed", await p.getByText("Timed DSA pair").first().isVisible());
+say("phase standings shown", await p.getByText(/\d+\/\d+ checkpoints/).first().isVisible());
+await p.screenshot({ path: "shots/metrics.png", fullPage: true });
 
+// the old paths are stored in saved plans and sent messages, so they redirect
+await go("/metrics");
+say("old /metrics redirects", new URL(p.url()).pathname === "/progress");
+
+await go("/desk/aptitude");
+say("aptitude desk renders", await p.getByRole("heading", { name: "Aptitude" }).isVisible());
 await p.getByLabel("correct").fill("19");
 await p.getByRole("button", { name: "log", exact: true }).click();
 await p.waitForTimeout(3500);
@@ -37,10 +45,11 @@ say("aptitude percent shown", await p.getByText("76%").first().isVisible().catch
 await p.reload({ waitUntil: "domcontentloaded" });
 await p.waitForTimeout(2500);
 say("aptitude survives reload", await p.getByText("19/25").first().isVisible().catch(() => false));
-await p.screenshot({ path: "shots/metrics.png", fullPage: true });
+say("topic breakdown shown", await p.getByText(/1 drill\b/).first().isVisible().catch(() => false));
+await p.screenshot({ path: "shots/aptitude.png", fullPage: true });
 
 // --- projects -----------------------------------------------------------
-await go("/projects");
+await go("/desk");
 const names = await Promise.all(["sentinel", "atlas", "atlas-k8s"].map((n) =>
   p.getByText(n, { exact: true }).first().isVisible().catch(() => false)));
 say("three projects", names.every(Boolean));
@@ -71,7 +80,7 @@ say("deliverable ticks", canTick ? doneAfter === doneBefore + 1 : doneBefore ===
 await p.screenshot({ path: "shots/projects.png", fullPage: true });
 
 // --- career -------------------------------------------------------------
-await go("/career");
+await go("/desk/career");
 say("career renders", await p.getByRole("heading", { name: "Career desk" }).isVisible());
 say("star prompts listed", await p.getByText(/Tell me about yourself/).first().isVisible());
 
@@ -92,7 +101,7 @@ say("career survives reload", await p.getByText("Zerodha").first().isVisible().c
 await p.screenshot({ path: "shots/career.png", fullPage: true });
 
 // --- the numbers moved --------------------------------------------------
-await go("/metrics");
+await go("/progress");
 say("metrics sees the work", await p.getByText(/applications/i).first().isVisible());
 
 // --- links in, links out ------------------------------------------------
@@ -100,7 +109,7 @@ say("metrics sees the work", await p.getByText(/applications/i).first().isVisibl
 // href. Each one has to survive the round trip in the form a browser will
 // accept ("github.com/x" is what people type; `new URL` rejects it), and each
 // one has to refuse a scheme that would execute.
-await go("/projects");
+await go("/desk");
 
 // untick then re-tick, so the row starts from a known state
 const tick = p.locator("button[aria-pressed]").first();
@@ -138,7 +147,7 @@ await p.waitForTimeout(3000);
 const repoHref = await p.getByRole("link", { name: "open repo" }).first().getAttribute("href").catch(() => null);
 say("repo url normalises", repoHref === "https://github.com/me/sentinel");
 
-await go("/career");
+await go("/desk/career");
 const desk = p.locator("section").filter({ has: p.getByRole("button", { name: "log application" }) });
 await desk.getByLabel("company").fill("Linkable Co");
 await desk.getByLabel("role").fill("SRE");
@@ -152,7 +161,7 @@ say("application link is reachable", appHref === "https://careers.example.com/jo
 
 // --- the aptitude form cannot log a phantom zero ------------------------
 // Number("") is 0, so a blank field used to record a real 0% score.
-await go("/metrics");
+await go("/desk/aptitude");
 const rowsBefore = await p.locator("li", { hasText: "%" }).count();
 await p.getByLabel("correct").fill("");
 await p.getByRole("button", { name: "log", exact: true }).click();

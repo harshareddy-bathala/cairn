@@ -1,11 +1,15 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { eq } from "drizzle-orm";
 import { auth } from "@/auth";
+import { db } from "@/db";
+import { users } from "@/db/schema";
 import { Panel } from "@/components/instrument/panel";
 import { Readout } from "@/components/instrument/readout";
 import { Sparkline } from "@/components/instrument/sparkline";
 import { Boot, BootItem } from "@/components/instrument/boot";
-import { AptitudeLog } from "@/components/instrument/aptitude-log";
+import { HandleClaim } from "@/components/instrument/handle-claim";
+import { getCertificationState, shapeCertification } from "@/lib/certification";
 import { getJourneyStateCached } from "@/lib/journey";
 import { aptitudeTrend, getMetrics } from "@/lib/sidetracks";
 import {
@@ -19,16 +23,30 @@ import {
   STAR_READY_TARGET,
 } from "@/content/cadence";
 import { fmtDay, fmtMin, fmtWeek } from "@/lib/format";
+import { ROUTES } from "@/lib/routes";
+import { cn } from "@/lib/cn";
 
-export const metadata = { title: "Metrics" };
+export const metadata = { title: "Progress" };
 
-export default async function MetricsPage() {
+/**
+ * Progress — where the journey stands, in one read.
+ *
+ * Metrics and the certification standings used to be separate destinations,
+ * and the question they answer is the same one: am I on track? The per-module
+ * checkpoint list and the cohort are a tab away; this page carries only the
+ * summary of each.
+ */
+export default async function ProgressPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/signin");
 
   const journey = await getJourneyStateCached(session.user.id);
-  const day = Math.max(journey.dayIndex, 1);
-  const m = await getMetrics(session.user.id, journey.journeyWeek);
+  const [m, cert, [me]] = await Promise.all([
+    getMetrics(session.user.id, journey.journeyWeek),
+    getCertificationState(session.user.id),
+    db.select({ handle: users.handle }).from(users).where(eq(users.id, session.user.id)),
+  ]);
+  const standings = shapeCertification(cert).standings.filter((s) => s.checkpointsTotal > 0);
 
   // At the trailhead the curve has not started, and "target ~0 by day 0" is
   // noise dressed as a number. Show the first real mark instead.
@@ -51,17 +69,17 @@ export default async function MetricsPage() {
   );
 
   return (
-    <Boot className="mx-auto max-w-3xl space-y-6 px-4 py-8 sm:px-6 sm:py-10">
+    <Boot className="mx-auto max-w-3xl space-y-6 px-4 pt-6 pb-8 sm:px-6 sm:pt-8 sm:pb-10">
       <BootItem>
         <header>
           <p className="legend">
             {fmtDay(journey.dayIndex)} · {fmtWeek(journey.journeyWeek)}
           </p>
-          <h1 className="mt-1 text-2xl text-hi">Metrics</h1>
+          <h1 className="mt-1 text-2xl text-hi">Progress</h1>
           <p className="mt-1 max-w-xl note text-lo">
-            The lanes with nothing to show for them. Aptitude has no repo and five
-            applications leave no commit, so they are the first to disappear — these are
-            the numbers that notice.
+            Whether you are on track, in one read: the DSA curve, each phase&rsquo;s
+            checkpoints, and the lanes with nothing else to show for them — aptitude has no
+            repo and applications leave no commit, so they are the first to disappear.
           </p>
         </header>
       </BootItem>
@@ -104,6 +122,43 @@ export default async function MetricsPage() {
 
       <BootItem>
         <Panel
+          legend="phases"
+          aux={
+            <Link href={ROUTES.certification} className="tap hover:text-hi">
+              certification →
+            </Link>
+          }
+        >
+          <ul className="divide-y divide-line-soft">
+            {standings.map((s) => (
+              <li key={s.phaseSlug} className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 py-2">
+                {/* on a phone the title takes its own line — the three counts
+                    beside it left "Depth & Automation" cut to a stub */}
+                <span className="min-w-0 basis-full truncate text-sm text-hi sm:flex-1 sm:basis-0">
+                  {s.title}
+                </span>
+                <span className="legend tabular-nums">
+                  {s.unitsDone}/{s.unitsTotal} units
+                </span>
+                <span className="legend tabular-nums">
+                  {s.checkpointsPassed}/{s.checkpointsTotal} checkpoints
+                </span>
+                <span
+                  className={cn(
+                    "legend ml-auto text-right sm:w-28",
+                    s.certificateId ? "text-phos" : s.examUnlocked && "text-warn",
+                  )}
+                >
+                  {s.certificateId ? "◈ certified" : s.examUnlocked ? "exam open" : "exam locked"}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      </BootItem>
+
+      <BootItem>
+        <Panel
           legend="aptitude"
           aux={
             aptAvg != null
@@ -123,7 +178,15 @@ export default async function MetricsPage() {
               <span className="legend tabular-nums">{trend[trend.length - 1]}%</span>
             </div>
           )}
-          <AptitudeLog dayIndex={day} scores={m.aptitude} />
+          <p className="note text-lo">
+            {trend.length
+              ? "Each drill is logged from its block on Today, or on the "
+              : "Nothing logged yet. Log a drill from its block on Today, or on the "}
+            <Link href={ROUTES.aptitude} className="text-info underline underline-offset-[3px]">
+              aptitude desk
+            </Link>
+            , which keeps the full history.
+          </p>
         </Panel>
       </BootItem>
 
@@ -152,7 +215,7 @@ export default async function MetricsPage() {
           </ul>
           <p className="note mt-3 text-lo">
             Log a session on the{" "}
-            <Link href="/career" className="text-info underline underline-offset-[3px]">
+            <Link href={ROUTES.career} className="text-info underline underline-offset-[3px]">
               career desk
             </Link>
             .
@@ -218,6 +281,11 @@ export default async function MetricsPage() {
               </p>
             </div>
           </div>
+        </Panel>
+      </BootItem>
+      <BootItem>
+        <Panel legend="public profile">
+          <HandleClaim handle={me?.handle ?? null} />
         </Panel>
       </BootItem>
     </Boot>

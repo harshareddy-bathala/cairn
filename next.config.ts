@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { MOVED } from "./lib/routes";
 
 /**
  * Response headers.
@@ -21,6 +22,16 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
+  },
+  // Nine destinations became five. Plans already stored in journey_days.plan
+  // and Telegram messages already sent carry the old paths, so each one keeps
+  // working — sub-paths and query strings included.
+  async redirects() {
+    return MOVED.map(([from, to]) => ({
+      source: `${from}/:rest*`,
+      destination: `${to}/:rest*`,
+      permanent: false,
+    }));
   },
 };
 

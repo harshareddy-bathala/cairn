@@ -105,8 +105,9 @@ say("timer running", await p.getByText(/^\d\d:\d\d$/).first().isVisible().catch(
 await p.screenshot({ path: "shots/exam.png", fullPage: false });
 
 // --- certification overview ----------------------------------------------
-await go("/certification");
+await go("/progress/certification");
 say("certification renders", await p.getByRole("heading", { name: "Certification" }).isVisible());
+await go("/progress");
 await p.getByLabel("public handle").fill("e2e-cairn");
 await p.getByRole("button", { name: "claim" }).click();
 await p.waitForTimeout(3500);
@@ -122,7 +123,7 @@ say("profile shows the record", await ap.getByText("units").first().isVisible().
 await ap.screenshot({ path: "shots/profile.png", fullPage: true });
 
 // --- cohort ---------------------------------------------------------------
-await go("/cohort");
+await go("/progress/cohort");
 say("cohort renders", await p.getByRole("heading", { name: "Cohort" }).isVisible());
 
 // --- installable ----------------------------------------------------------
@@ -170,7 +171,7 @@ for (const m of allModules) {
   await p.getByRole("button", { name: "submit checkpoint" }).click();
   await p.waitForTimeout(2500);
 }
-await go("/certification");
+await go("/progress/certification");
 say("all checkpoints passed",
   (await p.locator("li", { hasText: "units" }).locator("span.text-phos").count()) >= 14);
 

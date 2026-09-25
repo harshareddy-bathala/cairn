@@ -7,6 +7,7 @@ import { auth } from "@/auth";
 import { db } from "@/db";
 import { openTodayCte, retryUnopened } from "@/lib/open-today";
 import { recordAttempt, revealHintFor } from "@/lib/progress";
+import { ROUTES } from "@/lib/routes";
 
 const outcomeSchema = z.enum(["clean", "hinted", "editorial", "failed"]);
 const slugSchema = z.string().min(1).max(200);
@@ -48,7 +49,7 @@ export async function recordOutcome(input: {
   if (!row) throw new Error("unknown problem");
 
   if (row.unitSlug) revalidatePath(`/unit/${row.unitSlug}`);
-  revalidatePath("/today");
+  revalidatePath(ROUTES.today);
   return { dayIndex: row.dayIndex, redoDueDay: row.redoDueDay, outcome: row.outcome };
 }
 
@@ -113,9 +114,9 @@ export async function setUnitState(unitSlug: string, done: boolean) {
   if (!res.rows[0]) throw new Error("unknown unit");
 
   revalidatePath(`/unit/${slug}`);
-  revalidatePath("/roadmap");
-  revalidatePath("/today");
-  revalidatePath("/review");
+  revalidatePath(ROUTES.trail);
+  revalidatePath(ROUTES.today);
+  revalidatePath(ROUTES.review);
   return {
     done,
     dayIndex: Number(res.rows[0].day_index),

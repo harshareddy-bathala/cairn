@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { PRIMARY_NAV, SECONDARY_NAV, activeHref } from "@/lib/nav";
+import { PRIMARY_NAV, SECONDARY_NAV, SETTINGS, activeHref } from "@/lib/nav";
 import { AccountRow, type AccountInfo } from "./account";
 import { scrim, sheet } from "@/lib/motion";
 import { cn } from "@/lib/cn";
@@ -14,8 +14,8 @@ import { cn } from "@/lib/cn";
  * takes over.
  *
  * It is at the bottom because that is where a thumb is, and it carries labels
- * because nine unlabelled glyphs is a memory test. Four fit with a readable
- * 11px label on a 390px screen; the other five live behind "more", which is
+ * because unlabelled glyphs are a memory test. Four fit with a readable 11px
+ * label on a 390px screen; Desk and Settings live behind "more", which is
  * honest about them being the pages you visit weekly rather than hourly.
  *
  * There is deliberately no matching top bar. The obvious one would carry the
@@ -62,7 +62,10 @@ export function MobileNav({ account }: { account: AccountInfo }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [open]);
 
-  const moreActive = SECONDARY_NAV.some((n) => n.href === current);
+  // Settings rides in the sheet here because the phone has no account menu —
+  // the sheet's own account row is where it would otherwise be looked for
+  const more = [...SECONDARY_NAV, SETTINGS];
+  const moreActive = more.some((n) => n.href === current);
 
   return (
     <>
@@ -134,7 +137,7 @@ export function MobileNav({ account }: { account: AccountInfo }) {
               className="fixed inset-x-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom))] z-40 border-y border-line bg-ink-850 sm:hidden"
             >
               <ul className="p-2">
-                {SECONDARY_NAV.map((n) => (
+                {more.map((n) => (
                   <li key={n.href}>
                     <Link
                       href={n.href}

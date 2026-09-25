@@ -22,11 +22,14 @@ export function AptitudeLog({
   dayIndex,
   scores: initial,
   compact = false,
+  history = 8,
 }: {
   dayIndex: number;
   scores: Score[];
   /** the form alone, for embedding in the plan's aptitude block */
   compact?: boolean;
+  /** how many past scores to list under the form */
+  history?: number;
 }) {
   const log = useAction(logAptitude);
   const [scores, setScores] = useState(initial);
@@ -139,7 +142,7 @@ export function AptitudeLog({
         <ul className="divide-y divide-line-soft border-t border-line-soft">
           {[...scores]
             .sort((a, b) => b.dayIndex - a.dayIndex)
-            .slice(0, 8)
+            .slice(0, history)
             .map((s, i) => {
               const pct = Math.round((s.correct / s.total) * 100);
               return (

@@ -7,6 +7,7 @@ import { auth } from "@/auth";
 import { db } from "@/db";
 import { schedule } from "@/lib/recall";
 import { WEEK_REVIEW_PROMPTS, type Grade } from "@/content/review";
+import { ROUTES } from "@/lib/routes";
 
 const gradeSchema = z.enum(["again", "hard", "good", "easy"]);
 const idSchema = z.number().int().positive();
@@ -78,7 +79,7 @@ export async function gradeCard(cardId: number, grade: string) {
     where id = ${id} and user_id = ${userId} and reviews = ${Number(row.reviews)}
   `);
 
-  revalidatePath("/review");
+  revalidatePath(ROUTES.review);
   return { intervalDays: next.intervalDays, dueDayIndex: next.dueDayIndex };
 }
 
@@ -102,7 +103,7 @@ export async function buryCard(cardId: number) {
     where id = ${id} and user_id = ${userId}
   `);
 
-  revalidatePath("/review");
+  revalidatePath(ROUTES.review);
   return { ok: true };
 }
 
@@ -149,7 +150,7 @@ export async function submitWeekReview(input: {
       submitted_at = excluded.submitted_at
   `);
 
-  revalidatePath("/review");
-  revalidatePath("/today");
+  revalidatePath(ROUTES.review);
+  revalidatePath(ROUTES.today);
   return { ok: true };
 }

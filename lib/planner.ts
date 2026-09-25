@@ -4,6 +4,7 @@ import { openTodayCte, retryUnopened } from "@/lib/open-today";
 import type { DayMode, Difficulty, Outcome } from "@/db/schema";
 import { aptitudeTopicFor } from "@/content/aptitude";
 import { CADENCE, perWeekFor } from "@/content/cadence";
+import { ROUTES } from "@/lib/routes";
 
 /* ------------------------------------------------------------------ *
  * the shape of a day
@@ -272,7 +273,7 @@ export function generatePlan(input: PlanInput): DayPlan {
         track: "recall",
         title: `Recall — ${input.cardsDue} card${input.cardsDue === 1 ? "" : "s"}`,
         detail: "five minutes, and nothing you already paid for lapses",
-        href: "/review",
+        href: ROUTES.review,
         minutes: 5,
         unitSlug: null,
         problems: [],
@@ -348,7 +349,7 @@ export function generatePlan(input: PlanInput): DayPlan {
       track: "recall",
       title: `Recall — ${n} card${n === 1 ? "" : "s"}`,
       detail: "spaced by active day, so nothing is ever overdue",
-      href: "/review",
+      href: ROUTES.review,
       // ~20s a card, floored at 5 and capped at 15: a deck sitting is short by
       // design, and a long one means the cap in getRecallDeck is doing its job
       minutes: Math.min(15, Math.max(5, Math.round((n * 20) / 60))),
@@ -407,7 +408,7 @@ export function generatePlan(input: PlanInput): DayPlan {
     track: "aptitude",
     title: `25 questions — ${apt.topic}`,
     detail: `${apt.pool}, timed`,
-    href: "/metrics",
+    href: ROUTES.aptitude,
     minutes: APTITUDE_MIN,
     unitSlug: null,
     problems: [],
@@ -462,7 +463,7 @@ export function generatePlan(input: PlanInput): DayPlan {
       track: "project",
       title: d.title,
       detail: d.projectName,
-      href: "/projects",
+      href: ROUTES.desk,
       minutes: d.estMinutes,
       unitSlug: null,
       problems: [],
@@ -480,7 +481,7 @@ export function generatePlan(input: PlanInput): DayPlan {
         track: "aptitude",
         title: q.label,
         detail: `${q.short} short — journey week ends in ${8 - dayOfWeek} day${8 - dayOfWeek === 1 ? "" : "s"}`,
-        href: "/career",
+        href: ROUTES.career,
         minutes: q.minutes,
         unitSlug: null,
         problems: [],

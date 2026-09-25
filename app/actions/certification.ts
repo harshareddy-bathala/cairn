@@ -10,6 +10,7 @@ import { startSitting, submitSitting, type Paper, type QuizGrade } from "@/lib/q
 import type { QuizKind } from "@/db/schema";
 import { safeUrlSchema } from "@/lib/safe-url";
 import { dsaSolvedSql } from "@/lib/progress";
+import { ROUTES } from "@/lib/routes";
 
 async function requireUser() {
   const session = await auth();
@@ -48,9 +49,9 @@ export async function submitQuiz(
   const { kind, subjectSlug, ...graded } = r;
   if (kind === "checkpoint") {
     revalidatePath(`/module/${subjectSlug}`);
-    revalidatePath("/review");
+    revalidatePath(ROUTES.review);
   }
-  revalidatePath("/certification");
+  revalidatePath(ROUTES.certification);
   return graded;
 }
 
@@ -81,7 +82,7 @@ export async function attachDefense(phaseSlug: string, url: string): Promise<{ o
   `);
 
   if (!res.rows[0]) return refuse("Pass the exam first — the recording attaches to a passing attempt.");
-  revalidatePath("/certification");
+  revalidatePath(ROUTES.certification);
   return { ok: true };
 }
 
@@ -166,7 +167,7 @@ export async function issueCertificate(
   const row = res.rows[0];
   if (!row) return refuse("Pass the exam and attach a defense recording first.");
 
-  revalidatePath("/certification");
+  revalidatePath(ROUTES.certification);
   revalidatePath(`/c/${row.id}`);
   return { ok: true, id: String(row.id) };
 }
@@ -201,7 +202,7 @@ export async function setHandle(handle: string): Promise<{ ok: true; handle: str
     if (code === "23505") return refuse("That handle is taken.");
     throw e;
   }
-  revalidatePath("/certification");
+  revalidatePath(ROUTES.certification);
   revalidatePath(`/u/${h}`);
   return { ok: true, handle: h };
 }

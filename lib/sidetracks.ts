@@ -95,6 +95,42 @@ export function aptitudeTrend(scores: Metrics["aptitude"]) {
   return scores.filter((s) => s.total > 0).map((s) => Math.round((s.correct / s.total) * 100));
 }
 
+export type AptitudeScore = Metrics["aptitude"][number];
+
+/**
+ * The aptitude history, oldest first. Metrics reads the last fortnight for its
+ * trend; the aptitude desk reads further back, because which topics keep going
+ * wrong only shows over more than one pass of the rotation.
+ */
+export async function getAptitude(userId: string, limit = 90): Promise<AptitudeScore[]> {
+  const res = await db.execute<{ data: AptitudeScore[] }>(sql`
+    select coalesce(json_agg(json_build_object(
+      'dayIndex', day_index, 'topic', topic, 'correct', correct, 'total', total
+    ) order by day_index, id), '[]'::json) as data
+    from (
+      select * from aptitude_scores where user_id = ${userId}
+      order by day_index desc, id desc limit ${limit}
+    ) a
+  `);
+  return res.rows[0]!.data;
+}
+
+/** per topic, weakest first — the rotation is fixed, so the weak ones are what to extra-drill */
+export function aptitudeByTopic(scores: AptitudeScore[]) {
+  const by = new Map<string, { correct: number; total: number; n: number }>();
+  for (const s of scores) {
+    if (s.total <= 0) continue;
+    const t = by.get(s.topic) ?? { correct: 0, total: 0, n: 0 };
+    t.correct += s.correct;
+    t.total += s.total;
+    t.n += 1;
+    by.set(s.topic, t);
+  }
+  return [...by]
+    .map(([topic, t]) => ({ topic, n: t.n, percent: Math.round((t.correct / t.total) * 100) }))
+    .sort((a, b) => a.percent - b.percent || b.n - a.n);
+}
+
 export type ProjectView = {
   slug: string;
   name: string;

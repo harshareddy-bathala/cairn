@@ -6,6 +6,7 @@ import { z } from "zod";
 import { auth } from "@/auth";
 import { db } from "@/db";
 import { optionalSafeUrlSchema } from "@/lib/safe-url";
+import { ROUTES } from "@/lib/routes";
 
 async function requireUser() {
   const session = await auth();
@@ -67,8 +68,9 @@ export async function logAptitude(input: z.input<typeof aptitudeSchema>) {
             ${v.minutes ?? null})
     returning day_index
   `);
-  revalidatePath("/metrics");
-  revalidatePath("/today");
+  revalidatePath(ROUTES.progress);
+  revalidatePath(ROUTES.aptitude);
+  revalidatePath(ROUTES.today);
   return { dayIndex: Number(res.rows[0]!.day_index), percent: Math.round((v.correct / v.total) * 100) };
 }
 
@@ -99,9 +101,9 @@ export async function logMock(input: z.input<typeof mockSchema>) {
     from d
     returning day_index, journey_week
   `);
-  revalidatePath("/career");
-  revalidatePath("/metrics");
-  revalidatePath("/today");
+  revalidatePath(ROUTES.career);
+  revalidatePath(ROUTES.progress);
+  revalidatePath(ROUTES.today);
   const row = res.rows[0]!;
   return { ok: true as const, dayIndex: Number(row.day_index), journeyWeek: Number(row.journey_week) };
 }
@@ -131,8 +133,8 @@ export async function addApplication(input: z.input<typeof appSchema>) {
     from d
     returning id, journey_week, link
   `);
-  revalidatePath("/career");
-  revalidatePath("/metrics");
+  revalidatePath(ROUTES.career);
+  revalidatePath(ROUTES.progress);
   const row = res.rows[0]!;
   // the normalised link comes back so the optimistic row can adopt it: what was
   // typed ("acme.com/jobs/1") is not what was stored ("https://acme.com/jobs/1")
@@ -150,8 +152,8 @@ export async function setApplicationStatus(id: number, status: string) {
     update applications set status = ${s}
     where id = ${z.coerce.number().int().parse(id)} and user_id = ${userId}
   `);
-  revalidatePath("/career");
-  revalidatePath("/metrics");
+  revalidatePath(ROUTES.career);
+  revalidatePath(ROUTES.progress);
   return { status: s };
 }
 
@@ -173,7 +175,7 @@ export async function addContact(input: z.input<typeof contactSchema>) {
            ceil(d.day_index / 7.0)::int
     from d
   `);
-  revalidatePath("/career");
+  revalidatePath(ROUTES.career);
   return { ok: true as const };
 }
 
@@ -203,8 +205,8 @@ export async function saveStory(input: z.input<typeof storySchema>) {
       situation = excluded.situation, task = excluded.task, action = excluded.action,
       result = excluded.result, updated_at = now()
   `);
-  revalidatePath("/career");
-  revalidatePath("/metrics");
+  revalidatePath(ROUTES.career);
+  revalidatePath(ROUTES.progress);
   return { ok: true };
 }
 
@@ -217,7 +219,7 @@ export async function rehearseStory(prompt: string) {
     where user_id = ${userId} and prompt = ${p}
     returning rehearsed_count
   `);
-  revalidatePath("/career");
+  revalidatePath(ROUTES.career);
   return { rehearsedCount: res.rows[0] ? Number(res.rows[0].rehearsed_count) : 0 };
 }
 
@@ -242,9 +244,9 @@ export async function setDeliverable(slug: string, done: boolean, evidenceUrl?: 
     await db.execute(sql`
       delete from deliverable_done where user_id = ${userId} and deliverable_slug = ${s}
     `);
-    revalidatePath("/projects");
-    revalidatePath("/metrics");
-    revalidatePath("/today");
+    revalidatePath(ROUTES.desk);
+    revalidatePath(ROUTES.progress);
+    revalidatePath(ROUTES.today);
     return { ok: true as const, done: false, dayIndex: null, evidenceUrl: null };
   }
 
@@ -256,9 +258,9 @@ export async function setDeliverable(slug: string, done: boolean, evidenceUrl?: 
       set evidence_url = coalesce(excluded.evidence_url, deliverable_done.evidence_url)
     returning day_index, evidence_url
   `);
-  revalidatePath("/projects");
-  revalidatePath("/metrics");
-  revalidatePath("/today");
+  revalidatePath(ROUTES.desk);
+  revalidatePath(ROUTES.progress);
+  revalidatePath(ROUTES.today);
   // the stored URL goes back, not the typed one: "github.com/x" is normalised on
   // the way in, and a caller that keeps the raw string holds a value its own
   // href check will reject
@@ -290,7 +292,7 @@ export async function acceptPledge(projectSlug: string, repoUrl?: string) {
       repo_url = coalesce(excluded.repo_url, user_projects.repo_url),
       pledge_accepted_at = coalesce(user_projects.pledge_accepted_at, excluded.pledge_accepted_at)
   `);
-  revalidatePath("/projects");
+  revalidatePath(ROUTES.desk);
   return { ok: true as const };
 }
 
@@ -306,6 +308,6 @@ export async function setRepoUrl(projectSlug: string, repoUrl: string) {
     on conflict (user_id, project_slug) do update set repo_url = excluded.repo_url
     returning repo_url
   `);
-  revalidatePath("/projects");
+  revalidatePath(ROUTES.desk);
   return { ok: true as const, repoUrl: res.rows[0]?.repo_url ?? null };
 }

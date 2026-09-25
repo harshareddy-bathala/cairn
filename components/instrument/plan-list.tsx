@@ -12,6 +12,8 @@ import type { HydratedBlock } from "@/lib/planner";
 import { cn } from "@/lib/cn";
 import { fmtMin } from "@/lib/format";
 import { DUR, EASE } from "@/lib/motion";
+import { ROUTES } from "@/lib/routes";
+import { APTITUDE_SOURCES } from "@/content/aptitude";
 
 const GLYPH: Record<string, string> = {
   redo: "↺",
@@ -26,11 +28,6 @@ const GLYPH: Record<string, string> = {
   career: "◰",
   close: "▣",
 };
-
-const APTITUDE_SOURCES = [
-  { title: "IndiaBix", url: "https://www.indiabix.com/aptitude/questions-and-answers/" },
-  { title: "PrepInsta", url: "https://prepinsta.com/aptitude/" },
-];
 
 /**
  * The day, as a list of sized blocks.
@@ -231,7 +228,7 @@ function Block({
           {b.kind === "project" && (
             <p className="note text-lo">
               Mark the deliverable done on{" "}
-              <Link href="/projects" className="text-info underline underline-offset-[3px]">
+              <Link href={ROUTES.desk} className="text-info underline underline-offset-[3px]">
                 the project board
               </Link>{" "}
               with a link to the evidence, and this block finishes with it.

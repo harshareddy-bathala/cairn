@@ -6,6 +6,7 @@ import { REMINDER_GRACE_MIN, type ReminderKind } from "@/lib/reminder-slots";
 import { aptitudeTopicFor } from "@/content/aptitude";
 import { streaksOf } from "@/lib/journey";
 import { fmtMin } from "@/lib/format";
+import { ROUTES } from "@/lib/routes";
 
 /**
  * The schedule half lives in `reminder-slots.ts` because the settings UI needs
@@ -286,7 +287,7 @@ const skip = (ctx: ReminderContext, reason: string): ComposedReminder => ({
 export function composeReminder(ctx: ReminderContext): ComposedReminder {
   const day = subjectDay(ctx);
   const url = appUrl();
-  const open = [{ text: "Open today", url: `${url}/today` }];
+  const open = [{ text: "Open today", url: `${url}${ROUTES.today}` }];
   const streak = streaksOf(ctx.closedDates, ctx.localDate).current;
 
   switch (ctx.kind) {
@@ -340,7 +341,7 @@ export function composeReminder(ctx: ReminderContext): ComposedReminder {
       return {
         send: true,
         dayIndex: ctx.todayIndex,
-        buttons: [{ text: "Aptitude", url: `${url}/aptitude` }],
+        buttons: [{ text: "Aptitude", url: `${url}${ROUTES.aptitude}` }],
         text: [
           `<b>Aptitude · day ${day}</b>`,
           `25 questions — ${esc(a.topic)} (${a.pool}). Timed, 30 minutes.`,
@@ -376,7 +377,7 @@ export function composeReminder(ctx: ReminderContext): ComposedReminder {
       return {
         send: true,
         dayIndex: ctx.todayIndex,
-        buttons: [{ text: "Close the day", url: `${url}/today#close` }],
+        buttons: [{ text: "Close the day", url: `${url}${ROUTES.today}#close` }],
         text: [
           `<b>Day ${day} · not closed</b>`,
           "Two lines and the stone is placed: what you learned, and tomorrow's first task.",
