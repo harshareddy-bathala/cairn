@@ -20,6 +20,7 @@ const GLYPH: Record<string, string> = {
   corecs: "◎",
   project: "✦",
   cadence: "▧",
+  career: "◰",
   close: "▣",
 };
 

@@ -3,7 +3,7 @@ import { auth } from "@/auth";
 import { Panel } from "@/components/instrument/panel";
 import { Boot, BootItem } from "@/components/instrument/boot";
 import { SelfPlacement } from "@/components/instrument/self-placement";
-import { modules } from "@/content";
+import { modules, phases } from "@/content";
 
 export const metadata = { title: "Self-placement" };
 
@@ -11,12 +11,21 @@ export default async function StartPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/signin");
 
-  const shaped = modules.map((m) => ({
-    slug: m.slug,
-    title: m.title,
-    trackSlug: m.trackSlug,
-    units: m.units.map((u) => ({ slug: u.slug, title: u.title, objective: u.objective })),
-  }));
+  // grouped by phase: Phase 2 material you already know (AWS, say) is banked
+  // the same way, but it should not read as the next thing on the list
+  const phaseOf = new Map(phases.map((p) => [p.slug, p]));
+  const shaped = [...modules]
+    .sort((a, b) => phaseOf.get(a.phaseSlug)!.order - phaseOf.get(b.phaseSlug)!.order)
+    .map((m) => {
+      const ph = phaseOf.get(m.phaseSlug)!;
+      return {
+        slug: m.slug,
+        title: m.title,
+        trackSlug: m.trackSlug,
+        phaseTitle: `phase ${ph.order} · ${ph.title}`,
+        units: m.units.map((u) => ({ slug: u.slug, title: u.title, objective: u.objective })),
+      };
+    });
 
   return (
     <Boot className="mx-auto max-w-3xl space-y-6 px-4 py-8 sm:px-6 sm:py-10">

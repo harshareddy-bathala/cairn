@@ -67,7 +67,7 @@ export async function getCertificationState(userId: string) {
             select count(*)::int from checkpoint_attempts
             where user_id = ${userId} and module_slug = m.slug
           )
-        ) order by m."order")
+        ) order by (select ph."order" from phases ph where ph.slug = m.phase_slug), m."order")
         from modules m
       ), '[]'::json),
       'exams', coalesce((

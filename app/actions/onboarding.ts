@@ -43,8 +43,11 @@ export async function bankUnits(unitSlugs: string[]) {
     ins as (
       insert into unit_progress (user_id, unit_slug, state, completed_on_day_index, updated_at)
       select ${userId}, slug, 'done', 0, now() from valid
+      -- a unit already finished on a journey day keeps that day: banking it
+      -- again must not quietly take a stone back off the cairn
       on conflict (user_id, unit_slug) do update set
         state = 'done', completed_on_day_index = 0, updated_at = now()
+      where unit_progress.state <> 'done'
       returning 1
     ),
     mark as (
@@ -57,5 +60,6 @@ export async function bankUnits(unitSlugs: string[]) {
   revalidatePath("/roadmap");
   revalidatePath("/today");
   revalidatePath("/certification");
+  revalidatePath("/module/[slug]", "page");
   return { banked: Number(res.rows[0]?.n ?? 0) };
 }

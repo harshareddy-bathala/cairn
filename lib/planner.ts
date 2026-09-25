@@ -10,7 +10,8 @@ import { CADENCE } from "@/content/cadence";
  * ------------------------------------------------------------------ */
 
 export type BlockKind =
-  | "redo" | "recall" | "dsa" | "aptitude" | "domain" | "corecs" | "project" | "cadence" | "close";
+  | "redo" | "recall" | "dsa" | "aptitude" | "domain" | "corecs" | "career" | "project"
+  | "cadence" | "close";
 
 export type PlanProblem = {
   slug: string;
@@ -25,6 +26,8 @@ export type PlanProblem = {
   isMust: boolean;
   outcome?: Outcome | null;
   redoDueDay?: number | null;
+  /** set on redo items, so a lane that wants DSA can tell a SQL redo apart */
+  trackSlug?: string;
 };
 
 export type PlanBlock = {
@@ -72,6 +75,9 @@ export type CandidateUnit = {
   moduleSlug: string;
   moduleTitle: string;
   trackSlug: string;
+  /** the phase's order, 1 = foundations; every lane walks phases in order */
+  phaseOrder: number;
+  moduleOrder: number;
   /** rank within its track, 1 = next up */
   rnTrack: number;
   /** rank within its module, 1 = next up */
@@ -85,6 +91,12 @@ export type OpenDeliverable = {
   projectName: string;
   estMinutes: number;
 };
+
+/**
+ * Where a lane stands: the earliest phase it still has units in, and how much
+ * of that phase is left. What decides which domain lane is further behind.
+ */
+export type TrackStanding = { track: string; phaseOrder: number; total: number; remaining: number };
 
 /** a weekly quota that has not been met and is running out of week */
 export type CadenceDue = { kind: string; label: string; minutes: number; short: number };
@@ -103,12 +115,35 @@ export type PlanInput = {
   cadenceDue?: CadenceDue[];
   /** recall cards whose interval has come due on or before today */
   cardsDue?: number;
+  standing?: TrackStanding[];
 };
 
-/** DevOps four days out of five, SDE on the fifth. The roadmap's Wed fork, generalised. */
-function domainTrackFor(dayIndex: number) {
-  return dayIndex % 5 === 0 ? "sde" : "devops";
+/** the domain lanes, in the order a tie goes */
+const DOMAIN_TRACKS = ["devops", "sde"] as const;
+
+/**
+ * The domain lane that is further behind, among those with a unit to offer.
+ *
+ * First the one still in an earlier phase, then the one with the larger share
+ * of its current phase left; a tie goes to DevOps. This replaced a fixed
+ * DevOps 4 : SDE 1 rotation, which starved SDE whatever its size: a lane that
+ * is half the length of the other should finish its phase at the same time,
+ * not three times later.
+ */
+function laggingTrack(
+  input: PlanInput,
+  next: (track: string) => CandidateUnit | undefined,
+): string | undefined {
+  return DOMAIN_TRACKS.flatMap((track, tie) => {
+    const u = next(track);
+    if (!u) return [];
+    const s = input.standing?.find((x) => x.track === track);
+    return [{ track, tie, phase: s?.phaseOrder ?? u.phaseOrder, left: s && s.total ? s.remaining / s.total : 0 }];
+  }).sort((a, b) => a.phase - b.phase || b.left - a.left || a.tie - b.tie)[0]?.track;
 }
+
+/** the career lane runs on these days of each journey week */
+const CAREER_DAYS = new Set([3, 6]);
 
 const REDO_CAP = 3;
 const DSA_PROBLEM_CAP = 3;
@@ -134,7 +169,23 @@ function problemsFor(input: PlanInput, unit: CandidateUnit, cap: number, used: S
   const mine = open.filter((p) => p.unitSlug === unit.slug);
   const module = open.filter((p) => p.moduleSlug === unit.moduleSlug && p.unitSlug !== unit.slug);
   const stranded = open.filter((p) => p.trackSlug === unit.trackSlug && !live.has(p.moduleSlug));
-  return [...mine, ...module, ...stranded].slice(0, cap);
+  // and when even those run out, the next modules' problems in the same lane —
+  // three a day outpaces a unit's own, and the reps should not stop for it
+  const ahead = open.filter(
+    (p) => p.trackSlug === unit.trackSlug && p.moduleSlug !== unit.moduleSlug && live.has(p.moduleSlug),
+  );
+  return [...mine, ...module, ...stranded, ...ahead].slice(0, cap);
+}
+
+/**
+ * Problems for a unit outside DSA: only the ones bound to that unit, and at
+ * most two. A SQL problem belongs to the unit that teaches the query — it is
+ * not reps, and it must never leak into a DSA block or inflate the DSA count.
+ */
+function ownProblems(input: PlanInput, unit: CandidateUnit, used: Set<string>) {
+  const ps = input.problems.filter((p) => p.unitSlug === unit.slug && !used.has(p.slug)).slice(0, 2);
+  ps.forEach((p) => used.add(p.slug));
+  return ps;
 }
 
 function nextInTrack(input: PlanInput, track: string, nth: number) {
@@ -143,12 +194,18 @@ function nextInTrack(input: PlanInput, track: string, nth: number) {
 
 /**
  * Core CS rotates by module rather than draining OS before touching DBMS —
- * revision only works spaced out, and the interview asks all three.
+ * revision only works spaced out, and the interview asks all three. It rotates
+ * within the earliest phase that still has units, in module order: DBMS depth
+ * waits until Phase 1's DBMS is done, like every other lane.
  */
 function nextCoreCs(input: PlanInput) {
-  const cs = input.units.filter((u) => u.trackSlug === "corecs");
-  if (cs.length === 0) return undefined;
-  const moduleSlugs = [...new Set(cs.map((u) => u.moduleSlug))].sort();
+  const all = input.units.filter((u) => u.trackSlug === "corecs");
+  if (all.length === 0) return undefined;
+  const phase = Math.min(...all.map((u) => u.phaseOrder));
+  const cs = all.filter((u) => u.phaseOrder === phase);
+  const moduleSlugs = [
+    ...new Set([...cs].sort((a, b) => a.moduleOrder - b.moduleOrder).map((u) => u.moduleSlug)),
+  ];
   const start = (input.dayIndex - 1) % moduleSlugs.length;
   for (let i = 0; i < moduleSlugs.length; i++) {
     const m = moduleSlugs[(start + i) % moduleSlugs.length];
@@ -222,7 +279,9 @@ export function generatePlan(input: PlanInput): DayPlan {
         stretch: false,
       });
     }
-    const p = input.redo[0] ?? input.problems[0];
+    // DSA only: the minimum chain is the compounding lane, not a SQL exercise
+    const isDsa = (x: PlanProblem & { trackSlug?: string }) => (x.trackSlug ?? "dsa") === "dsa";
+    const p = input.redo.find(isDsa) ?? input.problems.find(isDsa);
     if (p) {
       blocks.push({
         id: `dsa:minimum`,
@@ -355,20 +414,42 @@ export function generatePlan(input: PlanInput): DayPlan {
     stretch: false,
   });
 
-  // 4. Domain — DevOps 4 : SDE 1.
-  const domain = domainTrackFor(input.dayIndex);
-  for (let i = 0; i <= extra.domain; i++) {
-    const u = nextInTrack(input, domain, i);
+  // 4. Domain — whichever of DevOps and SDE is further behind.
+  const taken = new Set<string>();
+  const nextFree = (track: string) =>
+    input.units.find((u) => u.trackSlug === track && !taken.has(u.slug));
+  const place = (kind: BlockKind, u: CandidateUnit, stretch: boolean) => {
+    taken.add(u.slug);
+    blocks.push(unitBlock(kind, u, ownProblems(input, u, used), stretch));
+  };
+  const domain = laggingTrack(input, nextFree);
+  for (let i = 0; domain && i <= extra.domain; i++) {
+    const u = nextFree(domain);
     if (!u) break;
-    blocks.push(unitBlock("domain", u, [], i > 0));
+    place("domain", u, i > 0);
   }
 
-  // 5. Core CS — rotating revision.
+  // 5. Core CS — rotating revision. A lane that has run out of Core CS gives
+  //    the slot to the domain lane that is behind, rather than to nothing.
   const cs = nextCoreCs(input);
-  if (cs) blocks.push(unitBlock("corecs", cs, [], false));
+  if (cs) place("corecs", cs, false);
+  else {
+    const lag = laggingTrack(input, nextFree);
+    const u = lag ? nextFree(lag) : undefined;
+    if (u) place("domain", u, false);
+  }
   if (extra.corecs > 0) {
-    const second = input.units.find((u) => u.trackSlug === "corecs" && u.slug !== cs?.slug);
-    if (second) blocks.push(unitBlock("corecs", second, [], true));
+    const second = nextFree("corecs");
+    if (second) place("corecs", second, true);
+  }
+
+  // 5b. Career — twice a journey week. The story bank and the resumes are an
+  //     interview gate like any other, and they do not get written by waiting
+  //     for a free evening.
+  const dayOfWeek = ((input.dayIndex - 1) % 7) + 1;
+  if (CAREER_DAYS.has(dayOfWeek)) {
+    const u = nextFree("career");
+    if (u) place("career", u, false);
   }
 
   // 6. The project. Weekends have the budget for it; on a weekday it only earns
@@ -391,7 +472,6 @@ export function generatePlan(input: PlanInput): DayPlan {
 
   // 7. Obligations whose journey week is running out. A quota that surfaces on
   //    day 5 is still recoverable; one that surfaces on day 7 is a lecture.
-  const dayOfWeek = ((input.dayIndex - 1) % 7) + 1;
   if (dayOfWeek >= 5) {
     for (const q of input.cadenceDue ?? []) {
       blocks.push({
@@ -416,10 +496,10 @@ export function generatePlan(input: PlanInput): DayPlan {
   const firstDsa = blocks.find((b) => b.kind === "dsa");
   if (firstDsa) protectedIds.add(firstDsa.id);
 
-  // trimmed first to last: stretch blocks, then Core CS, the project, the
-  // domain lane, and finally the week's outstanding obligations
-  const RANK: Record<string, number> = { corecs: 0, project: 1, domain: 2, cadence: 3 };
-  const trimOrder = (b: PlanBlock) => (b.stretch ? 0 : 10) + (RANK[b.kind] ?? 4);
+  // trimmed first to last: stretch blocks, then Core CS, career, the project,
+  // the domain lane, and finally the week's outstanding obligations
+  const RANK: Record<string, number> = { corecs: 0, career: 1, project: 2, domain: 3, cadence: 4 };
+  const trimOrder = (b: PlanBlock) => (b.stretch ? 0 : 10) + (RANK[b.kind] ?? 5);
 
   const total = () => blocks.reduce((n, b) => n + b.minutes, 0);
   const ceiling = input.budgetMin - 10; // the close costs 10
@@ -483,6 +563,7 @@ export type DayContext = {
   redo: PlanProblem[];
   doneUnits: string[];
   cardsDue: number;
+  standing: TrackStanding[];
 };
 
 /**
@@ -496,17 +577,45 @@ export async function getDayContext(userId: string): Promise<DayContext> {
   const run = () => db.execute<{ data: DayContext }>(sql`
     with ${openTodayCte(userId)},
     prog as (select unit_slug, state from unit_progress where user_id = ${userId}),
+    /*
+     * Phase first, then module, then unit. Module order restarts in each phase,
+     * so ordering by module alone would slot Phase 2's first module in beside
+     * Phase 1's. Each lane walks its own phases; no lane waits on another.
+     */
     cand as (
       select un.slug, un.title, un.objective, un.est_minutes, m.slug as module_slug,
-             m.title as module_title, m.track_slug,
-             row_number() over (partition by m.track_slug order by m."order", un."order") as rn_track,
+             m.title as module_title, m.track_slug, ph."order" as phase_order,
+             m."order" as module_order,
+             row_number() over (
+               partition by m.track_slug order by ph."order", m."order", un."order"
+             ) as rn_track,
              row_number() over (partition by m.slug order by un."order") as rn_module
       from units un
       join modules m on m.slug = un.module_slug
+      join phases ph on ph.slug = m.phase_slug
       left join prog p on p.unit_slug = un.slug
       where coalesce(p.state, 'available') <> 'done'
     ),
-    top as (select * from cand where rn_track <= ${CANDIDATE_DEPTH}),
+    -- Core CS rotates across modules, so it needs every module's next unit,
+    -- not just the first few units of whichever module comes first
+    top as (
+      select * from cand
+      where rn_track <= ${CANDIDATE_DEPTH} or (track_slug = 'corecs' and rn_module = 1)
+    ),
+    standing as (
+      select distinct on (track_slug) track_slug, phase_order, total, remaining
+      from (
+        select m.track_slug, ph."order" as phase_order, count(*)::int as total,
+               count(*) filter (where coalesce(p.state, 'available') <> 'done')::int as remaining
+        from units un
+        join modules m on m.slug = un.module_slug
+        join phases ph on ph.slug = m.phase_slug
+        left join prog p on p.unit_slug = un.slug
+        group by 1, 2
+      ) per_phase
+      where remaining > 0
+      order by track_slug, phase_order
+    ),
     solved as (
       select distinct problem_slug from problem_attempts
       where user_id = ${userId} and outcome in ('clean', 'hinted')
@@ -527,9 +636,10 @@ export async function getDayContext(userId: string): Promise<DayContext> {
     prob as (
       select p.slug, p.title, p.url, p.platform, p.difficulty, p.pattern_tag, p.trigger_hint,
              p.approach_hint, p.est_minutes, p.is_must, p.module_slug, p.unit_slug, p."order",
-             m.track_slug, m."order" as module_order
+             m.track_slug, m."order" as module_order, ph."order" as phase_order
       from problems p
       join modules m on m.slug = p.module_slug
+      join phases ph on ph.slug = m.phase_slug
       where (p.module_slug in (select module_slug from top)
              or p.module_slug in (select module_slug from drained))
         and p.slug not in (select problem_slug from solved)
@@ -537,9 +647,10 @@ export async function getDayContext(userId: string): Promise<DayContext> {
     redoq as (
       select a.problem_slug as slug, p.title, p.url, p.platform, p.difficulty, p.pattern_tag,
              p.trigger_hint, p.approach_hint, p.est_minutes, p.is_must,
-             a.outcome, a.redo_due_day
+             a.outcome, a.redo_due_day, m.track_slug
       from problem_attempts a
-      join problems p on p.slug = a.problem_slug, day d
+      join problems p on p.slug = a.problem_slug
+      join modules m on m.slug = p.module_slug, day d
       where a.user_id = ${userId} and a.redo_cleared_at is null
         and a.redo_due_day is not null and a.redo_due_day <= d.day_index
     )
@@ -593,8 +704,14 @@ export async function getDayContext(userId: string): Promise<DayContext> {
         select json_agg(json_build_object(
           'slug', slug, 'title', title, 'objective', objective, 'estMinutes', est_minutes,
           'moduleSlug', module_slug, 'moduleTitle', module_title, 'trackSlug', track_slug,
+          'phaseOrder', phase_order, 'moduleOrder', module_order,
           'rnTrack', rn_track, 'rnModule', rn_module
         ) order by track_slug, rn_track) from top
+      ), '[]'::json),
+      'standing', coalesce((
+        select json_agg(json_build_object(
+          'track', track_slug, 'phaseOrder', phase_order, 'total', total, 'remaining', remaining
+        )) from standing
       ), '[]'::json),
       'problems', coalesce((
         select json_agg(json_build_object(
@@ -602,14 +719,14 @@ export async function getDayContext(userId: string): Promise<DayContext> {
           'difficulty', difficulty, 'patternTag', pattern_tag, 'triggerHint', trigger_hint,
           'approachHint', approach_hint, 'estMinutes', est_minutes, 'isMust', is_must,
           'moduleSlug', module_slug, 'unitSlug', unit_slug, 'trackSlug', track_slug
-        ) order by module_order, (unit_slug is null), "order") from prob
+        ) order by phase_order, module_order, (unit_slug is null), "order") from prob
       ), '[]'::json),
       'redo', coalesce((
         select json_agg(json_build_object(
           'slug', slug, 'title', title, 'url', url, 'platform', platform,
           'difficulty', difficulty, 'patternTag', pattern_tag, 'triggerHint', trigger_hint,
           'approachHint', approach_hint, 'estMinutes', est_minutes, 'isMust', is_must,
-          'outcome', outcome, 'redoDueDay', redo_due_day
+          'outcome', outcome, 'redoDueDay', redo_due_day, 'trackSlug', track_slug
         ) order by redo_due_day) from redoq
       ), '[]'::json)
     ) as data
@@ -715,6 +832,7 @@ export function planInputFrom(
     deliverable: ctx.deliverable,
     cadenceDue: cadenceDueFor(ctx.journeyWeek, ctx.mocksThisWeek),
     cardsDue: ctx.cardsDue,
+    standing: ctx.standing,
   };
 }
 

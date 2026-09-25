@@ -62,7 +62,7 @@ export default async function RoadmapPage() {
             >
               <p className="prose-cairn mb-4 text-base">{phase.mission}</p>
               {inPhase.length === 0 ? (
-                <p className="text-2xs text-lo">Content pass B fills this in.</p>
+                <p className="text-2xs text-lo">Its modules are still being written.</p>
               ) : (
                 <ul className="grid gap-2 sm:grid-cols-2">
                   {inPhase.map((m) => {

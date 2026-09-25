@@ -2,7 +2,7 @@ import { cache } from "react";
 import { and, asc, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { openTodayCte, retryUnopened } from "@/lib/open-today";
-import { journeyDays, unitProgress, units, modules } from "@/db/schema";
+import { journeyDays, unitProgress, units, modules, phases } from "@/db/schema";
 
 /** 13 weeks of curriculum, paced against ~90 active days. No calendar anywhere. */
 export { TARGET_ACTIVE_DAYS } from "@/content/cadence";
@@ -166,11 +166,13 @@ export async function getNextUnits(userId: string, trackSlugs: string[]) {
     })
     .from(units)
     .innerJoin(modules, eq(units.moduleSlug, modules.slug))
+    .innerJoin(phases, eq(phases.slug, modules.phaseSlug))
     .leftJoin(
       unitProgress,
       and(eq(unitProgress.unitSlug, units.slug), eq(unitProgress.userId, userId)),
     )
-    .orderBy(asc(modules.order), asc(units.order));
+    // phase first: module order restarts in every phase
+    .orderBy(asc(phases.order), asc(modules.order), asc(units.order));
 
   return trackSlugs
     .map((t) => rows.find((r) => r.trackSlug === t && r.state !== "done"))

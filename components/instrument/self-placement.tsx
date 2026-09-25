@@ -9,6 +9,8 @@ type Mod = {
   slug: string;
   title: string;
   trackSlug: string;
+  /** modules arrive in phase order; a heading opens each phase */
+  phaseTitle: string;
   units: { slug: string; title: string; objective: string }[];
 };
 
@@ -49,11 +51,13 @@ export function SelfPlacement({ modules }: { modules: Mod[] }) {
   return (
     <div className="space-y-5">
       <ul className="divide-y divide-line-soft border-t border-line-soft">
-        {modules.map((m) => {
+        {modules.map((m, i) => {
           const mine = m.units.filter((u) => picked.has(u.slug)).length;
           const isOpen = open === m.slug;
+          const newPhase = i === 0 || modules[i - 1]!.phaseTitle !== m.phaseTitle;
           return (
             <li key={m.slug}>
+              {newPhase && <p className="legend pb-1 pt-4 first:pt-2">{m.phaseTitle}</p>}
               <div className="flex items-baseline gap-3 py-2.5">
                 <button
                   type="button"

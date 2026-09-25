@@ -7,6 +7,7 @@ import { modules, problems, tracks, unitProgress, units } from "@/db/schema";
 import { Panel } from "@/components/instrument/panel";
 import { Boot, BootItem } from "@/components/instrument/boot";
 import { cn } from "@/lib/cn";
+import { BankModule } from "@/components/instrument/bank-module";
 import { CHECKPOINT_PASS, questionsForModule } from "@/content/checkpoints";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
@@ -111,6 +112,17 @@ export default async function ModulePage({ params }: { params: Promise<{ slug: s
           </ul>
         </Panel>
       </BootItem>
+
+      {done < unitRows.length && (
+        <BootItem>
+          <Panel legend="already known">
+            <BankModule
+              title={mod.title}
+              unitSlugs={unitRows.filter((u) => u.state !== "done").map((u) => u.slug)}
+            />
+          </Panel>
+        </BootItem>
+      )}
 
       <BootItem>
         <Panel legend="checkpoint">

@@ -166,9 +166,11 @@ async function checks(u: typeof users.$inferSelect) {
    * run on a built input rather than the seed, because the failure only shows
    * once a module is finished — which the seed, at day one, never is.
    */
-  const mkUnit = (slug: string, moduleSlug: string, trackSlug: string): typeof ctx.units[number] => ({
+  const mkUnit = (
+    slug: string, moduleSlug: string, trackSlug: string, phaseOrder = 1, moduleOrder = 1,
+  ): typeof ctx.units[number] => ({
     slug, title: slug, objective: "", estMinutes: 30,
-    moduleSlug, moduleTitle: moduleSlug, trackSlug, rnTrack: 1, rnModule: 1,
+    moduleSlug, moduleTitle: moduleSlug, trackSlug, phaseOrder, moduleOrder, rnTrack: 1, rnModule: 1,
   });
   const mkProb = (
     slug: string, moduleSlug: string, unitSlug: string | null, trackSlug = "dsa",
@@ -214,6 +216,8 @@ async function checks(u: typeof users.$inferSelect) {
   ok("dsa survives its last unit",
     practice?.unitSlug === null && practice?.problems.length === 3,
     `${practice?.problems.length ?? 0} problems, no unit`);
+
+  lanes(ctx, mkUnit, mkProb);
 
   const pools = new Set([1, 2, 3, 4, 5, 6, 7].map((d) => aptitudeTopicFor(d).pool));
   ok("aptitude rotates pools", pools.size === 3, [...pools].join(","));
@@ -405,6 +409,91 @@ async function checks(u: typeof users.$inferSelect) {
  * same functions the server actions call. Last, because it banks units and
  * advances the day — both of which the checks above assume have not happened.
  */
+/**
+ * The lanes: each walks its own phases in order, the domain slot goes to the
+ * lane that is behind, Core CS rotates within its earliest phase, career runs
+ * twice a week, and a SQL problem never lands in a DSA block.
+ */
+function lanes(
+  ctx: Awaited<ReturnType<typeof getDayContext>>,
+  mkUnit: (s: string, m: string, t: string, ph?: number, mo?: number) => (typeof ctx.units)[number],
+  mkProb: (s: string, m: string, u: string | null, t?: string) => (typeof ctx.problems)[number],
+) {
+  const base = { mode: "normal" as const, multiplier: 1, budgetMin: 600, isWeekend: false, redo: [] };
+
+  // the seeded curriculum, as a fresh user sees it: no lane reaches into a
+  // later phase while it still has units in an earlier one
+  const byTrack = new Map<string, number[]>();
+  for (const u of ctx.units) byTrack.set(u.trackSlug, [...(byTrack.get(u.trackSlug) ?? []), u.phaseOrder]);
+  const monotone = [...byTrack.values()].every((ps) => ps.every((p, i) => i === 0 || p >= ps[i - 1]!));
+  const real = generatePlan({ ...base, dayIndex: 3, units: ctx.units, problems: ctx.problems, standing: ctx.standing });
+  const first = new Map([...byTrack].map(([t, ps]) => [t, Math.min(...ps)]));
+  const early = real.blocks.every((b) => {
+    const u = ctx.units.find((x) => x.slug === b.unitSlug);
+    return !u || u.phaseOrder === first.get(u.trackSlug);
+  });
+  ok("lanes walk phases in order", monotone && early, `${ctx.units.length} candidates, ${ctx.standing.length} lanes`);
+
+  const dv = [mkUnit("dv-1", "m-dv", "devops"), mkUnit("dv-2", "m-dv", "devops")];
+  const sd = [mkUnit("sd-1", "m-sd", "sde"), mkUnit("sd-2", "m-sd", "sde")];
+  const cs = [mkUnit("os-1", "m-os", "corecs", 1, 1)];
+  const domainOf = (standing: { track: string; phaseOrder: number; total: number; remaining: number }[]) =>
+    generatePlan({ ...base, dayIndex: 1, units: [...dv, ...sd, ...cs], problems: [], standing })
+      .blocks.find((b) => b.kind === "domain")?.track;
+  const even = domainOf([
+    { track: "devops", phaseOrder: 1, total: 20, remaining: 20 },
+    { track: "sde", phaseOrder: 1, total: 10, remaining: 10 },
+  ]);
+  const lags = domainOf([
+    { track: "devops", phaseOrder: 1, total: 20, remaining: 10 },
+    { track: "sde", phaseOrder: 1, total: 10, remaining: 9 },
+  ]);
+  const phaseFirst = domainOf([
+    { track: "devops", phaseOrder: 1, total: 20, remaining: 1 },
+    { track: "sde", phaseOrder: 2, total: 10, remaining: 10 },
+  ]);
+  ok("sde picked when it lags", even === "devops" && lags === "sde" && phaseFirst === "devops",
+    `tie ${even}, behind ${lags}, earlier phase ${phaseFirst}`);
+
+  const csUnits = [
+    mkUnit("os-1", "m-os", "corecs", 1, 1), mkUnit("db-1", "m-db", "corecs", 1, 2),
+    mkUnit("deep-1", "m-deep", "corecs", 2, 1),
+  ];
+  const csPicks = [1, 2, 3, 4].map((d) =>
+    generatePlan({ ...base, dayIndex: d, units: csUnits, problems: [] }).blocks.find((b) => b.kind === "corecs")?.unitSlug);
+  ok("core cs rotates in phase", !csPicks.includes("deep-1") && csPicks.includes("os-1") && csPicks.includes("db-1"),
+    csPicks.join(","));
+
+  const overflow = generatePlan({ ...base, dayIndex: 1, units: [...dv, ...sd], problems: [] });
+  ok("no core cs: slot to domain", overflow.blocks.filter((b) => b.kind === "domain").length === 2,
+    overflow.blocks.map((b) => b.unitSlug).filter(Boolean).join(","));
+
+  const car = [mkUnit("car-1", "m-car", "career")];
+  const careerOn = [1, 2, 3, 4, 5, 6, 7, 10, 13].filter((d) =>
+    generatePlan({ ...base, dayIndex: d, units: [...dv, ...car], problems: [] }).blocks.some((b) => b.kind === "career"));
+  ok("career on days 3 and 6", careerOn.join(",") === "3,6,10,13", `days ${careerOn.join(",")}`);
+
+  const sqlDay = generatePlan({
+    ...base, dayIndex: 1,
+    units: [mkUnit("arr-1", "m-arr", "dsa"), mkUnit("sql-1", "m-sql", "corecs")],
+    problems: [
+      mkProb("p-sql-1", "m-sql", "sql-1", "corecs"), mkProb("p-sql-2", "m-sql", "sql-1", "corecs"),
+      mkProb("p-sql-3", "m-sql", "sql-1", "corecs"), mkProb("p-arr", "m-arr", "arr-1"),
+    ],
+  });
+  const inDsa = sqlDay.blocks.filter((b) => b.kind === "dsa").flatMap((b) => b.problems.map((p) => p.slug));
+  const inCs = sqlDay.blocks.find((b) => b.kind === "corecs")?.problems.map((p) => p.slug) ?? [];
+  ok("no sql in dsa blocks", !inDsa.some((s) => s.startsWith("p-sql")) && inCs.length === 2,
+    `dsa ${inDsa.join(",")} · core cs ${inCs.join(",")}`);
+  const badSql = generatePlan({
+    ...base, mode: "bad_day", dayIndex: 1, units: [],
+    problems: [mkProb("p-sql-1", "m-sql", "sql-1", "corecs"), mkProb("p-arr", "m-arr", null)],
+    redo: [{ ...mkProb("p-sql-2", "m-sql", "sql-1", "corecs"), outcome: "editorial", redoDueDay: 1 }],
+  });
+  ok("bad day stays dsa", badSql.blocks.find((b) => b.kind === "dsa")?.problems[0]?.slug === "p-arr",
+    badSql.blocks.find((b) => b.kind === "dsa")?.problems[0]?.slug ?? "none");
+}
+
 /**
  * The validator is only worth its rules if each one fires. A broken module is
  * spliced into the registry, validated, and taken back out — nothing touches
