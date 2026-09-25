@@ -25,9 +25,15 @@ import { sre } from "./modules/devops/09-sre";
 import { cppInternals } from "./modules/sde/01-cpp-internals";
 import { oop } from "./modules/sde/02-oop";
 import { restFastapi } from "./modules/sde/03-rest-fastapi";
+import { systemDesign } from "./modules/sde/04-system-design";
+import { scaling } from "./modules/sde/05-scaling";
+import { testing } from "./modules/sde/06-testing";
+import { cppDepth } from "./modules/sde/07-cpp-depth";
 import { os } from "./modules/corecs/01-os";
 import { dbms } from "./modules/corecs/02-dbms";
 import { cn } from "./modules/corecs/03-cn";
+import { dbDepth } from "./modules/corecs/04-db-depth";
+import { revisionSheets } from "./modules/corecs/05-revision-sheets";
 import { storyBank } from "./modules/career/01-story-bank";
 import { offCampus } from "./modules/career/02-offcampus";
 import { projects } from "./projects";
@@ -53,6 +59,10 @@ export const modules: Module[] = [
   stacksQueues, binaryTrees, bst, heapsTries, greedy,
   // devops / sre
   awsCore, cicd, iac, observability, sre,
+  // sde / backend
+  systemDesign, scaling, testing, cppDepth,
+  // core cs
+  dbDepth, revisionSheets,
   // career
   storyBank, offCampus,
 ];

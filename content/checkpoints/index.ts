@@ -4,7 +4,9 @@ import { dsaDepthQuestions } from "./dsa-depth";
 import { devopsQuestions } from "./devops";
 import { devopsDepthQuestions } from "./devops-depth";
 import { sdeQuestions } from "./sde";
+import { sdeDepthQuestions } from "./sde-depth";
 import { corecsQuestions } from "./corecs";
+import { corecsDepthQuestions } from "./corecs-depth";
 import { careerQuestions } from "./career";
 
 export type { Question };
@@ -23,7 +25,9 @@ export const questions: Question[] = [
   ...devopsQuestions,
   ...devopsDepthQuestions,
   ...sdeQuestions,
+  ...sdeDepthQuestions,
   ...corecsQuestions,
+  ...corecsDepthQuestions,
   ...careerQuestions,
 ];
 
