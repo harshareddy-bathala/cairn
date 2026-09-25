@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
 import { THEME_SCRIPT } from "@/lib/theme";
 import { ThemeColorSync } from "@/components/instrument/theme-color";
+import { MotionPrefs } from "@/components/instrument/motion-prefs";
 import "./globals.css";
 
 const plexMono = IBM_Plex_Mono({
@@ -54,7 +55,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
       </head>
       <body>
-        {children}
+        <MotionPrefs>{children}</MotionPrefs>
         <ThemeColorSync />
       </body>
     </html>

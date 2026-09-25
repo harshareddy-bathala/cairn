@@ -13,6 +13,7 @@ import { getMisses } from "@/lib/misses";
 import { getRedoQueue } from "@/lib/progress";
 import { cn } from "@/lib/cn";
 import { fmtDay, fmtWeek } from "@/lib/format";
+import { DIFFICULTY } from "@/lib/marks";
 
 export const metadata = { title: "Review" };
 
@@ -143,16 +144,9 @@ export default async function ReviewPage() {
                   </a>
                   <span className="legend">{p.patternTag}</span>
                   <span
-                    className={cn(
-                      "legend",
-                      p.difficulty === "hard"
-                        ? "text-bad"
-                        : p.difficulty === "medium"
-                          ? "text-warn"
-                          : "text-phos-dim",
-                    )}
+                    className={cn("legend", DIFFICULTY[p.difficulty].cls)}
                   >
-                    {p.difficulty}
+                    {DIFFICULTY[p.difficulty].label}
                   </span>
                   {p.unitSlug && (
                     <Link
@@ -211,9 +205,11 @@ export default async function ReviewPage() {
                                 : "text-lo",
                           )}
                         >
-                          <span className="w-3 shrink-0">
+                          <span className="w-3 shrink-0" aria-hidden>
                             {i === m.answer ? "✓" : i === m.chose ? "✕" : "·"}
                           </span>
+                          {i === m.answer && <span className="sr-only">correct answer:</span>}
+                          {i === m.chose && i !== m.answer && <span className="sr-only">your answer:</span>}
                           <span>{o}</span>
                         </li>
                       ))}

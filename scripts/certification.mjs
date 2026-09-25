@@ -34,8 +34,10 @@ async function answerPaper(right) {
   const n = await lis.count();
   for (let i = 0; i < n; i++) {
     const li = lis.nth(i);
-    const correct = KEY[(await li.locator("p span.prose-cairn").first().textContent())?.trim()];
-    const opts = li.locator("ul button");
+    const correct = KEY[(await li.locator("legend span.prose-cairn").first().textContent())?.trim()];
+    // each option is a label around a visually hidden radio; the label is what a
+    // pointer clicks, and clicking it checks the radio
+    const opts = li.locator("fieldset label");
     for (let j = 0; j < await opts.count(); j++) {
       const text = (await opts.nth(j).locator("span.prose-cairn").textContent())?.trim();
       if ((text === correct) === right) { await opts.nth(j).click(); break; }
@@ -58,7 +60,8 @@ say("answer key withheld", !(await p.content()).includes("Growing a vector reall
 await answerPaper(false);
 await p.getByRole("button", { name: "submit checkpoint" }).click();
 await p.waitForTimeout(4000);
-say("checkpoint scores", await p.getByText(/^\d+\/\d+$/).first().isVisible().catch(() => false));
+// the score carries a screen-reader prefix ("Not passed: 2/5"), so match the tail
+say("checkpoint scores", await p.getByText(/passed: \d+\/\d+$/i).first().isVisible().catch(() => false));
 say("failed paper withholds key", !(await p.content()).includes("Growing a vector reallocates"));
 say("misses are marked", (await p.getByText("✕").count()) > 0);
 await p.screenshot({ path: "shots/checkpoint.png", fullPage: true });
@@ -138,14 +141,16 @@ await begin("begin the exam");
 await answerPaper(false);
 await p.getByRole("button", { name: "submit exam" }).click();
 await p.waitForTimeout(5000);
-say("failed exam: no key", (await p.locator("ol > li ul button", { hasText: "\u2713" }).count()) === 0);
+const options = p.locator("ol > li fieldset label");
+say("failed exam: no key", (await options.count()) > 0 && (await options.filter({ hasText: "\u2713" }).count()) === 0);
 say("failed exam: breakdown", await p.getByText(/breakdown shows where/).isVisible().catch(() => false));
-const firstPaper = await p.locator("ol > li p span.prose-cairn").allTextContents();
+const prompts = () => p.locator("ol > li legend span.prose-cairn").allTextContents();
+const firstPaper = await prompts();
 
 await p.getByRole("button", { name: "sit a fresh paper" }).first().click();
 await p.getByRole("button", { name: "submit exam" }).waitFor();
-const secondPaper = await p.locator("ol > li p span.prose-cairn").allTextContents();
-say("retake is a new paper", firstPaper.join() !== secondPaper.join());
+const secondPaper = await prompts();
+say("retake is a new paper", firstPaper.length > 0 && firstPaper.join() !== secondPaper.join());
 await answerPaper(true);
 await p.getByRole("button", { name: "submit exam" }).click();
 await p.waitForTimeout(5000);

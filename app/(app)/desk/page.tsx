@@ -18,6 +18,12 @@ export default async function ProjectsPage() {
   if (!session?.user?.id) redirect("/signin");
 
   const projects = await getProjects(session.user.id);
+  // nothing pledged and nothing built: say where to begin, rather than leaving
+  // three identical untouched boards to choose between
+  const untouched = projects.every(
+    (p) => !p.pledgeAcceptedAt && p.deliverables.every((d) => d.doneOnDay == null),
+  );
+  const first = projects[0];
 
   return (
     <Boot className="mx-auto max-w-3xl space-y-6 px-4 pt-6 pb-8 sm:px-6 sm:pt-8 sm:pb-10">
@@ -31,6 +37,16 @@ export default async function ProjectsPage() {
           </p>
         </header>
       </BootItem>
+
+      {untouched && first && (
+        <BootItem>
+          <p className="rounded-panel border border-line-soft p-4 note text-mid">
+            Nothing started yet. Begin with <span className="text-hi">{first.name}</span>: accept
+            its pledge, add the repo, and the weekend plan starts offering its first
+            deliverable. The other two open as their phases arrive.
+          </p>
+        </BootItem>
+      )}
 
       {projects.map((p) => (
         <BootItem key={p.slug}>

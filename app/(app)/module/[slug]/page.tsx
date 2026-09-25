@@ -9,6 +9,7 @@ import { Boot, BootItem } from "@/components/instrument/boot";
 import { cn } from "@/lib/cn";
 import { BankModule } from "@/components/instrument/bank-module";
 import { CHECKPOINT_PASS, questionsForModule } from "@/content/checkpoints";
+import { buttonClass } from "@/components/instrument/button";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -97,7 +98,14 @@ export default async function ModulePage({ params }: { params: Promise<{ slug: s
                       u.state === "done" ? "text-phos" : "text-lo",
                     )}
                   >
-                    {u.state === "done" ? "✓" : String(u.order).padStart(2, "0")}
+                    {u.state === "done" ? (
+                      <>
+                        <span aria-hidden>✓</span>
+                        <span className="sr-only">done:</span>
+                      </>
+                    ) : (
+                      String(u.order).padStart(2, "0")
+                    )}
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="block text-sm text-hi">{u.title}</span>
@@ -134,7 +142,7 @@ export default async function ModulePage({ params }: { params: Promise<{ slug: s
             </p>
             <Link
               href={`/checkpoint/${slug}`}
-              className="ctl inline-flex shrink-0 items-center rounded-[3px] border border-line px-3 py-1.5 text-xs text-mid transition-colors duration-[120ms] hover:border-phos hover:text-phos"
+              className={buttonClass("ghost", "sm", "shrink-0")}
             >
               take the checkpoint
             </Link>

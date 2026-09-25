@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Panel } from "@/components/instrument/panel";
+import { buttonClass } from "@/components/instrument/button";
 
 /**
  * A unit, module or checkpoint that does not exist — inside the app shell, so
@@ -21,7 +22,7 @@ export default function NotFound() {
         <div className="mt-4 flex flex-wrap gap-2">
           <Link
             href="/today"
-            className="ctl inline-flex items-center rounded-[3px] border border-line px-4 py-1.5 text-sm text-hi transition-colors duration-[120ms] hover:border-phos hover:text-phos"
+            className={buttonClass("ghost", "md", "py-1.5 text-hi")}
           >
             back to today
           </Link>

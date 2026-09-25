@@ -5,6 +5,7 @@ import Link from "next/link";
 import { signOutAction } from "@/app/actions/auth";
 import { cn } from "@/lib/cn";
 import { ROUTES } from "@/lib/routes";
+import { Button } from "./button";
 
 export type AccountInfo = {
   email: string;
@@ -81,7 +82,7 @@ export function AccountMenu({ account }: { account: AccountInfo }) {
       {open && (
         <div
           id="account-panel"
-          className="absolute bottom-0 left-[calc(100%+10px)] z-40 w-60 rounded-[3px] border border-line bg-ink-850 p-3 shadow-lg"
+          className="absolute bottom-0 left-[calc(100%+10px)] z-40 w-60 rounded-[3px] border border-line bg-ink-850 p-3"
         >
           <p className="legend">signed in as</p>
           <p className="mt-1 truncate text-sm text-hi" title={account.email}>
@@ -107,14 +108,14 @@ export function AccountMenu({ account }: { account: AccountInfo }) {
             >
               settings
             </Link>
-            <button
-              type="button"
-              disabled={pending}
+            <Button
+              variant="danger"
+              pending={pending}
               onClick={() => startTransition(() => void signOutAction())}
-              className="rounded-[3px] border border-line px-2.5 py-1 text-xs text-mid transition-colors duration-[120ms] hover:border-bad hover:text-bad disabled:opacity-40"
+              className="min-h-0 px-2.5 py-1"
             >
               {pending ? "signing out…" : "sign out"}
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -136,14 +137,14 @@ export function AccountRow({ account }: { account: AccountInfo }) {
           {account.handle ? `@${account.handle}` : "no handle yet"}
         </span>
       </span>
-      <button
-        type="button"
-        disabled={pending}
+      <Button
+        variant="danger"
+        pending={pending}
         onClick={() => startTransition(() => void signOutAction())}
-        className="ctl shrink-0 rounded-[3px] border border-line px-3 py-1.5 text-xs text-mid transition-colors duration-[120ms] hover:border-bad hover:text-bad disabled:opacity-40"
+        className="shrink-0"
       >
         {pending ? "signing out…" : "sign out"}
-      </button>
+      </Button>
     </div>
   );
 }

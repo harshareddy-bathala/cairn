@@ -2,7 +2,7 @@ import { cache } from "react";
 import { and, asc, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { openTodayCte, retryUnopened } from "@/lib/open-today";
-import { journeyDays, unitProgress, units, modules, phases } from "@/db/schema";
+import { unitProgress, units, modules, phases } from "@/db/schema";
 
 /** 13 weeks of curriculum, paced against ~90 active days. No calendar anywhere. */
 export { TARGET_ACTIVE_DAYS } from "@/content/cadence";

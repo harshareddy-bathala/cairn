@@ -9,13 +9,9 @@ import { aptitudeByTopic, aptitudeTrend, getAptitude } from "@/lib/sidetracks";
 import { APTITUDE_SOURCES } from "@/content/aptitude";
 import { fmtDay } from "@/lib/format";
 import { cn } from "@/lib/cn";
+import { scoreBand, scoreText } from "@/lib/marks";
 
 export const metadata = { title: "Aptitude" };
-
-/** the score colour used everywhere a percentage is shown for this lane */
-function tone(pct: number) {
-  return pct >= 70 ? "text-phos" : pct >= 50 ? "text-warn" : "text-bad";
-}
 
 /**
  * The aptitude desk: today's drill, the log, and which topics keep going wrong.
@@ -75,7 +71,7 @@ export default async function AptitudePage() {
                 data={trend}
                 width={160}
                 height={20}
-                tone={avg != null && avg >= 70 ? "ok" : avg != null && avg >= 50 ? "warn" : "bad"}
+                tone={scoreBand(avg ?? 0)}
                 label={`aptitude scores over the last ${trend.length} drills, ${trend.join("%, ")}%`}
               />
               <span className="legend tabular-nums">{trend[trend.length - 1]}%</span>
@@ -95,7 +91,7 @@ export default async function AptitudePage() {
                   <span className="legend shrink-0 tabular-nums">
                     {t.n} {t.n === 1 ? "drill" : "drills"}
                   </span>
-                  <span className={cn("w-10 shrink-0 text-right text-2xs tabular-nums", tone(t.percent))}>
+                  <span className={cn("w-10 shrink-0 text-right text-2xs tabular-nums", scoreText(t.percent))}>
                     {t.percent}%
                   </span>
                 </li>

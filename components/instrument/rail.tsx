@@ -46,7 +46,13 @@ export function Rail({
         <span className="hidden text-sm tracking-[0.02em] text-hi lg:inline">Cairn</span>
       </Link>
 
-      <ul className="flex min-h-0 flex-col gap-1 overflow-y-auto px-1.5 lg:px-2.5">
+      {/*
+        No overflow on this list, deliberately. `overflow-y-auto` forces the x
+        axis to auto as well, and the hover labels below sit outside the 48px
+        column — so between `sm` and `lg` the rail grew a horizontal scrollbar.
+        Five items never need to scroll; the labels do need to escape.
+      */}
+      <ul className="flex flex-col gap-1 px-1.5 lg:px-2.5">
         {NAV.map((n) => {
           const active = current === n.href;
           return (
@@ -91,7 +97,9 @@ export function Rail({
 
       <div className="mt-auto flex w-full flex-col items-center gap-2 px-2.5 lg:gap-3 lg:px-4">
         <div className="flex w-full flex-col items-center gap-2 lg:flex-row lg:items-end lg:gap-3">
-          <div className="w-full lg:w-10 lg:shrink-0">
+          {/* a full cairn is tall; on a short window it would run into the
+              list above, and the day number beside it says the same thing */}
+          <div className="w-full lg:w-10 lg:shrink-0 [@media(max-height:560px)]:hidden">
             <Cairn stones={stones} max={18} />
           </div>
           {/* today's day number and the closed days are different counts —

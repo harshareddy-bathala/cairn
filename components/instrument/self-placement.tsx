@@ -1,9 +1,12 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { bankUnits } from "@/app/actions/onboarding";
 import { cn } from "@/lib/cn";
+import { ROUTES } from "@/lib/routes";
+import { useAction } from "@/lib/use-action";
+import { Button } from "./button";
 
 type Mod = {
   slug: string;
@@ -24,10 +27,13 @@ type Mod = {
  */
 export function SelfPlacement({ modules }: { modules: Mod[] }) {
   const router = useRouter();
-  const [, startTransition] = useTransition();
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [open, setOpen] = useState<string | null>(modules[0]?.slug ?? null);
-  const [saving, setSaving] = useState(false);
+  const banking = useAction(bankUnits);
+  // held after the action returns too: the push to Today takes a moment, and
+  // the button must not come back to life in between
+  const [leaving, setLeaving] = useState(false);
+  const saving = banking.pending || leaving;
 
   const toggleUnit = (slug: string) =>
     setPicked((s) => {
@@ -130,25 +136,29 @@ export function SelfPlacement({ modules }: { modules: Mod[] }) {
       </ul>
 
       <div className="flex flex-wrap items-center gap-3 border-t border-line pt-4">
-        <button
-          type="button"
-          disabled={saving}
-          onClick={() =>
-            startTransition(async () => {
-              setSaving(true);
-              await bankUnits([...picked]);
-              router.push("/today");
-              router.refresh();
-            })
-          }
-          className="ctl rounded-[3px] border border-line px-4 py-1.5 text-sm text-mid transition-colors duration-[120ms] hover:border-phos hover:text-phos disabled:opacity-50"
+        <Button
+          size="md"
+          pending={saving}
+          onClick={async () => {
+            const r = await banking.run([...picked]);
+            if (!r.ok) return;
+            setLeaving(true);
+            router.push(ROUTES.today);
+            router.refresh();
+          }}
+          className="py-1.5"
         >
           {saving ? "banking…" : picked.size === 0 ? "start from the beginning" : `bank ${picked.size} and start`}
-        </button>
+        </Button>
         <span className="note text-lo">
           Banked units count toward the map and the phase exam, but they put no stone on
           the cairn — you did not earn them here.
         </span>
+        {banking.error && (
+          <p role="alert" className="note w-full text-bad">
+            {banking.error}
+          </p>
+        )}
       </div>
     </div>
   );

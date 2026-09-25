@@ -1,5 +1,5 @@
 import { chromium } from "playwright";
-import { E2E_EMAIL } from "./e2e-account.mjs";
+import { E2E_EMAIL, SURFACES } from "./e2e-account.mjs";
 import { mkdir } from "node:fs/promises";
 
 /**
@@ -28,21 +28,7 @@ const BASE = process.env.BASE ?? "http://localhost:3000";
 // shooting a real account on purpose
 const EMAIL = process.env.SHOT_EMAIL ?? E2E_EMAIL;
 
-const PAGES = [
-  ["today", "/today"],
-  ["review", "/review"],
-  ["trail", "/roadmap"],
-  ["module", "/module/dsa-binary-search"],
-  ["unit", "/unit/dsa-bs-answer-space"],
-  ["progress", "/progress"],
-  ["certification", "/progress/certification"],
-  ["cohort", "/progress/cohort"],
-  ["checkpoint", "/checkpoint/dsa-cpp-stl"],
-  ["projects", "/desk"],
-  ["career", "/desk/career"],
-  ["aptitude", "/desk/aptitude"],
-  ["settings", "/settings"],
-];
+const PAGES = SURFACES;
 
 const VIEWPORTS = [
   { name: "phone", width: 390, height: 844, mobile: true },

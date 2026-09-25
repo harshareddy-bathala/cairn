@@ -61,7 +61,7 @@ shows its label on hover *and* keyboard focus.
 `note` utility — Plex Sans at the data-row size — not as an 11px legend. Legends stay
 mono, uppercase and small; they label things, they are not read. Every foreground token
 clears 4.5:1 on both the page and a panel, in both grounds — re-check with an axe pass
-after touching a colour token.
+after touching a colour token (`npm run a11y`).
 
 **Failure has a shape.** `app/(app)/loading.tsx` answers a tap before the server does,
 `error.tsx` keeps the shell and offers a retry when an action throws, and the 404s are
@@ -126,12 +126,14 @@ enforces the allowlist.
 | `npm run e2e:day` | drive the plan, catch-up, bad day and day close in a browser |
 | `npm run e2e:tracks` | drive aptitude, projects, applications and the STAR bank |
 | `npm run e2e:cert` | drive self-placement, checkpoints, the exam and a certificate |
+| `npm run e2e:keys` | the keyboard walkthrough: focus after every action that removes a control, quiz radios, and reduce-motion |
 | `npm run latency` | measure database round-trip cost |
 | `npm run reset-me` | wipe your own progress rows, keeping the curriculum; `-- --email x` for another account |
 | `npm run reminders` | 21 invariants: the schedule, the copy, the due window, one send per slot |
 | `npm run review` | 43 invariants: the scheduler, the deck, misses, the week review |
 | `npm run telegram` | bot plumbing — `setup`, `info`, `tick`, `preview` |
 | `npm run shots` | every page at 390px and 1280px; fails on sideways scroll or console errors |
+| `npm run a11y` | axe (WCAG 2.2 AA) on every page, both themes, both shells — and a hand-measured contrast check for what axe skips; read-only |
 
 **The e2e scripts drive `e2e@cairn.local`, never you.** Development shares the production
 database, so each browser run resets that account first and then works on it

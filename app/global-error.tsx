@@ -1,6 +1,7 @@
 "use client";
 
 import "./globals.css";
+import { buttonClass } from "@/components/instrument/button";
 
 /**
  * The last resort: an error in the root layout itself, where the app's own
@@ -29,7 +30,7 @@ export default function GlobalError({
             <button
               type="button"
               onClick={() => retry()}
-              className="ctl rounded-[3px] border border-line px-4 py-2 text-sm text-hi hover:border-phos hover:text-phos"
+              className={buttonClass("ghost", "md", "text-hi")}
             >
               try again
             </button>

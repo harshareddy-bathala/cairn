@@ -5,7 +5,8 @@ import { Panel } from "@/components/instrument/panel";
 import { Boot, BootItem } from "@/components/instrument/boot";
 import { getCertificationState, shapeCertification } from "@/lib/certification";
 import { CERT_CHECKPOINTS, CHECKPOINT_PASS, EXAM_UNLOCK } from "@/content/checkpoints";
-import { cn } from "@/lib/cn";
+import { buttonClass } from "@/components/instrument/button";
+import { StateMark } from "@/components/instrument/state-mark";
 
 export const metadata = { title: "Certification" };
 
@@ -15,6 +16,11 @@ export default async function CertificationPage() {
 
   const raw = await getCertificationState(session.user.id);
   const { modules, standings } = shapeCertification(raw);
+  // Before any sitting the page is seventeen empty boxes. Point at the one to
+  // take: the first module whose units are all done, else the first module.
+  const sat = modules.some((m) => m.attempts > 0);
+  const ready = modules.find((m) => !m.passed && m.unitsTotal > 0 && m.unitsDone === m.unitsTotal);
+  const suggest = ready ?? modules[0];
 
   return (
     <Boot className="mx-auto max-w-3xl space-y-6 px-4 pt-6 pb-8 sm:px-6 sm:pt-8 sm:pb-10">
@@ -33,6 +39,21 @@ export default async function CertificationPage() {
         </header>
       </BootItem>
 
+      {!sat && suggest && (
+        <BootItem>
+          <p className="rounded-panel border border-line-soft p-4 note text-mid">
+            No checkpoints sat yet.{" "}
+            {ready
+              ? "This module's units are all done, so its checkpoint is the one to take:"
+              : "A checkpoint is best sat once its module's units are done — the first is"}{" "}
+            <Link href={`/checkpoint/${suggest.moduleSlug}`} className="text-info underline underline-offset-[3px]">
+              {suggest.moduleTitle}
+            </Link>
+            .
+          </p>
+        </BootItem>
+      )}
+
       {standings
         .filter((s) => s.checkpointsTotal > 0)
         .map((s) => (
@@ -47,15 +68,10 @@ export default async function CertificationPage() {
                   .filter((m) => m.phaseSlug === s.phaseSlug)
                   .map((m) => (
                     <li key={m.moduleSlug} className="flex items-baseline gap-3 py-2">
-                      <span
-                        className={cn(
-                          "w-4 shrink-0 text-center text-sm leading-none",
-                          m.passed ? "text-phos" : m.attempts > 0 ? "text-warn" : "text-lo",
-                        )}
-                        aria-hidden
-                      >
-                        {m.passed ? "✓" : m.attempts > 0 ? "◐" : "▢"}
-                      </span>
+                      <StateMark
+                        state={m.passed ? "done" : m.attempts > 0 ? "partial" : "open"}
+                        label={m.passed ? "passed:" : m.attempts > 0 ? "attempted, not passed:" : "not attempted:"}
+                      />
                       <Link
                         href={`/checkpoint/${m.moduleSlug}`}
                         className="min-w-0 flex-1 py-1 text-sm text-hi transition-colors duration-[120ms] hover:text-phos"
@@ -86,7 +102,7 @@ export default async function CertificationPage() {
                 ) : s.examUnlocked ? (
                   <Link
                     href={`/exam/${s.phaseSlug}`}
-                    className="ctl inline-flex items-center rounded-[3px] border border-line px-3 py-1.5 text-xs text-mid transition-colors duration-[120ms] hover:border-phos hover:text-phos"
+                    className={buttonClass()}
                   >
                     {s.bestExam?.passed ? "defense & certificate" : "take the phase exam"}
                   </Link>

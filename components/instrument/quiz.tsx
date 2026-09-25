@@ -6,6 +6,15 @@ import type { PaperQuestion } from "@/lib/quiz-paper";
 import type { QuizGrade } from "@/lib/quiz-sessions";
 import { cn } from "@/lib/cn";
 import { DUR, EASE } from "@/lib/motion";
+import { Button } from "./button";
+
+/**
+ * The focus ring an option shows while its (visually hidden) radio has focus.
+ * The radio does the work — arrow keys between options, one choice per group,
+ * "2 of 4" read aloud — and the label it sits in is what you see.
+ */
+const optionFocus =
+  "has-[input:focus-visible]:outline-2 has-[input:focus-visible]:outline-offset-2 has-[input:focus-visible]:outline-phos has-[input:focus-visible]:outline-solid";
 
 export type QuizQuestion = PaperQuestion;
 export type QuizResult = QuizGrade;
@@ -102,13 +111,18 @@ export function Quiz({
     <div className="space-y-5">
       {result ? (
         <motion.div
-          initial={reduce ? false : { opacity: 0, y: -4 }}
+          // Grading removes the submit button, and focus would drop to <body>
+          // with it. It lands on the score instead — the thing that just changed.
+          ref={(el) => el?.focus({ preventScroll: true })}
+          tabIndex={-1}
+          initial={{ opacity: 0, y: -4 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: DUR.slow, ease: EASE }}
-          className="space-y-3 border-b border-line pb-3"
+          className="space-y-3 border-b border-line pb-3 focus:outline-none"
         >
           <div className="flex items-baseline justify-between gap-4">
             <span className={cn("text-2xl tabular-nums", result.passed ? "text-phos" : "text-warn")}>
+              <span className="sr-only">{result.passed ? "Passed: " : "Not passed: "}</span>
               {result.score}
               <span className="text-lo">/{result.total}</span>
             </span>
@@ -154,7 +168,7 @@ export function Quiz({
       ) : (
         // sticky, so the count and the clock stay in view down a twenty-question
         // paper instead of scrolling away with the first question
-        <div className="sticky top-0 z-10 -mx-4 flex items-baseline justify-between gap-4 border-b border-line-soft bg-ink-850/95 px-4 py-2.5 backdrop-blur-sm">
+        <div className="sticky top-0 z-10 -mx-4 flex items-baseline justify-between gap-4 border-b border-line-soft bg-ink-850 px-4 py-2.5">
           <span className="legend tabular-nums" aria-live="polite">
             {answeredCount}/{questions.length} answered
           </span>
@@ -180,56 +194,70 @@ export function Quiz({
           const key = result?.key?.[q.id];
           const markedWrong = wrong.has(q.id);
           return (
-            <li key={q.id} className="space-y-2">
-              <p className="flex gap-3 text-sm leading-relaxed text-hi">
-                <span className="legend shrink-0 pt-1 tabular-nums">
-                  {result?.wrong ? (
-                    <span className={markedWrong ? "text-bad" : "text-phos-dim"}>
-                      {markedWrong ? "✕" : "✓"}
-                      <span className="sr-only">{markedWrong ? " wrong" : " right"}</span>
+            <li key={q.id}>
+              {/* A question is a radio group: the prompt is its legend, so a
+                  screen reader announces it on entering the options, and the
+                  arrow keys move between answers the way they do in any form. */}
+              <fieldset className="space-y-2" disabled={result != null}>
+                <legend className="w-full text-sm leading-relaxed text-hi">
+                  <span className="flex gap-3">
+                    <span className="legend shrink-0 pt-1 tabular-nums">
+                      {result?.wrong ? (
+                        <span className={markedWrong ? "text-bad" : "text-phos-dim"}>
+                          <span aria-hidden>{markedWrong ? "✕" : "✓"}</span>
+                          <span className="sr-only">{markedWrong ? "wrong: " : "right: "}</span>
+                        </span>
+                      ) : (
+                        <span aria-hidden>{String(i + 1).padStart(2, "0")}</span>
+                      )}
                     </span>
-                  ) : (
-                    String(i + 1).padStart(2, "0")
-                  )}
-                </span>
-                <span className="prose-cairn">{q.prompt}</span>
-              </p>
-              <ul className="space-y-1 pl-9">
-                {q.options.map((opt, oi) => {
-                  const isChosen = chosen === oi;
-                  const isKey = key === oi;
-                  const wrongChoice = key != null && isChosen && !isKey;
-                  return (
-                    <li key={oi}>
-                      <button
-                        type="button"
-                        disabled={result != null}
-                        aria-pressed={isChosen}
-                        onClick={() => setAnswers((a) => ({ ...a, [q.id]: oi }))}
+                    <span className="prose-cairn">{q.prompt}</span>
+                  </span>
+                </legend>
+                <div className="space-y-1 pl-9">
+                  {q.options.map((opt, oi) => {
+                    const isChosen = chosen === oi;
+                    const isKey = key === oi;
+                    const wrongChoice = key != null && isChosen && !isKey;
+                    return (
+                      <label
+                        key={oi}
                         className={cn(
                           "flex w-full items-baseline gap-2.5 rounded-[3px] border px-3 py-2 text-left text-sm transition-colors duration-[120ms]",
+                          optionFocus,
+                          result == null && "cursor-pointer",
                           result == null && isChosen && "border-phos-dim bg-ink-800 text-hi",
-                          result == null && !isChosen && "border-line text-mid hover:border-line-hi hover:text-hi",
+                          result == null && !isChosen && "border-line text-mid hover:border-phos-dim hover:text-hi",
                           isKey && "border-phos text-phos",
                           wrongChoice && "border-bad text-bad",
                           // no key on a failed paper: your choice stays visible, uncoloured
-                          result != null && key == null && isChosen && "border-line-hi text-mid",
+                          result != null && key == null && isChosen && "border-phos-dim text-mid",
                           result != null && !isKey && !wrongChoice && !(key == null && isChosen) &&
                             "border-line-soft text-lo",
                         )}
                       >
-                        <span className="legend shrink-0">
+                        <input
+                          type="radio"
+                          name={q.id}
+                          value={oi}
+                          checked={isChosen}
+                          onChange={() => setAnswers((a) => ({ ...a, [q.id]: oi }))}
+                          className="sr-only"
+                        />
+                        <span className="legend shrink-0" aria-hidden>
                           {isKey ? "✓" : wrongChoice ? "✕" : String.fromCharCode(97 + oi)}
                         </span>
                         <span className="prose-cairn">{opt}</span>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
+                        {isKey && <span className="sr-only"> (correct answer)</span>}
+                        {wrongChoice && <span className="sr-only"> (your answer, wrong)</span>}
+                      </label>
+                    );
+                  })}
+                </div>
+              </fieldset>
               {result?.why?.[q.id] && (
                 <motion.p
-                  initial={reduce ? false : { opacity: 0 }}
+                  initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ duration: DUR.base, ease: EASE }}
                   className="prose-cairn ml-9 border-l border-line-soft pl-3 text-sm leading-relaxed text-mid"
@@ -244,14 +272,9 @@ export function Quiz({
 
       {!result && (
         <div className="flex flex-wrap items-center gap-3 border-t border-line pt-4">
-          <button
-            type="button"
-            onClick={submit}
-            disabled={pending}
-            className="ctl rounded-[3px] border border-line px-4 py-1.5 text-sm text-mid transition-colors duration-[120ms] hover:border-phos hover:text-phos disabled:opacity-50"
-          >
+          <Button variant="primary" size="md" onClick={submit} pending={pending} className="py-1.5">
             {pending ? "grading…" : submitLabel}
-          </button>
+          </Button>
           {error && (
             <span role="alert" className="note w-full text-bad">
               {error}

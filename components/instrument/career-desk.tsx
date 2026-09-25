@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { motion, useReducedMotion } from "motion/react";
+import { useState } from "react";
+import { motion } from "motion/react";
 import {
   addApplication,
   addContact,
@@ -17,6 +17,9 @@ import { cn } from "@/lib/cn";
 import { DUR, EASE } from "@/lib/motion";
 import { useAction } from "@/lib/use-action";
 import { fmtWeek } from "@/lib/format";
+import { Button } from "./button";
+import { Field, Input, Select, Textarea } from "./field";
+import { StateMark } from "./state-mark";
 
 const STATUSES = [
   "applied", "responded", "screening", "interviewing", "offer", "rejected", "ghosted",
@@ -31,13 +34,6 @@ const STATUS_TONE: Record<string, string> = {
   rejected: "text-bad",
   ghosted: "text-bad",
 };
-
-const input =
-  "rounded-[3px] border border-line bg-ink-900 px-2.5 py-1.5 text-sm text-hi placeholder:text-lo focus:border-phos-dim focus:outline-none";
-const button =
-  "ctl rounded-[3px] border border-line px-3 py-1.5 text-xs text-mid transition-colors duration-[120ms] hover:border-phos hover:text-phos";
-
-const OFFLINE = "Could not reach the server — nothing was saved. Try again.";
 
 /** the reason a form did not save, next to the form rather than instead of the page */
 function FormError({ error }: { error: string | null }) {
@@ -114,17 +110,14 @@ export function ApplicationDesk({
           }}
         className="flex flex-wrap items-end gap-2"
       >
-        <label className="min-w-0 flex-1 basis-36">
-          <span className="legend">company</span>
-          <input value={company} onChange={(e) => setCompany(e.target.value)} className={cn("mt-1 w-full", input)} />
-        </label>
-        <label className="min-w-0 flex-1 basis-36">
-          <span className="legend">role</span>
-          <input value={role} onChange={(e) => setRole(e.target.value)} className={cn("mt-1 w-full", input)} />
-        </label>
-        <label className="min-w-0 flex-1 basis-36">
-          <span className="legend">link</span>
-          <input
+        <Field label="company" className="min-w-0 flex-1 basis-36">
+          <Input value={company} onChange={(e) => setCompany(e.target.value)} />
+        </Field>
+        <Field label="role" className="min-w-0 flex-1 basis-36">
+          <Input value={role} onChange={(e) => setRole(e.target.value)} />
+        </Field>
+        <Field label="link" className="min-w-0 flex-1 basis-36">
+          <Input
             value={link}
             onChange={(e) => {
               setLink(e.target.value);
@@ -133,12 +126,11 @@ export function ApplicationDesk({
             inputMode="url"
             autoCapitalize="none"
             placeholder="optional"
-            className={cn("mt-1 w-full", input)}
           />
-        </label>
-        <button type="submit" disabled={add.pending} className={cn("py-2", button)}>
+        </Field>
+        <Button type="submit" pending={add.pending} className="py-2">
           log application
-        </button>
+        </Button>
       </form>
       <FormError error={error ?? add.error ?? setStatus.error} />
 
@@ -185,7 +177,7 @@ export function ApplicationDesk({
                   }
                 }}
                 className={cn(
-                  "shrink-0 rounded-[3px] border border-line bg-ink-900 px-1.5 py-1 text-xs focus:border-phos-dim focus:outline-none",
+                  "shrink-0 rounded-[3px] border border-line bg-ink-900 px-1.5 py-1 text-xs focus:border-phos-dim",
                   STATUS_TONE[a.status],
                 )}
               >
@@ -240,21 +232,24 @@ export function ContactDesk({ contacts: initial }: { contacts: CareerView["conta
           }}
         className="flex flex-wrap items-end gap-2"
       >
-        <label className="min-w-0 flex-1 basis-36">
-          <span className="legend">name</span>
-          <input value={name} onChange={(e) => setName(e.target.value)} className={cn("mt-1 w-full", input)} />
-        </label>
-        <label className="min-w-0 flex-1 basis-36">
-          <span className="legend">company</span>
-          <input value={company} onChange={(e) => setCompany(e.target.value)} className={cn("mt-1 w-full", input)} />
-        </label>
-        <button type="submit" disabled={add.pending} className={cn("py-2", button)}>
+        <Field label="name" className="min-w-0 flex-1 basis-36">
+          <Input value={name} onChange={(e) => setName(e.target.value)} />
+        </Field>
+        <Field label="company" className="min-w-0 flex-1 basis-36">
+          <Input value={company} onChange={(e) => setCompany(e.target.value)} />
+        </Field>
+        <Button type="submit" pending={add.pending} className="py-2">
           add
-        </button>
+        </Button>
       </form>
       <FormError error={error ?? add.error} />
 
-      {rows.length > 0 && (
+      {rows.length === 0 ? (
+        <p className="note text-lo">
+          No one yet. Start with people you already know at companies you would apply to —
+          a message to a senior from college is a conversation, not cold outreach.
+        </p>
+      ) : (
         <ul className="divide-y divide-line-soft border-t border-line-soft">
           {rows.map((c) => (
             <li key={c.id} className="flex items-baseline gap-3 py-1.5">
@@ -305,27 +300,21 @@ export function MockLogForm({
         }}
         className="flex flex-wrap items-end gap-2"
       >
-        <label className="min-w-0 flex-1 basis-44">
-          <span className="legend">session</span>
-          <select
-            value={kind}
-            onChange={(e) => setKind(e.target.value)}
-            className={cn("mt-1 w-full", input)}
-          >
+        <Field label="session" className="min-w-0 flex-1 basis-44">
+          <Select value={kind} onChange={(e) => setKind(e.target.value)}>
             {available.map((q) => (
               <option key={q.kind} value={q.kind}>
                 {q.label}
               </option>
             ))}
-          </select>
-        </label>
-        <label className="w-28">
-          <span className="legend">score</span>
-          <input value={score} onChange={(e) => setScore(e.target.value)} placeholder="optional" className={cn("mt-1 w-full", input)} />
-        </label>
-        <button type="submit" disabled={log.pending} className={cn("py-2", button)}>
+          </Select>
+        </Field>
+        <Field label="score" className="w-28">
+          <Input value={score} onChange={(e) => setScore(e.target.value)} placeholder="optional" />
+        </Field>
+        <Button type="submit" pending={log.pending} className="py-2">
           log session
-        </button>
+        </Button>
       </form>
       <FormError error={log.error} />
     </>
@@ -377,7 +366,6 @@ export function MockDesk({
  * have written and never said out loud is not ready.
  */
 export function StarBank({ stories: initial }: { stories: CareerView["stories"] }) {
-  const reduce = useReducedMotion();
   const rehearse = useAction(rehearseStory);
   const [stories, setStories] = useState(initial);
   const [open, setOpen] = useState<string | null>(null);
@@ -399,15 +387,7 @@ export function StarBank({ stories: initial }: { stories: CareerView["stories"] 
         return (
           <li key={prompt}>
             <div className="flex items-baseline gap-3 py-2.5">
-              <span
-                className={cn(
-                  "tap w-4 shrink-0 text-center text-sm leading-none",
-                  ready ? "text-phos" : "text-lo",
-                )}
-                aria-hidden
-              >
-                {ready ? "✓" : "▢"}
-              </span>
+              <StateMark state={ready ? "done" : "open"} label={ready ? "ready:" : "not written:"} />
               <button
                 type="button"
                 onClick={() => setOpen(isOpen ? null : prompt)}
@@ -424,7 +404,7 @@ export function StarBank({ stories: initial }: { stories: CareerView["stories"] 
             </div>
             {isOpen && (
               <motion.div
-                initial={reduce ? false : { opacity: 0, y: -4 }}
+                initial={{ opacity: 0, y: -4 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: DUR.base, ease: EASE }}
                 className="pb-3 pl-7"
@@ -471,8 +451,8 @@ function StarForm({
   onSaved: (s: CareerView["stories"][number]) => void;
   onRehearsed: () => void;
 }) {
-  const [pending, startTransition] = useTransition();
-  const [status, setStatus] = useState<"idle" | "saved" | "failed">("idle");
+  const save = useAction(saveStory);
+  const [saved, setSaved] = useState(false);
   const [v, setV] = useState({
     situation: story?.situation ?? "",
     task: story?.task ?? "",
@@ -490,53 +470,50 @@ function StarForm({
   return (
     <div className="space-y-2">
       {fields.map((f) => (
-        <label key={f.key} className="block">
-          <span className="legend">
-            {f.label} <span className="text-lo/70">· {f.hint}</span>
-          </span>
-          <textarea
+        <Field
+          key={f.key}
+          label={
+            <>
+              {f.label} <span className="normal-case tracking-normal">· {f.hint}</span>
+            </>
+          }
+        >
+          <Textarea
             value={v[f.key]}
             onChange={(e) => {
               setV({ ...v, [f.key]: e.target.value });
-              setStatus("idle");
+              setSaved(false);
+              save.setError(null);
             }}
             rows={2}
-            className={cn("prose-cairn mt-1 w-full resize-y", input)}
+            className="prose-cairn resize-y"
           />
-        </label>
+        </Field>
       ))}
       <div className="flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          onClick={() =>
-            startTransition(async () => {
-              onSaved({
-                id: story?.id ?? -Date.now(),
-                prompt,
-                ...v,
-                rehearsedCount: story?.rehearsedCount ?? 0,
-              });
-              const ok = await saveStory({ prompt, ...v }).then(
-                () => true,
-                () => false,
-              );
-              setStatus(ok ? "saved" : "failed");
-            })
-          }
-          disabled={pending}
-          className={cn(button, "disabled:opacity-50")}
+        <Button
+          pending={save.pending}
+          onClick={async () => {
+            const res = await save.run({ prompt, ...v });
+            if (!res.ok) return;
+            onSaved({
+              id: story?.id ?? -Date.now(),
+              prompt,
+              ...v,
+              rehearsedCount: story?.rehearsedCount ?? 0,
+            });
+            setSaved(true);
+          }}
         >
-          {pending ? "saving…" : status === "saved" ? "saved ✓" : "save"}
-        </button>
-        <button type="button" onClick={onRehearsed} className={button}>
-          rehearsed out loud
-        </button>
+          {save.pending ? "saving…" : saved ? "saved ✓" : "save"}
+        </Button>
+        <Button onClick={onRehearsed}>rehearsed out loud</Button>
         <span className="note text-lo">
           Say it standing up. Reading it back silently does not count.
         </span>
-        {status === "failed" && (
+        {save.error && (
           <span role="alert" className="note w-full text-bad">
-            {OFFLINE}
+            {save.error}
           </span>
         )}
       </div>

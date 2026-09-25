@@ -1,10 +1,14 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { resetProgress } from "@/app/actions/reset";
 import { RESET_PHRASE } from "@/lib/reset-phrase";
 import { cn } from "@/lib/cn";
+import { ROUTES } from "@/lib/routes";
+import { useAction } from "@/lib/use-action";
+import { Button } from "./button";
+import { Input } from "./field";
 
 type Summary = {
   days: number;
@@ -26,8 +30,8 @@ export function ResetProgress({ summary }: { summary: Summary }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [typed, setTyped] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [pending, startTransition] = useTransition();
+  const reset = useAction(resetProgress);
+  const { pending, error, setError } = reset;
 
   const armed = typed.trim().toLowerCase() === RESET_PHRASE;
   const nothingToLose =
@@ -56,13 +60,9 @@ export function ResetProgress({ summary }: { summary: Summary }) {
           Clears the trail and starts the journey at day one. Your account, handle,
           timezone, Telegram link, budget and reminder schedule all stay.
         </p>
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          className="tap shrink-0 rounded-[3px] border border-line px-4 py-1.5 text-sm text-mid transition-colors duration-[120ms] hover:border-bad hover:text-bad"
-        >
+        <Button variant="danger" size="md" onClick={() => setOpen(true)} className="shrink-0 py-1.5">
           reset progress
-        </button>
+        </Button>
       </div>
     );
   }
@@ -88,7 +88,7 @@ export function ResetProgress({ summary }: { summary: Summary }) {
           type <span className="text-hi">{RESET_PHRASE}</span> to confirm
           {error && <span className="ml-2 text-bad">{error}</span>}
         </span>
-        <input
+        <Input
           value={typed}
           onChange={(e) => {
             setTyped(e.target.value);
@@ -97,54 +97,44 @@ export function ResetProgress({ summary }: { summary: Summary }) {
           autoComplete="off"
           spellCheck={false}
           aria-invalid={error ? true : undefined}
-          className={cn(
-            "mt-1 w-full max-w-xs rounded-[3px] border bg-ink-900 px-2.5 py-1.5 text-sm text-hi placeholder:text-lo focus:outline-none",
-            error ? "border-bad" : "border-line focus:border-phos-dim",
-          )}
+          className={cn("mt-1 max-w-xs", error && "border-bad")}
         />
       </label>
 
       <div className="flex flex-wrap items-center gap-3">
-        <button
-          type="button"
-          disabled={!armed || pending}
-          onClick={() =>
-            startTransition(async () => {
-              const res = await resetProgress(typed);
-              if (!res.ok) {
-                setError(res.error);
-                return;
-              }
-              setOpen(false);
-              setTyped("");
-              // /start, not /today: landing on Today calls openToday, which would
-              // stamp day 1 before the reset has even been read as finished. The
-              // reset clears onboardedAt, so self-placement is the right re-entry.
-              router.push("/start");
-              router.refresh();
-            })
-          }
-          className={cn(
-            "tap rounded-[3px] border px-4 py-1.5 text-sm transition-colors duration-[120ms]",
-            armed
-              ? "border-bad text-bad hover:bg-bad/10"
-              : "border-line-soft text-lo opacity-50",
-          )}
+        <Button
+          variant="danger"
+          size="md"
+          disabled={!armed}
+          pending={pending}
+          onClick={async () => {
+            const res = await reset.run(typed);
+            if (!res.ok) return;
+            setOpen(false);
+            setTyped("");
+            // /start, not /today: landing on Today calls openToday, which would
+            // stamp day 1 before the reset has even been read as finished. The
+            // reset clears onboardedAt, so self-placement is the right re-entry.
+            router.push(ROUTES.start);
+            router.refresh();
+          }}
+          // armed, it stops being neutral: this is the one button in the app
+          // that is red before you aim at it
+          className={cn("py-1.5", armed && "border-bad text-bad hover:bg-bad/10")}
         >
           {pending ? "resetting…" : "reset everything"}
-        </button>
-        <button
-          type="button"
+        </Button>
+        <Button
+          variant="quiet"
           disabled={pending}
           onClick={() => {
             setOpen(false);
             setTyped("");
             setError(null);
           }}
-          className="tap px-1 text-2xs text-lo transition-colors duration-[120ms] hover:text-mid"
         >
           cancel
-        </button>
+        </Button>
       </div>
     </div>
   );

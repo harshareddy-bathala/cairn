@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 import { PRIMARY_NAV, SECONDARY_NAV, SETTINGS, activeHref } from "@/lib/nav";
 import { AccountRow, type AccountInfo } from "./account";
 import { scrim, sheet } from "@/lib/motion";
@@ -36,7 +36,6 @@ export function MobileNav({ account }: { account: AccountInfo }) {
   const pathname = usePathname();
   const current = activeHref(pathname);
   const [open, setOpen] = useState(false);
-  const reduce = useReducedMotion();
 
   // The sheet is route-scoped: navigating away must close it, or coming back
   // via the browser's back button lands you behind a menu you did not open.
@@ -71,7 +70,7 @@ export function MobileNav({ account }: { account: AccountInfo }) {
     <>
       <nav
         aria-label="Sections"
-        className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-ink-900/95 backdrop-blur-sm pb-[env(safe-area-inset-bottom)] sm:hidden"
+        className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-ink-900 pb-[env(safe-area-inset-bottom)] sm:hidden"
       >
         <ul className="flex">
           {PRIMARY_NAV.map((n) => (
@@ -115,7 +114,7 @@ export function MobileNav({ account }: { account: AccountInfo }) {
               type="button"
               aria-label="Close menu"
               onClick={() => setOpen(false)}
-              variants={reduce ? undefined : scrim}
+              variants={scrim}
               initial="hidden"
               animate="shown"
               exit="exit"
@@ -124,7 +123,7 @@ export function MobileNav({ account }: { account: AccountInfo }) {
             <motion.nav
               id="more-sections"
               aria-label="More sections"
-              variants={reduce ? undefined : sheet}
+              variants={sheet}
               initial="hidden"
               animate="shown"
               exit="exit"

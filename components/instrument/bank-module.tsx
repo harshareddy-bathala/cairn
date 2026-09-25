@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { bankUnits } from "@/app/actions/onboarding";
+import { useAction } from "@/lib/use-action";
+import { Button } from "./button";
 
 /**
  * Banks a whole module you already know — AWS when you hold the certs, say.
@@ -13,21 +15,16 @@ import { bankUnits } from "@/app/actions/onboarding";
  */
 export function BankModule({ unitSlugs, title }: { unitSlugs: string[]; title: string }) {
   const router = useRouter();
-  const [pending, startTransition] = useTransition();
+  const banking = useAction(bankUnits);
+  const { pending, error } = banking;
   const [armed, setArmed] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  const bank = () =>
-    startTransition(async () => {
-      setError(null);
-      try {
-        await bankUnits(unitSlugs);
-        setArmed(false);
-        router.refresh();
-      } catch {
-        setError("Could not bank the module. Try again.");
-      }
-    });
+  const bank = async () => {
+    const r = await banking.run(unitSlugs);
+    if (!r.ok) return;
+    setArmed(false);
+    router.refresh();
+  };
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-3">
@@ -43,22 +40,13 @@ export function BankModule({ unitSlugs, title }: { unitSlugs: string[]; title: s
       </p>
       <div className="flex shrink-0 gap-2">
         {armed && (
-          <button
-            type="button"
-            onClick={() => setArmed(false)}
-            className="ctl inline-flex items-center rounded-[3px] border border-line px-3 py-1.5 text-xs text-mid transition-colors duration-[120ms] hover:text-hi"
-          >
+          <Button variant="quiet" onClick={() => setArmed(false)}>
             cancel
-          </button>
+          </Button>
         )}
-        <button
-          type="button"
-          disabled={pending}
-          onClick={armed ? bank : () => setArmed(true)}
-          className="ctl inline-flex items-center rounded-[3px] border border-line px-3 py-1.5 text-xs text-mid transition-colors duration-[120ms] hover:border-phos hover:text-phos disabled:opacity-50"
-        >
+        <Button pending={pending} onClick={armed ? bank : () => setArmed(true)}>
           {pending ? "banking…" : armed ? `bank ${unitSlugs.length} units` : "bank this module"}
-        </button>
+        </Button>
       </div>
     </div>
   );

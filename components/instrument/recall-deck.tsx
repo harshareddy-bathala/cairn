@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, useTransition } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { cardFace, ease, DUR } from "@/lib/motion";
@@ -9,6 +9,7 @@ import type { DueCard } from "@/lib/recall";
 import { gradeCard, buryCard } from "@/app/actions/review";
 import { Markdown } from "./markdown";
 import { cn } from "@/lib/cn";
+import { buttonClass } from "./button";
 
 /**
  * The deck: one card at a time, answer hidden until you commit to having tried.
@@ -33,6 +34,25 @@ export function RecallDeck({ cards, dayIndex }: { cards: DueCard[]; dayIndex: nu
 
   const card = queue[0];
 
+  // Every step of a card removes the control you just used: "show answer"
+  // unmounts when it flips, the grade buttons when you grade. Left alone, focus
+  // falls to <body> and a keyboard user starts from the top of the page each
+  // card. Instead it follows the work — to the answer once flipped, to the
+  // next card's "show answer" once graded — but only when it was in the deck
+  // (or already lost), never pulled away from something else on the page.
+  const deck = useRef<HTMLDivElement>(null);
+  const follow = useRef<"answer" | "next" | null>(null);
+  const aim = (to: "answer" | "next") => {
+    const a = document.activeElement;
+    if (!a || a === document.body || deck.current?.contains(a)) follow.current = to;
+  };
+  const land = (to: "answer" | "next") => (el: HTMLElement | null) => {
+    if (el && follow.current === to) {
+      follow.current = null;
+      el.focus({ preventScroll: true });
+    }
+  };
+
   /**
    * Grading advances at once and saves behind you. If the save fails, the card
    * comes back to the front of the queue and says so — the old version dropped
@@ -54,6 +74,7 @@ export function RecallDeck({ cards, dayIndex }: { cards: DueCard[]; dayIndex: nu
   const advance = useCallback(
     (grade: Grade) => {
       if (!card) return;
+      aim("next");
       setLost(false);
       setFlipped(false);
       setDone((n) => n + 1);
@@ -69,6 +90,7 @@ export function RecallDeck({ cards, dayIndex }: { cards: DueCard[]; dayIndex: nu
 
   const bury = useCallback(() => {
     if (!card) return;
+    aim("next");
     setLost(false);
     setFlipped(false);
     setQueue((q) => q.slice(1));
@@ -94,6 +116,7 @@ export function RecallDeck({ cards, dayIndex }: { cards: DueCard[]; dayIndex: nu
       if (e.key === " " || e.key === "Enter") {
         if (control) return;
         e.preventDefault();
+        aim("answer");
         setFlipped(true);
         return;
       }
@@ -111,7 +134,9 @@ export function RecallDeck({ cards, dayIndex }: { cards: DueCard[]; dayIndex: nu
   if (!card) {
     return (
       <div className="py-6 text-center">
-        <p className="text-sm text-phos">Deck clear.</p>
+        <p ref={land("next")} tabIndex={-1} className="text-sm text-phos focus:outline-none">
+          Deck clear.
+        </p>
         <p className="mt-1.5 note text-lo">
           {done > 0 ? (
             <>
@@ -130,7 +155,7 @@ export function RecallDeck({ cards, dayIndex }: { cards: DueCard[]; dayIndex: nu
   const overdue = dayIndex - card.dueDayIndex;
 
   return (
-    <div data-deck className="space-y-3">
+    <div ref={deck} data-deck className="space-y-3">
       {lost && (
         <p role="alert" className="note text-bad">
           The last card did not save — it is back at the front. Check the connection and
@@ -165,7 +190,7 @@ export function RecallDeck({ cards, dayIndex }: { cards: DueCard[]; dayIndex: nu
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={card.id}
-            variants={reduce ? undefined : cardFace}
+            variants={cardFace}
             initial="enter"
             animate="shown"
             exit="exit"
@@ -177,18 +202,25 @@ export function RecallDeck({ cards, dayIndex }: { cards: DueCard[]; dayIndex: nu
 
             {flipped ? (
               <motion.div
-                initial={reduce ? false : { opacity: 0, y: 4 }}
+                ref={land("answer")}
+                tabIndex={-1}
+                initial={{ opacity: 0, y: 4 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={ease(DUR.base)}
-                className="mt-3.5 border-t border-line-soft pt-3.5"
+                className="mt-3.5 border-t border-line-soft pt-3.5 focus:outline-none"
               >
+                <span className="sr-only">Answer: </span>
                 <Markdown source={card.back} className="text-base" />
               </motion.div>
             ) : (
               <button
+                ref={land("next")}
                 type="button"
-                onClick={() => setFlipped(true)}
-                className="mt-4 w-full rounded-[3px] border border-line px-3 py-3 text-xs uppercase tracking-[0.08em] text-mid transition-colors duration-[120ms] hover:border-phos-dim hover:text-phos sm:py-2"
+                onClick={() => {
+                  aim("answer");
+                  setFlipped(true);
+                }}
+                className={buttonClass("ghost", "sm", "mt-4 w-full py-3 uppercase tracking-[0.08em] sm:py-2")}
               >
                 show answer <span className="hidden text-lo sm:inline">· space</span>
               </button>
@@ -199,7 +231,7 @@ export function RecallDeck({ cards, dayIndex }: { cards: DueCard[]; dayIndex: nu
 
       {flipped && (
         <motion.div
-          initial={reduce ? false : { opacity: 0 }}
+          initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={ease(DUR.fast)}
           className="grid grid-cols-2 gap-1.5 sm:grid-cols-4"

@@ -1,16 +1,14 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { Quiz } from "./quiz";
 import { attachDefense, issueCertificate, startQuiz, submitQuiz } from "@/app/actions/certification";
 import type { Paper } from "@/lib/quiz-sessions";
 import { cn } from "@/lib/cn";
-
-const input =
-  "rounded-[3px] border border-line bg-ink-900 px-2.5 py-1.5 text-sm text-hi placeholder:text-lo focus:border-phos-dim focus:outline-none";
-const button =
-  "ctl rounded-[3px] border border-line px-3 py-1.5 text-xs text-mid transition-colors duration-[120ms] hover:border-phos hover:text-phos disabled:opacity-50";
+import { useAction } from "@/lib/use-action";
+import { Button } from "./button";
+import { Field, Input } from "./field";
 
 /**
  * Draws a sitting from the server and keeps it. A retake asks for a new one;
@@ -19,20 +17,16 @@ const button =
  */
 function useSitting(kind: "checkpoint" | "exam", slug: string) {
   const [paper, setPaper] = useState<Paper | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [pending, startTransition] = useTransition();
+  const start = useAction(startQuiz);
 
-  const begin = () =>
-    startTransition(async () => {
-      setError(null);
-      const r = await startQuiz(kind, slug).catch(() => null);
-      if (!r) return setError("Could not reach the server — try again.");
-      if (!r.ok) return setError(r.error);
-      setPaper(r);
-      window.scrollTo({ top: 0 });
-    });
+  const begin = async () => {
+    const r = await start.run(kind, slug);
+    if (!r.ok) return;
+    setPaper(r.value);
+    window.scrollTo({ top: 0 });
+  };
 
-  return { paper, error, pending, begin };
+  return { paper, error: start.error, pending: start.pending, begin };
 }
 
 export function CheckpointRunner({
@@ -50,9 +44,9 @@ export function CheckpointRunner({
   if (!paper) {
     return (
       <div className="flex flex-wrap items-center gap-3">
-        <button type="button" onClick={begin} disabled={pending} className={cn("py-2", button)}>
+        <Button onClick={begin} pending={pending} className="py-2">
           {pending ? "drawing the paper…" : `begin — ${count} questions`}
-        </button>
+        </Button>
         <span className="note text-lo">Untimed. Each sitting shuffles the order and the options.</span>
         {error && (
           <p role="alert" className="note w-full text-bad">
@@ -119,9 +113,10 @@ export function ExamRunner({
   const [defense, setDefense] = useState(hasDefense);
   const [certId, setCertId] = useState(certificateId);
   const [url, setUrl] = useState("");
-  const [error, setError] = useState<string | null>(null);
   const [taking, setTaking] = useState(!alreadyPassed);
-  const [pending, startTransition] = useTransition();
+  const attach = useAction(attachDefense);
+  const issue = useAction(issueCertificate);
+  const error = attach.error ?? issue.error;
   const sitting = useSitting("exam", phaseSlug);
   const paper = sitting.paper;
 
@@ -144,14 +139,9 @@ export function ExamRunner({
         />
       ) : taking ? (
         <div className="flex flex-wrap items-center gap-3">
-          <button
-            type="button"
-            onClick={sitting.begin}
-            disabled={sitting.pending}
-            className="ctl rounded-[3px] border border-phos px-4 py-2 text-sm text-phos transition-colors duration-[120ms] hover:bg-phos/10 disabled:opacity-50"
-          >
+          <Button variant="primary" size="md" onClick={sitting.begin} pending={sitting.pending}>
             {sitting.pending ? "drawing the paper…" : "begin the exam"}
-          </button>
+          </Button>
           <span className="note text-lo">
             {questionCount} questions, {timeLimitMin} minutes from the moment you begin. A
             reload keeps the paper and the clock.
@@ -189,34 +179,28 @@ export function ExamRunner({
           </div>
           <form
             className="flex flex-wrap items-end gap-2"
-            action={() =>
-              startTransition(async () => {
-                setError(null);
-                const r = await attachDefense(phaseSlug, url.trim()).catch(() => null);
-                if (!r) return setError("Could not reach the server — try again.");
-                if (!r.ok) return setError(r.error);
-                setDefense(true);
-              })
-            }
+            action={async () => {
+              const r = await attach.run(phaseSlug, url.trim());
+              if (r.ok) setDefense(true);
+            }}
           >
-            <label className="min-w-0 flex-1 basis-64">
-              <span className="legend">recording url</span>
-              <input
+            <Field label="recording url" className="min-w-0 flex-1 basis-64">
+              <Input
                 value={url}
                 onChange={(e) => {
                   setUrl(e.target.value);
-                  setError(null);
+                  attach.setError(null);
                 }}
                 inputMode="url"
                 autoComplete="off"
                 placeholder="drive, youtube unlisted, anywhere you can link"
-                aria-invalid={error ? true : undefined}
-                className={cn("mt-1 w-full", input, error && "border-bad")}
+                aria-invalid={attach.error ? true : undefined}
+                className={cn(attach.error && "border-bad")}
               />
-            </label>
-            <button type="submit" disabled={pending || !url.trim()} className={cn("py-2", button)}>
-              {pending ? "attaching…" : defense ? "replace" : "attach"}
-            </button>
+            </Field>
+            <Button type="submit" pending={attach.pending} disabled={!url.trim()} className="py-2">
+              {attach.pending ? "attaching…" : defense ? "replace" : "attach"}
+            </Button>
           </form>
           {defense && <p className="note text-phos-dim">Recording attached.</p>}
           {defense && checkpointsPassed < checkpointsNeeded && (
@@ -227,22 +211,17 @@ export function ExamRunner({
             </p>
           )}
           {defense && checkpointsPassed >= checkpointsNeeded && (
-            <button
-              type="button"
-              disabled={pending}
-              onClick={() =>
-                startTransition(async () => {
-                  setError(null);
-                  const r = await issueCertificate(phaseSlug).catch(() => null);
-                  if (!r) return setError("Could not reach the server — try again.");
-                  if (!r.ok) return setError(r.error);
-                  setCertId(r.id);
-                })
-              }
-              className="ctl rounded-[3px] border border-phos px-4 py-2 text-sm text-phos transition-colors duration-[120ms] hover:bg-phos/10 disabled:opacity-50"
+            <Button
+              variant="primary"
+              size="md"
+              pending={issue.pending}
+              onClick={async () => {
+                const r = await issue.run(phaseSlug);
+                if (r.ok) setCertId(r.value.id);
+              }}
             >
-              {pending ? "issuing…" : "issue the certificate"}
-            </button>
+              {issue.pending ? "issuing…" : "issue the certificate"}
+            </Button>
           )}
           {error && (
             <p role="alert" className="note text-bad">

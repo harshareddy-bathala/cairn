@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { startTelegramLink, unlinkTelegram } from "@/app/actions/reminders";
-import { cn } from "@/lib/cn";
 import { useAction } from "@/lib/use-action";
+import { Button } from "./button";
 
 /**
  * The handshake, in one button.
@@ -57,21 +57,17 @@ export function TelegramLink({ linked, configured }: { linked: boolean; configur
           <p className="note text-lo">
             Reminders arrive in Telegram. One code, used once, ties this account to that chat.
           </p>
-          <button
-            type="button"
-            disabled={pending}
+          <Button
+            size="md"
+            pending={pending}
             onClick={async () => {
               const r = await link.run();
               if (r.ok) setIssued(r.value);
             }}
-            className={cn(
-              "shrink-0 rounded-[3px] border border-line px-4 py-1.5 text-sm text-mid",
-              "transition-colors duration-[120ms] hover:border-phos-dim hover:text-hi",
-              "disabled:opacity-40",
-            )}
+            className="shrink-0 py-1.5"
           >
             {pending ? "…" : "link Telegram"}
-          </button>
+          </Button>
         </div>
       ) : null}
       {!issued && error && (

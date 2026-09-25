@@ -4,12 +4,10 @@ import { useState } from "react";
 import { WEEK_REVIEW_PROMPTS } from "@/content/review";
 import type { DayEntry, WeekReview } from "@/lib/week-review";
 import { submitWeekReview } from "@/app/actions/review";
-import { cn } from "@/lib/cn";
 import { fmtDay, fmtMin } from "@/lib/format";
 import { useAction } from "@/lib/use-action";
-
-const field =
-  "w-full rounded-[3px] border border-line bg-ink-900 px-2.5 py-2 text-sm text-hi placeholder:text-lo focus:border-phos-dim focus:outline-none";
+import { Button } from "./button";
+import { Input, Textarea } from "./field";
 
 /**
  * Four questions and three priorities, once every seven active days.
@@ -97,7 +95,7 @@ export function WeekReviewForm({
               {p.label}
             </label>
             <p className="mb-1.5 mt-0.5 note text-lo">{p.help}</p>
-            <textarea
+            <Textarea
               id={`wr-${p.id}`}
               rows={2}
               value={answers[p.id] ?? ""}
@@ -105,7 +103,7 @@ export function WeekReviewForm({
                 setAnswers((a) => ({ ...a, [p.id]: e.target.value }));
                 setDirty(true);
               }}
-              className={cn(field, "resize-y")}
+              className="resize-y py-2"
             />
           </div>
         ))}
@@ -120,14 +118,14 @@ export function WeekReviewForm({
           {priorities.map((v, i) => (
             <li key={i} className="flex items-center gap-2">
               <span className="legend w-3 shrink-0 tabular-nums">{i + 1}</span>
-              <input
+              <Input
                 value={v}
                 aria-label={`priority ${i + 1}`}
                 onChange={(e) => {
                   setPriorities((p) => p.map((x, j) => (j === i ? e.target.value : x)));
                   setDirty(true);
                 }}
-                className={field}
+                className="py-2"
               />
             </li>
           ))}
@@ -137,14 +135,14 @@ export function WeekReviewForm({
       {error && <p role="alert" className="note text-bad">{error}</p>}
 
       <div className="flex flex-wrap items-center gap-3">
-        <button
-          type="button"
+        <Button
           onClick={submit}
-          disabled={pending || (saved && !dirty)}
-          className="ctl rounded-[3px] border border-line px-3 py-2 text-xs uppercase tracking-[0.08em] text-mid transition-colors duration-[120ms] hover:border-phos hover:text-phos disabled:opacity-50 disabled:hover:border-line disabled:hover:text-mid"
+          pending={pending}
+          disabled={saved && !dirty}
+          className="py-2 uppercase tracking-[0.08em]"
         >
           {pending ? "saving…" : saved && !dirty ? "saved" : saved ? "revise" : "record review"}
-        </button>
+        </Button>
         <span className="legend tabular-nums">
           {answered}/{WEEK_REVIEW_PROMPTS.length} answered
         </span>

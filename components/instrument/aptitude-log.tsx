@@ -8,6 +8,9 @@ import { cn } from "@/lib/cn";
 import { DUR, EASE } from "@/lib/motion";
 import { useAction } from "@/lib/use-action";
 import { fmtDay } from "@/lib/format";
+import { Button } from "./button";
+import { Field, Input } from "./field";
+import { scoreText } from "@/lib/marks";
 
 type Score = { dayIndex: number; topic: string; correct: number; total: number };
 
@@ -70,17 +73,11 @@ export function AptitudeLog({
         // button on a second line with a gap above them.
         className="grid grid-cols-2 gap-3 sm:flex sm:flex-wrap sm:items-end"
       >
-        <label className="col-span-2 sm:min-w-40 sm:flex-1">
-          <span className="legend">topic</span>
-          <input
-            value={topic}
-            onChange={(e) => setTopic(e.target.value)}
-            className="mt-1 w-full rounded-[3px] border border-line bg-ink-900 px-2.5 py-1.5 text-sm text-hi focus:border-phos-dim focus:outline-none"
-          />
-        </label>
-        <label className="sm:w-20">
-          <span className="legend">correct</span>
-          <input
+        <Field label="topic" className="col-span-2 sm:min-w-40 sm:flex-1">
+          <Input value={topic} onChange={(e) => setTopic(e.target.value)} />
+        </Field>
+        <Field label="correct" className="sm:w-20">
+          <Input
             value={correct}
             onChange={(e) => {
               setCorrect(e.target.value.replace(/\D/g, ""));
@@ -88,28 +85,23 @@ export function AptitudeLog({
             }}
             inputMode="numeric"
             placeholder="—"
-            className="mt-1 w-full rounded-[3px] border border-line bg-ink-900 px-2.5 py-1.5 text-sm tabular-nums text-hi placeholder:text-lo focus:border-phos-dim focus:outline-none"
+            className="tabular-nums"
           />
-        </label>
-        <label className="sm:w-20">
-          <span className="legend">of</span>
-          <input
+        </Field>
+        <Field label="of" className="sm:w-20">
+          <Input
             value={total}
             onChange={(e) => {
               setTotal(e.target.value.replace(/\D/g, ""));
               setErr(null);
             }}
             inputMode="numeric"
-            className="mt-1 w-full rounded-[3px] border border-line bg-ink-900 px-2.5 py-1.5 text-sm tabular-nums text-hi focus:border-phos-dim focus:outline-none"
+            className="tabular-nums"
           />
-        </label>
-        <button
-          type="submit"
-          disabled={log.pending}
-          className="col-span-2 rounded-[3px] border border-line px-4 py-2 text-sm text-mid transition-colors duration-[120ms] hover:border-phos hover:text-phos sm:col-span-1 sm:py-1.5"
-        >
+        </Field>
+        <Button type="submit" size="md" pending={log.pending} className="col-span-2 sm:col-span-1 sm:py-1.5">
           log
-        </button>
+        </Button>
         {(err ?? log.error) && (
           <span role="alert" className="pb-1.5 text-2xs text-warn">
             {err ?? log.error}
@@ -123,7 +115,7 @@ export function AptitudeLog({
             transition={{ duration: DUR.base, ease: EASE }}
             className={cn(
               "pb-1.5 text-sm tabular-nums",
-              flash >= 70 ? "text-phos" : flash >= 50 ? "text-warn" : "text-bad",
+              scoreText(flash),
             )}
           >
             {flash}%
@@ -157,7 +149,7 @@ export function AptitudeLog({
                   <span
                     className={cn(
                       "w-10 shrink-0 text-right text-2xs tabular-nums",
-                      pct >= 70 ? "text-phos" : pct >= 50 ? "text-warn" : "text-bad",
+                      scoreText(pct),
                     )}
                   >
                     {pct}%

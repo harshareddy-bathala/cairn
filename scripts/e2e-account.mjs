@@ -44,3 +44,21 @@ export function reporter(width = 28) {
 }
 
 export const loginPath = () => `/api/dev-login?email=${encodeURIComponent(E2E_EMAIL)}`;
+
+// Every signed-in surface, for the scripts that sweep the whole app
+// (screenshots, the axe pass). One list, so a new page is covered by both.
+export const SURFACES = [
+  ["today", "/today"],
+  ["review", "/review"],
+  ["trail", "/roadmap"],
+  ["module", "/module/dsa-binary-search"],
+  ["unit", "/unit/dsa-bs-answer-space"],
+  ["progress", "/progress"],
+  ["certification", "/progress/certification"],
+  ["cohort", "/progress/cohort"],
+  ["checkpoint", "/checkpoint/dsa-cpp-stl"],
+  ["projects", "/desk"],
+  ["career", "/desk/career"],
+  ["aptitude", "/desk/aptitude"],
+  ["settings", "/settings"],
+];

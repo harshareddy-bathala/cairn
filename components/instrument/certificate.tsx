@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, useReducedMotion } from "motion/react";
+import { motion } from "motion/react";
 import { Readout } from "./readout";
 import { DUR, EASE } from "@/lib/motion";
 
@@ -35,11 +35,10 @@ export function CertificateSeal({
     activeDays: number;
   };
 }) {
-  const reduce = useReducedMotion();
 
   return (
     <motion.article
-      initial={reduce ? false : { opacity: 0, y: 8 }}
+      initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: DUR.slow, ease: EASE }}
       className="relative rounded-panel border border-line bg-ink-850/60 p-5 sm:p-8
@@ -53,7 +52,7 @@ export function CertificateSeal({
         </div>
         {/* the seal stamps in — the whole reason this page has a ceremony */}
         <motion.div
-          initial={reduce ? false : { scale: 1.6, opacity: 0, rotate: -8 }}
+          initial={{ scale: 1.6, opacity: 0, rotate: -8 }}
           animate={{ scale: 1, opacity: 1, rotate: 0 }}
           transition={{ duration: DUR.ceremony, ease: EASE, delay: 0.15 }}
           className="flex h-16 w-16 shrink-0 flex-col items-center justify-center gap-[3px] rounded-full border border-phos-dim/60"
@@ -97,7 +96,7 @@ export function CertificateSeal({
             </>
           )}
         </span>
-        <span className="legend break-all text-lo/70">{id}</span>
+        <span className="legend break-all text-lo">{id}</span>
       </footer>
     </motion.article>
   );

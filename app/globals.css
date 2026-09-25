@@ -265,6 +265,15 @@ body::before {
   width: max(100%, 24px);
   height: max(100%, 24px);
 }
+/* On a touchscreen the floor is 44px, the size a fingertip actually covers.
+   A mouse is precise enough for 24, and the larger box would start catching
+   clicks meant for a neighbouring row. */
+@media (pointer: coarse) {
+  .tap::after {
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+  }
+}
 
 ::selection { background: var(--color-phos-dim); color: var(--color-ink-900); }
 :root[data-theme="light"] ::selection { color: oklch(0.99 0 0); }
@@ -318,6 +327,14 @@ pre[tabindex]:focus-visible {
     animation-duration: 0.01ms !important;
     animation-delay: 0ms !important;
     animation-iteration-count: 1 !important;
+    /* Instant, not short. This was 120ms on every element — and since
+       `transition-property` defaults to `all`, that gave every style change
+       on every element a 120ms tween, including the transforms motion sets.
+       The rule meant to take movement out was adding it back. */
+    transition-duration: 0.01ms !important;
+  }
+  /* a colour change is feedback, not movement: those keep their short fade */
+  .transition-colors {
     transition-duration: 120ms !important;
   }
   /* `both` fill mode means the near-zero duration settles on the last

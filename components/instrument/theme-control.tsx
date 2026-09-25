@@ -92,7 +92,7 @@ export function ThemeControl() {
                 "rounded-[3px] border px-3 py-2.5 text-left transition-colors duration-[120ms]",
                 active
                   ? "border-phos-dim bg-ink-800 text-hi"
-                  : "border-line text-mid hover:border-line-hi hover:text-hi",
+                  : "border-line text-mid hover:border-phos-dim hover:text-hi",
               )}
             >
               <span className="flex items-center gap-2 text-sm">

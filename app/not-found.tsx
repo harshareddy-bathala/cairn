@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Mark } from "@/components/instrument/mark";
+import { buttonClass } from "@/components/instrument/button";
 
 export const metadata = { title: "Not found" };
 
@@ -24,7 +25,7 @@ export default function NotFound() {
         </div>
         <Link
           href="/"
-          className="ctl inline-flex items-center rounded-[3px] border border-line px-4 py-2 text-sm text-hi transition-colors duration-[120ms] hover:border-phos hover:text-phos"
+          className={buttonClass("ghost", "md", "text-hi")}
         >
           go to Cairn
         </Link>

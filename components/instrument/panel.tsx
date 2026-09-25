@@ -3,6 +3,12 @@ import { cn } from "@/lib/cn";
 /**
  * The one container in the app. A hairline schematic block with its legend
  * notched into the top border. Never a shadowed card.
+ *
+ * The legend is the panel's heading, and it is marked up as one: an `<h2>` by
+ * default, so a page reads as its title and then its panels to anyone moving
+ * by headings. It used to be a `<span>`, which left every page with one heading
+ * and nothing under it. `as` changes the level for a panel nested in a section
+ * that already has its own heading.
  */
 export function Panel({
   legend,
@@ -12,6 +18,7 @@ export function Panel({
   active = false,
   flush = false,
   id,
+  as: Legend = "h2",
 }: {
   legend?: string;
   aux?: React.ReactNode;
@@ -23,6 +30,8 @@ export function Panel({
   flush?: boolean;
   /** an anchor target, for links that jump to this panel */
   id?: string;
+  /** the legend's element — a heading level, or `span` when it is not one */
+  as?: "h2" | "h3" | "span";
 }) {
   return (
     <section
@@ -43,7 +52,7 @@ export function Panel({
       {(legend || aux) && (
         <header className="absolute -top-[7px] left-3 right-3 flex items-center justify-between gap-3">
           {legend ? (
-            <span className="legend bg-ink-900 px-1.5 leading-none">{legend}</span>
+            <Legend className="legend bg-ink-900 px-1.5 leading-none">{legend}</Legend>
           ) : (
             <span />
           )}

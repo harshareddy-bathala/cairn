@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { motion, useReducedMotion } from "motion/react";
+import { motion } from "motion/react";
 import { ProblemList } from "./problem-list";
 import { AptitudeLog } from "./aptitude-log";
 import { MockLogForm } from "./career-desk";
@@ -106,7 +106,6 @@ function Block({
   dayIndex: number;
   journeyWeek: number;
 }) {
-  const reduce = useReducedMotion();
   const glyph = GLYPH[b.kind] ?? GLYPH[b.track ?? ""] ?? "·";
   // Each of these finishes itself when the work is logged (see blockDone), and
   // offers a manual tick for work done somewhere Cairn cannot see.
@@ -118,15 +117,18 @@ function Block({
   return (
     // a finished block is quieted by colour, not opacity — at 55% opacity its
     // detail line fell to 2.4:1, below what anyone can read on a phone outdoors
-    <li className="relative">
+    // The phosphor bar and the ✓ are the whole of a row's state on screen, and
+    // neither was announced: the current block is now `aria-current="step"`,
+    // and a finished one says so before its title.
+    <li className="relative" aria-current={current && !b.done ? "step" : undefined}>
       {current && !b.done && (
-        <span className="absolute inset-y-0 -left-4 w-[2px] rounded-r-[1px] bg-phos" />
+        <span aria-hidden className="absolute inset-y-0 -left-4 w-[2px] rounded-r-[1px] bg-phos" />
       )}
 
       <div className="flex items-baseline gap-3 py-2.5">
         <span
           className={cn(
-            "tap w-4 shrink-0 text-center text-sm leading-none",
+            "w-4 shrink-0 text-center text-sm leading-none",
             b.done
               ? "text-phos"
               : b.kind === "redo" || b.kind === "cadence" || b.kind === "recall"
@@ -139,6 +141,7 @@ function Block({
         </span>
 
         <span className="min-w-0 flex-1">
+          {b.done && <span className="sr-only">Done: </span>}
           {href && !b.done ? (
             href.startsWith("#") ? (
               <a
@@ -165,7 +168,8 @@ function Block({
 
         {b.stretch && (
           <span className="legend shrink-0 text-phos-dim" title="pulled in by catch-up">
-            +
+            <span aria-hidden>+</span>
+            <span className="sr-only">pulled in by catch-up</span>
           </span>
         )}
 
@@ -189,7 +193,7 @@ function Block({
 
       {open && expandable && (
         <motion.div
-          initial={reduce ? false : { opacity: 0, y: -4 }}
+          initial={{ opacity: 0, y: -4 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: DUR.base, ease: EASE }}
           className="pb-3 pl-7"

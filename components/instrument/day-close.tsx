@@ -4,10 +4,11 @@ import { useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { Cairn, type Stone } from "./cairn";
 import { closeDay, reopenDay } from "@/app/actions/day";
-import { cn } from "@/lib/cn";
 import { DUR, EASE } from "@/lib/motion";
 import { useAction } from "@/lib/use-action";
 import { fmtDay } from "@/lib/format";
+import { Button } from "./button";
+import { Field, Input, Textarea } from "./field";
 
 /**
  * Closing the day.
@@ -39,6 +40,11 @@ export function DayClose({
   const reopen = useAction(reopenDay);
   const [closed, setClosed] = useState(initialClosed);
   const [justClosed, setJustClosed] = useState(false);
+  // Closing unmounts the form, and the button that had focus goes with it —
+  // focus would fall back to <body> and a keyboard user would be at the top of
+  // the page. It moves to the line that says what just happened instead, and
+  // back to the first field on a reopen.
+  const [justReopened, setJustReopened] = useState(false);
   const [learned, setLearned] = useState(initialLearned ?? "");
   const [task, setTask] = useState(initialTask ?? "");
   const [minutes, setMinutes] = useState(
@@ -58,10 +64,14 @@ export function DayClose({
         </div>
         <div className="min-w-0 flex-1">
           <motion.p
+            ref={(el) => {
+              if (el && justClosed) el.focus({ preventScroll: true });
+            }}
+            tabIndex={-1}
             initial={reduce || !justClosed ? false : { opacity: 0, y: 4 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: DUR.slow, ease: EASE, delay: 0.18 }}
-            className="text-sm text-hi"
+            className="text-sm text-hi focus:outline-none"
           >
             {fmtDay(dayIndex)} closed.{" "}
             <span className="text-lo">
@@ -79,6 +89,7 @@ export function DayClose({
             onClick={async () => {
               setClosed(false);
               setJustClosed(false);
+              setJustReopened(true);
               const r = await reopen.run();
               if (!r.ok) setClosed(true);
             }}
@@ -117,51 +128,43 @@ export function DayClose({
       }}
       className="space-y-3"
     >
-      <label className="block">
-        <span className="legend">what you learned</span>
-        <textarea
+      <Field label="what you learned">
+        <Textarea
+          ref={(el) => {
+            if (el && justReopened) el.focus({ preventScroll: true });
+          }}
           value={learned}
           onChange={(e) => setLearned(e.target.value)}
           required
           rows={2}
           maxLength={2000}
           placeholder="one honest sentence — not a summary of what you read"
-          className="prose-cairn mt-1 w-full resize-y rounded-[3px] border border-line bg-ink-900 px-2.5 py-2 text-sm text-hi placeholder:text-lo focus:border-phos-dim focus:outline-none"
+          className="prose-cairn resize-y py-2"
         />
-      </label>
+      </Field>
 
       <div className="flex flex-wrap items-end gap-3">
-        <label className="min-w-48 flex-1">
-          <span className="legend">tomorrow, first thing</span>
-          <input
+        <Field label="tomorrow, first thing" className="min-w-48 flex-1">
+          <Input
             value={task}
             onChange={(e) => setTask(e.target.value)}
             maxLength={300}
             placeholder="the exact task you open first"
-            className="mt-1 w-full rounded-[3px] border border-line bg-ink-900 px-2.5 py-1.5 text-sm text-hi placeholder:text-lo focus:border-phos-dim focus:outline-none"
           />
-        </label>
+        </Field>
 
-        <label className="w-24">
-          <span className="legend">minutes</span>
-          <input
+        <Field label="minutes" className="w-24">
+          <Input
             value={minutes}
             onChange={(e) => setMinutes(e.target.value.replace(/\D/g, "").slice(0, 4))}
             inputMode="numeric"
-            className="mt-1 w-full rounded-[3px] border border-line bg-ink-900 px-2.5 py-1.5 text-sm tabular-nums text-hi focus:border-phos-dim focus:outline-none"
+            className="tabular-nums"
           />
-        </label>
+        </Field>
 
-        <button
-          type="submit"
-          disabled={close.pending}
-          className={cn(
-            "ctl rounded-[3px] border border-line px-4 py-1.5 text-sm text-hi",
-            "transition-colors duration-[120ms] hover:border-phos hover:text-phos",
-          )}
-        >
+        <Button type="submit" variant="primary" size="md" pending={close.pending} className="py-1.5">
           close the day
-        </button>
+        </Button>
       </div>
 
       {close.error && (

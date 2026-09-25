@@ -25,6 +25,7 @@ import {
 import { fmtDay, fmtMin, fmtWeek } from "@/lib/format";
 import { ROUTES } from "@/lib/routes";
 import { cn } from "@/lib/cn";
+import { scoreBand } from "@/lib/marks";
 
 export const metadata = { title: "Progress" };
 
@@ -173,7 +174,7 @@ export default async function ProgressPage() {
                 data={trend}
                 width={160}
                 height={20}
-                tone={aptAvg != null && aptAvg >= 70 ? "ok" : aptAvg != null && aptAvg >= 50 ? "warn" : "bad"}
+                tone={scoreBand(aptAvg ?? 0)}
               />
               <span className="legend tabular-nums">{trend[trend.length - 1]}%</span>
             </div>

@@ -74,8 +74,8 @@ export function PaceControl({
                 }}
                 className={cn(
                   "disabled:cursor-not-allowed",
-                  // 36px tall on a phone, where this is a thumb target; 28px at `sm`
-                  "h-9 min-w-11 px-2.5 text-xs tabular-nums transition-colors duration-[120ms] sm:h-7 sm:min-w-0 sm:text-2xs",
+                  // 44px on a phone, where this is a thumb target; 28px at `sm`
+                  "h-11 min-w-11 px-2.5 text-xs tabular-nums transition-colors duration-[120ms] sm:h-7 sm:min-w-0 sm:text-2xs",
                   "border-r border-line last:border-r-0",
                   active ? "bg-ink-800 text-phos" : "text-mid hover:text-hi",
                 )}
@@ -97,7 +97,7 @@ export function PaceControl({
             setPending(null);
           }}
           className={cn(
-            "h-9 rounded-[3px] border px-3 text-xs transition-colors duration-[120ms] sm:h-7 sm:px-2.5 sm:text-2xs",
+            "h-11 rounded-[3px] border px-3 text-xs transition-colors duration-[120ms] sm:h-7 sm:px-2.5 sm:text-2xs",
             state.badDay
               ? "border-info/60 bg-ink-800 text-info"
               : "border-line text-mid hover:border-lo hover:text-hi",

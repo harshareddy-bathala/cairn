@@ -15,6 +15,7 @@
     "links": "tsx scripts/links.ts",
     "typecheck": "tsc --noEmit",
     "shots": "node scripts/shot.mjs",
+    "a11y": "node scripts/a11y.mjs",
     "invite": "tsx --env-file=.env.local scripts/invite.ts",
     "verify": "tsx --env-file=.env.local scripts/verify.ts",
     "latency": "tsx --env-file=.env.local scripts/latency.ts",
@@ -25,7 +26,8 @@
     "e2e": "node scripts/interact.mjs",
     "e2e:day": "node scripts/day.mjs",
     "e2e:tracks": "node scripts/sidetracks.mjs",
-    "e2e:cert": "node scripts/certification.mjs"
+    "e2e:cert": "node scripts/certification.mjs",
+    "e2e:keys": "node scripts/keys.mjs"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.3",
@@ -42,6 +44,7 @@
     "zod": "^4.5.4"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/pg": "^8.23.1",

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { motion, useReducedMotion } from "motion/react";
+import { motion } from "motion/react";
 import { Panel } from "./panel";
 import { Markdown } from "./markdown";
 import { ease, DUR } from "@/lib/motion";
@@ -22,7 +22,6 @@ import type { RecallCard } from "@/db/schema";
  */
 export function SelfCheck({ cards }: { cards: RecallCard[] }) {
   const [shown, setShown] = useState<Set<number>>(new Set());
-  const reduce = useReducedMotion();
 
   const allShown = shown.size === cards.length;
 
@@ -53,7 +52,7 @@ export function SelfCheck({ cards }: { cards: RecallCard[] }) {
               <Markdown source={c.front} className="text-base text-hi" />
               {open ? (
                 <motion.div
-                  initial={reduce ? false : { opacity: 0, y: 3 }}
+                  initial={{ opacity: 0, y: 3 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={ease(DUR.base)}
                 >

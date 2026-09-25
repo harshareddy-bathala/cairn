@@ -5,6 +5,7 @@ import { motion, useReducedMotion } from "motion/react";
 import { cn } from "@/lib/cn";
 import { DUR, EASE } from "@/lib/motion";
 import { fmtDay } from "@/lib/format";
+import { DIFFICULTY } from "@/lib/marks";
 
 export type Outcome = "clean" | "hinted" | "editorial" | "failed";
 
@@ -25,12 +26,6 @@ export type ProblemRowData = {
   /** set the instant an editorial is reported, before the server returns the day */
   redoPending?: boolean;
 };
-
-const DIFF = {
-  easy: { cls: "text-phos-dim", label: "easy" },
-  medium: { cls: "text-warn", label: "med" },
-  hard: { cls: "text-bad", label: "hard" },
-} as const;
 
 const OUTCOME_MARK: Record<Outcome, { glyph: string; cls: string; label: string }> = {
   clean: { glyph: "✓", cls: "text-phos", label: "solved clean" },
@@ -203,8 +198,8 @@ function Meta({ p, className }: { p: ProblemRowData; className?: string }) {
   return (
     <span className={className}>
       <span className="legend truncate">{p.patternTag}</span>
-      <span className={cn("shrink-0 text-2xs uppercase sm:w-9", DIFF[p.difficulty].cls)}>
-        {DIFF[p.difficulty].label}
+      <span className={cn("shrink-0 text-2xs uppercase sm:w-9", DIFFICULTY[p.difficulty].cls)}>
+        {DIFFICULTY[p.difficulty].short}
       </span>
       <span className="legend shrink-0 tabular-nums sm:w-10 sm:text-right">~{p.estMinutes}m</span>
     </span>

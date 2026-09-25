@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { motion, useReducedMotion } from "motion/react";
+import { motion } from "motion/react";
 import { acceptPledge, setDeliverable, setRepoUrl } from "@/app/actions/sidetracks";
 import type { ProjectView } from "@/lib/sidetracks";
 import { cn } from "@/lib/cn";
@@ -9,9 +9,8 @@ import { safeUrl } from "@/lib/safe-url";
 import { DUR, EASE } from "@/lib/motion";
 import { useAction } from "@/lib/use-action";
 import { fmtDay } from "@/lib/format";
-
-const urlInput =
-  "w-full rounded-[3px] border border-line bg-ink-900 px-2.5 py-1.5 text-sm text-hi placeholder:text-lo focus:border-phos-dim focus:outline-none";
+import { Button } from "./button";
+import { Input } from "./field";
 
 /**
  * A project as a checklist of deliverables, each with a definition of done.
@@ -21,7 +20,6 @@ const urlInput =
  * counts as finished.
  */
 export function ProjectBoard({ project }: { project: ProjectView }) {
-  const reduce = useReducedMotion();
   const [, startTransition] = useTransition();
   const tick = useAction(setDeliverable);
   const pledge = useAction(acceptPledge);
@@ -85,18 +83,17 @@ export function ProjectBoard({ project }: { project: ProjectView }) {
             line you wrote four weeks ago, and this is the only thing that makes that
             survivable.
           </p>
-          <button
-            type="button"
-            disabled={pledge.pending}
+          <Button
+            pending={pledge.pending}
             onClick={async () => {
               setState((s) => ({ ...s, pledgeAcceptedAt: new Date().toISOString() }));
               const r = await pledge.run(state.slug);
               if (!r.ok) setState((s) => ({ ...s, pledgeAcceptedAt: null }));
             }}
-            className="ctl mt-3 rounded-[3px] border border-line px-3 py-1.5 text-xs text-mid transition-colors duration-[120ms] hover:border-phos hover:text-phos"
+            className="mt-3"
           >
             I accept — no AI codegen in {state.name}
-          </button>
+          </Button>
           {pledge.error && (
             <p role="alert" className="note mt-2 text-bad">
               {pledge.error}
@@ -111,7 +108,7 @@ export function ProjectBoard({ project }: { project: ProjectView }) {
               repo
               {repoErr && <span className="ml-2 text-bad">not a link</span>}
             </span>
-            <input
+            <Input
               value={repo}
               onChange={(e) => {
                 setRepo(e.target.value);
@@ -133,7 +130,7 @@ export function ProjectBoard({ project }: { project: ProjectView }) {
               }}
               placeholder="github.com/…"
               aria-invalid={repoErr || undefined}
-              className={cn("mt-1", urlInput, repoErr && "border-bad")}
+              className={cn("mt-1", repoErr && "border-bad")}
             />
             {safeUrl(state.repoUrl) && (
               <a
@@ -202,7 +199,7 @@ export function ProjectBoard({ project }: { project: ProjectView }) {
               </div>
               {isOpen && (
                 <motion.div
-                  initial={reduce ? false : { opacity: 0, y: -4 }}
+                  initial={{ opacity: 0, y: -4 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: DUR.base, ease: EASE }}
                   className="space-y-3 pb-3 pl-7"
@@ -257,7 +254,7 @@ function EvidenceField({
           evidence
           {err && <span className="ml-2 text-bad">not a link</span>}
         </span>
-        <input
+        <Input
           value={v}
           onChange={(e) => {
             setV(e.target.value);
@@ -276,7 +273,7 @@ function EvidenceField({
           }}
           placeholder="commit, PR, screenshot or deployed URL"
           aria-invalid={err || undefined}
-          className={cn("mt-1", urlInput, err && "border-bad")}
+          className={cn("mt-1", err && "border-bad")}
         />
       </label>
       {href ? (

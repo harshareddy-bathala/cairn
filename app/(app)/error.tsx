@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { Panel } from "@/components/instrument/panel";
+import { buttonClass } from "@/components/instrument/button";
 
 /**
  * When a page, or an action on it, throws.
@@ -39,7 +40,7 @@ export default function AppError({
           <button
             type="button"
             onClick={() => retry()}
-            className="ctl rounded-[3px] border border-line px-4 py-1.5 text-sm text-hi transition-colors duration-[120ms] hover:border-phos hover:text-phos"
+            className={buttonClass("ghost", "md", "py-1.5 text-hi")}
           >
             try again
           </button>
