@@ -26,12 +26,14 @@ const nextConfig: NextConfig = {
   // Nine destinations became five. Plans already stored in journey_days.plan
   // and Telegram messages already sent carry the old paths, so each one keeps
   // working — sub-paths and query strings included.
+  //
+  // Two rules each: a single `:rest*` rule leaves an empty segment behind on
+  // Vercel, sending /metrics to /progress/ and then a second hop to /progress.
   async redirects() {
-    return MOVED.map(([from, to]) => ({
-      source: `${from}/:rest*`,
-      destination: `${to}/:rest*`,
-      permanent: false,
-    }));
+    return MOVED.flatMap(([from, to]) => [
+      { source: from, destination: to, permanent: false },
+      { source: `${from}/:rest+`, destination: `${to}/:rest+`, permanent: false },
+    ]);
   },
 };
 
