@@ -19,6 +19,16 @@ export type WeekReviewState = {
   dayOfWeek: number;
   existing: WeekReview | null;
   past: WeekReview[];
+  /** this journey week's closed days, oldest first — the review's raw material */
+  entries: DayEntry[];
+};
+
+export type DayEntry = {
+  dayIndex: number;
+  learned: string | null;
+  firstTask: string | null;
+  minutes: number;
+  mode: string;
 };
 
 
@@ -46,6 +56,15 @@ export async function getWeekReviewState(userId: string): Promise<WeekReviewStat
           'threePriorities', three_priorities, 'submittedAt', submitted_at
         ) from rows where journey_week = (select w from wk)
       ),
+      'entries', coalesce((
+        select json_agg(json_build_object(
+          'dayIndex', j.day_index, 'learned', j.learned_md, 'firstTask', j.tomorrow_first_task,
+          'minutes', j.minutes_total, 'mode', j.mode
+        ) order by j.day_index)
+        from journey_days j, wk
+        where j.user_id = ${userId} and j.closed_at is not null
+          and j.day_index between (wk.w - 1) * 7 + 1 and wk.w * 7
+      ), '[]'::json),
       'past', coalesce((
         select json_agg(json_build_object(
           'journeyWeek', journey_week, 'answers', answers,
@@ -63,5 +82,6 @@ export async function getWeekReviewState(userId: string): Promise<WeekReviewStat
     due: Number(raw.dayOfWeek ?? 1) >= REVIEW_OPENS_ON_DAY,
     existing: raw.existing ?? null,
     past: raw.past ?? [],
+    entries: raw.entries ?? [],
   };
 }

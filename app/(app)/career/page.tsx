@@ -10,6 +10,7 @@ import {
 } from "@/components/instrument/career-desk";
 import { getJourneyStateCached } from "@/lib/journey";
 import { getCareer } from "@/lib/sidetracks";
+import { fmtWeek } from "@/lib/format";
 import {
   APPLICATIONS_FROM_WEEK,
   APPLICATIONS_PER_WEEK,
@@ -32,7 +33,7 @@ export default async function CareerPage() {
     <Boot className="mx-auto max-w-3xl space-y-6 px-4 py-8 sm:px-6 sm:py-10">
       <BootItem>
         <header>
-          <p className="legend">week {String(journey.journeyWeek).padStart(2, "0")}</p>
+          <p className="legend">{fmtWeek(journey.journeyWeek)}</p>
           <h1 className="mt-1 text-2xl text-hi">Career desk</h1>
           <p className="mt-1 max-w-xl note text-lo">
             Interviews are a separate skill from the one you practise every morning, and

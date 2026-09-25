@@ -11,6 +11,7 @@ export function Panel({
   className,
   active = false,
   flush = false,
+  id,
 }: {
   legend?: string;
   aux?: React.ReactNode;
@@ -20,9 +21,12 @@ export function Panel({
   active?: boolean;
   /** drop inner padding, for tables and lists that manage their own */
   flush?: boolean;
+  /** an anchor target, for links that jump to this panel */
+  id?: string;
 }) {
   return (
     <section
+      id={id}
       className={cn(
         // `rounded-panel`, not `rounded-[--radius-panel]`: Tailwind 4 no longer
         // wraps a bare custom property in var(), so the old class compiled to

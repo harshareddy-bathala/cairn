@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { motion } from "motion/react";
 import { logAptitude } from "@/app/actions/sidetracks";
 import { aptitudeTopicFor } from "@/content/aptitude";
 import { cn } from "@/lib/cn";
 import { DUR, EASE } from "@/lib/motion";
+import { useAction } from "@/lib/use-action";
+import { fmtDay } from "@/lib/format";
 
 type Score = { dayIndex: number; topic: string; correct: number; total: number };
 
@@ -19,11 +21,14 @@ type Score = { dayIndex: number; topic: string; correct: number; total: number }
 export function AptitudeLog({
   dayIndex,
   scores: initial,
+  compact = false,
 }: {
   dayIndex: number;
   scores: Score[];
+  /** the form alone, for embedding in the plan's aptitude block */
+  compact?: boolean;
 }) {
-  const [, startTransition] = useTransition();
+  const log = useAction(logAptitude);
   const [scores, setScores] = useState(initial);
   const suggested = aptitudeTopicFor(dayIndex).topic;
   const [topic, setTopic] = useState(suggested);
@@ -37,22 +42,25 @@ export function AptitudeLog({
   return (
     <div className="space-y-4">
       <form
-        action={() =>
-          startTransition(async () => {
-            const c = Number(correct);
-            const t = Number(total);
-            if (correct === "") return setErr("how many did you get right?");
-            if (!Number.isFinite(t) || t <= 0) return setErr("out of how many?");
-            if (c > t) return setErr(`${c} out of ${t}?`);
-            if (!topic.trim()) return setErr("name the topic");
-            setErr(null);
-            const optimistic = { dayIndex, topic, correct: c, total: t };
-            setScores((s) => [...s, optimistic]);
-            setCorrect("");
-            const res = await logAptitude({ topic, correct: c, total: t });
-            setFlash(res.percent);
-          })
-        }
+        action={async () => {
+          const c = Number(correct);
+          const t = Number(total);
+          if (correct === "") return setErr("how many did you get right?");
+          if (!Number.isFinite(t) || t <= 0) return setErr("out of how many?");
+          if (c > t) return setErr(`${c} out of ${t}?`);
+          if (!topic.trim()) return setErr("name the topic");
+          setErr(null);
+          const optimistic = { dayIndex, topic, correct: c, total: t };
+          setScores((s) => [...s, optimistic]);
+          setCorrect("");
+          const res = await log.run({ topic, correct: c, total: t });
+          if (!res.ok) {
+            setScores((s) => s.filter((x) => x !== optimistic));
+            setCorrect(String(c));
+            return;
+          }
+          setFlash(res.value.percent);
+        }}
         // On a phone: topic on its own row, the two counts side by side,
         // then the button. At `sm` it collapses back to one line — at 326px of
         // usable width the single row wrapped mid-form, stranding "of" and the
@@ -94,16 +102,17 @@ export function AptitudeLog({
         </label>
         <button
           type="submit"
+          disabled={log.pending}
           className="col-span-2 rounded-[3px] border border-line px-4 py-2 text-sm text-mid transition-colors duration-[120ms] hover:border-phos hover:text-phos sm:col-span-1 sm:py-1.5"
         >
           log
         </button>
-        {err && (
-          <span role="status" className="pb-1.5 text-2xs text-warn">
-            {err}
+        {(err ?? log.error) && (
+          <span role="alert" className="pb-1.5 text-2xs text-warn">
+            {err ?? log.error}
           </span>
         )}
-        {err == null && flash != null && (
+        {err == null && log.error == null && flash != null && (
           <motion.span
             key={flash}
             initial={{ opacity: 0, y: 4 }}
@@ -119,14 +128,14 @@ export function AptitudeLog({
         )}
       </form>
 
-      {!loggedToday && (
+      {!compact && !loggedToday && (
         <p className="note text-lo">
           Today's rotation is <span className="text-mid">{suggested}</span>. 25 questions,
           timed — the clock is the part that transfers.
         </p>
       )}
 
-      {scores.length > 0 && (
+      {!compact && scores.length > 0 && (
         <ul className="divide-y divide-line-soft border-t border-line-soft">
           {[...scores]
             .sort((a, b) => b.dayIndex - a.dayIndex)
@@ -136,7 +145,7 @@ export function AptitudeLog({
               return (
                 <li key={`${s.dayIndex}-${s.topic}-${i}`} className="flex items-baseline gap-3 py-1.5">
                   <span className="legend w-12 shrink-0 tabular-nums">
-                    d{String(s.dayIndex).padStart(3, "0")}
+                    {fmtDay(s.dayIndex, true)}
                   </span>
                   <span className="min-w-0 flex-1 truncate text-2xs text-mid">{s.topic}</span>
                   <span className="legend shrink-0 tabular-nums">

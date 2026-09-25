@@ -564,6 +564,14 @@ export type DayContext = {
   doneUnits: string[];
   cardsDue: number;
   standing: TrackStanding[];
+  /** problems with an attempt logged on today's active day */
+  attemptedToday: string[];
+  /** an aptitude score has been logged today */
+  aptitudeToday: boolean;
+  /** every project deliverable already shipped */
+  deliverablesDone: string[];
+  /** the last closed day's log, read back the next morning */
+  yesterday: { dayIndex: number; learned: string | null; firstTask: string | null } | null;
 };
 
 /**
@@ -700,6 +708,26 @@ export async function getDayContext(userId: string): Promise<DayContext> {
       'doneUnits', coalesce((
         select json_agg(unit_slug) from prog where state = 'done'
       ), '[]'::json),
+      'attemptedToday', coalesce((
+        select json_agg(distinct a.problem_slug) from problem_attempts a, day d
+        where a.user_id = ${userId} and a.day_index = d.day_index
+      ), '[]'::json),
+      'aptitudeToday', exists (
+        select 1 from aptitude_scores s, day d
+        where s.user_id = ${userId} and s.day_index = d.day_index
+      ),
+      'yesterday', (
+        select json_build_object(
+          'dayIndex', j.day_index, 'learned', j.learned_md, 'firstTask', j.tomorrow_first_task
+        )
+        from journey_days j, day d
+        where j.user_id = ${userId} and j.day_index < d.day_index and j.closed_at is not null
+        order by j.day_index desc
+        limit 1
+      ),
+      'deliverablesDone', coalesce((
+        select json_agg(deliverable_slug) from deliverable_done where user_id = ${userId}
+      ), '[]'::json),
       'units', coalesce((
         select json_agg(json_build_object(
           'slug', slug, 'title', title, 'objective', objective, 'estMinutes', est_minutes,
@@ -761,6 +789,7 @@ export type Today = {
   tomorrowFirstTask: string | null;
   minutesTotal: number;
   budgetMin: number;
+  yesterday: DayContext["yesterday"];
 };
 
 export async function getTodayPlan(userId: string): Promise<Today> {
@@ -785,6 +814,68 @@ export async function getTodayPlan(userId: string): Promise<Today> {
     tomorrowFirstTask: ctx.tomorrowFirstTask,
     minutesTotal: ctx.minutesTotal,
     budgetMin: budgetWith(ctx.budgetMin, ctx.multiplier),
+    yesterday: ctx.yesterday ?? null,
+  };
+}
+
+/** what the day has actually recorded — everything blockDone reads */
+export type BlockSignals = {
+  doneUnits: Set<string>;
+  /** redo problems still due */
+  redoDue: Set<string>;
+  cardsDue: number;
+  closed: boolean;
+  attemptedToday: Set<string>;
+  aptitudeToday: boolean;
+  deliverablesDone: Set<string>;
+  /** cadence kinds whose weekly quota is still short */
+  cadenceShort: Set<string>;
+};
+
+/**
+ * Whether a block is finished.
+ *
+ * Every kind has a way to reach done. Where the work leaves a trace — a unit
+ * ticked, a problem attempted, a score logged, a deliverable shipped, a quota
+ * met — that trace decides it; a manual tick is the fallback for work done
+ * somewhere Cairn cannot see. A block that could never be finished sat in the
+ * plan as the "current" one forever, and the day never looked done.
+ */
+export function blockDone(b: PlanBlock, s: BlockSignals, ticked: Set<string>): boolean {
+  if (b.unitSlug) return s.doneUnits.has(b.unitSlug);
+  switch (b.kind) {
+    case "redo":
+      return b.problems.every((p) => !s.redoDue.has(p.slug));
+    case "recall":
+      return s.cardsDue === 0;
+    case "close":
+      return s.closed;
+    case "aptitude":
+      return s.aptitudeToday || ticked.has(b.id);
+  }
+  if (b.id === "dsa:minimum") return b.problems.some((p) => s.attemptedToday.has(p.slug));
+  if (b.id === "dsa:practice") {
+    return b.problems.length > 0 && b.problems.every((p) => s.attemptedToday.has(p.slug));
+  }
+  if (b.kind === "project") {
+    return s.deliverablesDone.has(b.id.slice("project:".length)) || ticked.has(b.id);
+  }
+  if (b.kind === "cadence") {
+    return !s.cadenceShort.has(b.id.slice("cadence:".length)) || ticked.has(b.id);
+  }
+  return ticked.has(b.id);
+}
+
+export function signalsFrom(ctx: DayContext): BlockSignals {
+  return {
+    doneUnits: new Set(ctx.doneUnits ?? []),
+    redoDue: new Set(ctx.redo.map((p) => p.slug)),
+    cardsDue: ctx.cardsDue ?? 0,
+    closed: ctx.closed,
+    attemptedToday: new Set(ctx.attemptedToday ?? []),
+    aptitudeToday: !!ctx.aptitudeToday,
+    deliverablesDone: new Set(ctx.deliverablesDone ?? []),
+    cadenceShort: new Set(cadenceDueFor(ctx.journeyWeek, ctx.mocksThisWeek).map((q) => q.kind)),
   };
 }
 
@@ -793,17 +884,8 @@ function hydrate(
   ctx: DayContext,
   ticked: Set<string>,
 ): HydratedPlan {
-  const doneUnits = new Set(ctx.doneUnits ?? []);
-  const stillDue = new Set(ctx.redo.map((p) => p.slug));
-
-  const blocks: HydratedBlock[] = plan.blocks.map((b) => {
-    let done = ticked.has(b.id);
-    if (b.unitSlug) done = doneUnits.has(b.unitSlug);
-    else if (b.kind === "redo") done = b.problems.every((p) => !stillDue.has(p.slug));
-    else if (b.kind === "recall") done = (ctx.cardsDue ?? 0) === 0;
-    else if (b.kind === "close") done = ctx.closed;
-    return { ...b, done };
-  });
+  const signals = signalsFrom(ctx);
+  const blocks: HydratedBlock[] = plan.blocks.map((b) => ({ ...b, done: blockDone(b, signals, ticked) }));
 
   return {
     ...plan,

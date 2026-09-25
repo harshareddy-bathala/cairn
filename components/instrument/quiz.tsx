@@ -28,6 +28,7 @@ export function Quiz({
   deadlineAt,
   serverNow,
   submitLabel = "submit",
+  afterPass,
 }: {
   questions: QuizQuestion[];
   onSubmit: (answers: Record<string, number>) => Promise<QuizResult | { ok: false; error: string }>;
@@ -39,6 +40,8 @@ export function Quiz({
   /** the server's clock when the paper was drawn, to correct for this tab's */
   serverNow?: number;
   submitLabel?: string;
+  /** where to go once passed — shown under the score, so a pass is not a dead end */
+  afterPass?: React.ReactNode;
 }) {
   const reduce = useReducedMotion();
   const [pending, startTransition] = useTransition();
@@ -129,6 +132,7 @@ export function Quiz({
               )}
             </span>
           </div>
+          {result.passed && afterPass}
           {result.byModule && (
             <ul className="divide-y divide-line-soft border-t border-line-soft">
               {result.byModule.map((m) => (

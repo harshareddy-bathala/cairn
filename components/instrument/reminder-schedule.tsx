@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
+import { useAction } from "@/lib/use-action";
 import { motion } from "motion/react";
 import { saveReminderSchedule, sendTestReminder } from "@/app/actions/reminders";
 import { REMINDER_KINDS, REMINDER_LABELS, type ReminderKind } from "@/lib/reminder-slots";
@@ -27,9 +28,10 @@ export function ReminderSchedule({
 }) {
   const [slots, setSlots] = useState<Slot[]>(initial);
   const [saved, setSaved] = useState(true);
-  const [pending, startTransition] = useTransition();
+  const save = useAction(saveReminderSchedule);
+  const sendTest = useAction(sendTestReminder);
+  const pending = save.pending || sendTest.pending;
   const [test, setTest] = useState<{ kind: ReminderKind; msg: string } | null>(null);
-  const [failed, setFailed] = useState(false);
 
   function edit(kind: ReminderKind, patch: Partial<Slot>) {
     setSlots((s) => s.map((x) => (x.kind === kind ? { ...x, ...patch } : x)));
@@ -67,12 +69,11 @@ export function ReminderSchedule({
                 <button
                   type="button"
                   disabled={pending}
-                  onClick={() =>
-                    startTransition(async () => {
-                      const r = await sendTestReminder(kind);
-                      setTest({ kind, msg: r.ok ? "sent" : r.error });
-                    })
-                  }
+                  onClick={async () => {
+                    setTest(null);
+                    const r = await sendTest.run(kind);
+                    if (r.ok) setTest({ kind, msg: "sent" });
+                  }}
                   className="tap legend shrink-0 px-1 text-lo hover:text-hi disabled:opacity-40"
                 >
                   test
@@ -106,9 +107,14 @@ export function ReminderSchedule({
         </p>
       )}
 
-      {failed && (
+      {sendTest.error && (
         <p role="alert" className="note text-bad">
-          The schedule did not save — check the times and commit again.
+          The test did not send. {sendTest.error}
+        </p>
+      )}
+      {save.error && (
+        <p role="alert" className="note text-bad">
+          The schedule did not save — check the times and save again. {save.error}
         </p>
       )}
 
@@ -118,16 +124,10 @@ export function ReminderSchedule({
         <button
           type="button"
           disabled={saved || pending}
-          onClick={() =>
-            startTransition(async () => {
-              const ok = await saveReminderSchedule({ slots }).then(
-                () => true,
-                () => false,
-              );
-              setSaved(ok);
-              setFailed(!ok);
-            })
-          }
+          onClick={async () => {
+            const r = await save.run({ slots });
+            setSaved(r.ok);
+          }}
           className={cn(
             "ctl relative overflow-hidden rounded-[3px] border px-4 py-1.5 text-sm transition-colors duration-[120ms]",
             saved
@@ -144,7 +144,7 @@ export function ReminderSchedule({
               className="pointer-events-none absolute inset-y-0 w-1/2 bg-phos/10"
             />
           )}
-          <span className="relative">{saved ? "saved" : pending ? "saving…" : "commit"}</span>
+          <span className="relative">{saved ? "saved" : save.pending ? "saving…" : "save schedule"}</span>
         </button>
       </div>
     </div>

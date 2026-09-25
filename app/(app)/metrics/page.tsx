@@ -18,7 +18,7 @@ import {
   STAR_PROMPTS,
   STAR_READY_TARGET,
 } from "@/content/cadence";
-import { fmtMin } from "@/lib/format";
+import { fmtDay, fmtMin, fmtWeek } from "@/lib/format";
 
 export const metadata = { title: "Metrics" };
 
@@ -55,8 +55,7 @@ export default async function MetricsPage() {
       <BootItem>
         <header>
           <p className="legend">
-            day {String(journey.dayIndex).padStart(3, "0")} · week{" "}
-            {String(journey.journeyWeek).padStart(2, "0")}
+            {fmtDay(journey.dayIndex)} · {fmtWeek(journey.journeyWeek)}
           </p>
           <h1 className="mt-1 text-2xl text-hi">Metrics</h1>
           <p className="mt-1 max-w-xl note text-lo">
@@ -72,8 +71,8 @@ export default async function MetricsPage() {
           legend="dsa"
           aux={
             activeDays === 0
-              ? `first mark ~${firstMark.target} by day ${String(firstMark.atDay).padStart(3, "0")}`
-              : `target ~${dsaTarget} by day ${String(activeDays).padStart(3, "0")}`
+              ? `first mark ~${firstMark.target} by ${fmtDay(firstMark.atDay)}`
+              : `target ~${dsaTarget} by ${fmtDay(activeDays)}`
           }
         >
           <div className="grid gap-4 sm:grid-cols-2">
@@ -129,7 +128,7 @@ export default async function MetricsPage() {
       </BootItem>
 
       <BootItem>
-        <Panel legend="cadence" aux={`journey week ${String(journey.journeyWeek).padStart(2, "0")}`}>
+        <Panel legend="cadence" aux={`journey ${fmtWeek(journey.journeyWeek)}`}>
           <p className="mb-3 note text-lo">
             Per journey week, not per calendar week — skip three days and the week simply
             has not ended yet.

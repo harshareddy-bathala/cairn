@@ -62,6 +62,25 @@ const heading = await p.getByRole("heading", { level: 1 }).textContent();
 say("bad day is named, not hidden", heading?.includes("Bad day"));
 await p.screenshot({ path: "shots/today-badday.png", fullPage: true });
 
+// --- every block can finish: recording the one problem finishes the chain.
+// dsa:minimum used to have no completion signal at all, so a bad day could
+// never show as done however much of it you did.
+const glyphOf = (row) => row.locator("span[aria-hidden]").first().textContent();
+const minimum = rows.filter({ hasText: "One problem" });
+if (await minimum.count()) {
+  const expand = p.getByRole("button", { name: /^Expand One problem/ });
+  if ((await expand.getAttribute("aria-expanded")) !== "true") await expand.click();
+  await minimum.getByRole("button", { name: "solved clean" }).first().click();
+  await p.waitForTimeout(4000);
+  say("minimum chain finishes", (await glyphOf(minimum)) === "✓");
+} else say("minimum chain finishes", false);
+const openLeft = [];
+for (const row of await rows.all()) {
+  const text = await row.innerText();
+  if (!/Close the day/.test(text) && (await glyphOf(row)) !== "✓") openLeft.push(text.split("\n")[0]);
+}
+say(`all blocks done but the close${openLeft.length ? ` (${openLeft.join(", ")})` : ""}`, openLeft.length === 0);
+
 // the pace steps are meaningless during a bad day, so they are disabled — the
 // only way back out is the toggle itself
 const stepDisabled = await p.getByRole("button", { name: "1×" }).isDisabled();
@@ -69,6 +88,15 @@ say("pace locked during bad day", stepDisabled);
 await p.getByRole("button", { name: "bad day" }).click();
 await p.waitForTimeout(4000);
 say("returns to normal pace", (await rows.count()) > 2);
+
+// --- logging a score in the plan finishes the aptitude block
+const apt = rows.filter({ hasText: "25 questions" });
+const aptExpand = p.getByRole("button", { name: /^Expand 25 questions/ });
+if ((await aptExpand.getAttribute("aria-expanded")) !== "true") await aptExpand.click();
+await apt.getByLabel("correct").fill("18");
+await apt.getByRole("button", { name: "log", exact: true }).click();
+await p.waitForTimeout(4000);
+say("aptitude log finishes block", (await glyphOf(apt)) === "✓");
 
 // --- close the day: the stone drops
 await p.getByPlaceholder(/one honest sentence/).fill("binary search on the answer space, not the array");

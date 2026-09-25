@@ -4,6 +4,7 @@ import { useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { cn } from "@/lib/cn";
 import { DUR, EASE } from "@/lib/motion";
+import { fmtDay } from "@/lib/format";
 
 export type Outcome = "clean" | "hinted" | "editorial" | "failed";
 
@@ -110,7 +111,7 @@ export function ProblemRow({
           aria-label={open ? `Hide hints for ${p.title}` : `Show hints for ${p.title}`}
           className="tap shrink-0 rounded-[2px] px-1 text-2xs text-lo transition-colors duration-[120ms] hover:text-mid"
         >
-          {open ? "−" : "+"}
+          {open ? "− hints" : "+ hints"}
         </button>
       </div>
 
@@ -153,38 +154,45 @@ export function ProblemRow({
             </div>
           </div>
 
-          {onOutcome && (
-            <div className="flex flex-wrap items-center gap-1.5">
-              <span className="legend mr-1">on return</span>
-              {(["clean", "hinted", "editorial"] as const).map((o) => (
-                <button
-                  key={o}
-                  type="button"
-                  onClick={() => onOutcome(p.slug, o)}
-                  className={cn(
-                    "ctl rounded-[2px] border px-2.5 py-1 text-xs transition-colors duration-[120ms]",
-                    p.outcome === o
-                      ? o === "clean"
-                        ? "border-phos text-phos"
-                        : o === "hinted"
-                          ? "border-warn text-warn"
-                          : "border-bad text-bad"
-                      : "border-line-soft text-lo hover:border-line hover:text-mid",
-                  )}
-                >
-                  {OUTCOME_MARK[o].label}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {(p.redoDueDay != null || p.redoPending) && (
-            <p className="text-2xs text-info">
-              redo scheduled
-              {p.redoDueDay != null ? ` — day ${String(p.redoDueDay).padStart(3, "0")}` : "…"}
-            </p>
-          )}
         </div>
+      )}
+
+      {/*
+        The outcome is always one tap away. It used to live inside the hints
+        panel, so recording "solved clean" meant first opening the hints you
+        had not needed — and people who solved without them never found it.
+      */}
+      {onOutcome && (
+        <div className="flex flex-wrap items-center gap-1.5 pb-2.5">
+          <span className="legend mr-1">{p.outcome ? "recorded" : "on return"}</span>
+          {(["clean", "hinted", "editorial"] as const).map((o) => (
+            <button
+              key={o}
+              type="button"
+              aria-pressed={p.outcome === o}
+              onClick={() => onOutcome(p.slug, o)}
+              className={cn(
+                "ctl rounded-[2px] border px-2.5 py-1 text-xs transition-colors duration-[120ms]",
+                p.outcome === o
+                  ? o === "clean"
+                    ? "border-phos text-phos"
+                    : o === "hinted"
+                      ? "border-warn text-warn"
+                      : "border-bad text-bad"
+                  : "border-line-soft text-lo hover:border-line hover:text-mid",
+              )}
+            >
+              {OUTCOME_MARK[o].label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {(p.redoDueDay != null || p.redoPending) && (
+        <p className="pb-2.5 text-2xs text-info">
+          redo scheduled
+          {p.redoDueDay != null ? ` — ${fmtDay(p.redoDueDay)}` : "…"}
+        </p>
       )}
     </li>
   );

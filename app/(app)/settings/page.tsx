@@ -53,9 +53,8 @@ export default async function SettingsPage() {
           <p className="legend">reminders · appearance · account</p>
           <h1 className="mt-1 text-2xl text-hi">Settings</h1>
           <p className="prose-cairn mt-3 text-base">
-            The roadmap failed twice for want of a nudge at the right hour. These are that
-            nudge — and nothing more. A reminder reports the trail; it never marks anything
-            late, because nothing here can be late.
+            Reminders arrive in Telegram at the times you set. A reminder reports where the
+            trail stands; it never marks anything late, because nothing here can be late.
           </p>
         </header>
       </BootItem>

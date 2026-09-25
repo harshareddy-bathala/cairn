@@ -5,7 +5,7 @@ import { Panel } from "@/components/instrument/panel";
 import { Boot, BootItem } from "@/components/instrument/boot";
 import { CheckpointRunner } from "@/components/instrument/quiz-runner";
 import { questionsForModule, CHECKPOINT_PASS } from "@/content/checkpoints";
-import { modules } from "@/content";
+import { modules, phases } from "@/content";
 
 export const metadata = { title: "Checkpoint" };
 
@@ -21,6 +21,17 @@ export default async function CheckpointPage({
   const mod = modules.find((m) => m.slug === slug);
   const qs = questionsForModule(slug);
   if (!mod || qs.length === 0) notFound();
+
+  // the next module along this track: phase first, then module order
+  const phaseOrder = new Map(phases.map((p) => [p.slug, p.order]));
+  const lane = modules
+    .filter((m) => m.trackSlug === mod.trackSlug)
+    .sort(
+      (a, b) =>
+        (phaseOrder.get(a.phaseSlug) ?? 0) - (phaseOrder.get(b.phaseSlug) ?? 0) || a.order - b.order,
+    );
+  const after = lane[lane.indexOf(mod) + 1];
+  const nextModule = after ? { slug: after.slug, title: after.title } : null;
 
   return (
     <Boot className="mx-auto max-w-3xl space-y-6 px-4 py-8 sm:px-6 sm:py-10">
@@ -43,7 +54,7 @@ export default async function CheckpointPage({
 
       <BootItem>
         <Panel legend="paper" active>
-          <CheckpointRunner moduleSlug={slug} count={qs.length} />
+          <CheckpointRunner moduleSlug={slug} count={qs.length} nextModule={nextModule} />
         </Panel>
       </BootItem>
     </Boot>

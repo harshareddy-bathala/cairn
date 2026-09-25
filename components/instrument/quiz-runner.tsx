@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Link from "next/link";
 import { Quiz } from "./quiz";
 import { attachDefense, issueCertificate, startQuiz, submitQuiz } from "@/app/actions/certification";
 import type { Paper } from "@/lib/quiz-sessions";
@@ -34,7 +35,16 @@ function useSitting(kind: "checkpoint" | "exam", slug: string) {
   return { paper, error, pending, begin };
 }
 
-export function CheckpointRunner({ moduleSlug, count }: { moduleSlug: string; count: number }) {
+export function CheckpointRunner({
+  moduleSlug,
+  count,
+  nextModule,
+}: {
+  moduleSlug: string;
+  count: number;
+  /** the module after this one in its track, if there is one */
+  nextModule?: { slug: string; title: string } | null;
+}) {
   const { paper, error, pending, begin } = useSitting("checkpoint", moduleSlug);
 
   if (!paper) {
@@ -61,6 +71,19 @@ export function CheckpointRunner({ moduleSlug, count }: { moduleSlug: string; co
       submitLabel="submit checkpoint"
       onSubmit={(a) => submitQuiz(paper.sessionId, a)}
       onRetake={begin}
+      afterPass={
+        <p className="flex flex-wrap gap-x-5 gap-y-2 text-sm">
+          <Link href={`/module/${moduleSlug}`} className="tap text-mid hover:text-hi">
+            ← back to module
+          </Link>
+          {nextModule && (
+            <Link href={`/module/${nextModule.slug}`} className="tap text-hi hover:text-phos">
+              <span className="legend mr-2">next module</span>
+              {nextModule.title} →
+            </Link>
+          )}
+        </p>
+      }
     />
   );
 }

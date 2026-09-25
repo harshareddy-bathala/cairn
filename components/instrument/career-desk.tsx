@@ -15,6 +15,8 @@ import { CADENCE, STAR_PROMPTS } from "@/content/cadence";
 import { safeUrl } from "@/lib/safe-url";
 import { cn } from "@/lib/cn";
 import { DUR, EASE } from "@/lib/motion";
+import { useAction } from "@/lib/use-action";
+import { fmtWeek } from "@/lib/format";
 
 const STATUSES = [
   "applied", "responded", "screening", "interviewing", "offer", "rejected", "ghosted",
@@ -58,7 +60,8 @@ export function ApplicationDesk({
   applications: CareerView["applications"];
   journeyWeek: number;
 }) {
-  const [, startTransition] = useTransition();
+  const add = useAction(addApplication);
+  const setStatus = useAction(setApplicationStatus);
   const [rows, setRows] = useState(initial);
   const [company, setCompany] = useState("");
   const [role, setRole] = useState("");
@@ -68,8 +71,8 @@ export function ApplicationDesk({
   return (
     <div className="space-y-4">
       <form
-        action={() =>
-          startTransition(async () => {
+        action={async () => {
+            if (add.pending) return;
             if (!company.trim() || !role.trim()) {
               setError("Company and role are both needed.");
               return;
@@ -89,27 +92,26 @@ export function ApplicationDesk({
             setCompany("");
             setRole("");
             setLink("");
-            const res = await addApplication({
+            const res = await add.run({
               company: draft.company, role: draft.role, link: draft.link ?? undefined,
-            }).catch(() => ({ ok: false as const, error: OFFLINE }));
+            });
             if (!res.ok) {
               // take the optimistic row back and hand the typing back with it
               setRows((r) => r.filter((x) => x.id !== draft.id));
               setCompany(typed.company);
               setRole(typed.role);
               setLink(typed.link);
-              setError(res.error);
               return;
             }
+            const saved = res.value;
             setRows((r) =>
               r.map((x) =>
                 x.id === draft.id
-                  ? { ...x, id: res.id, journeyWeek: res.journeyWeek, link: res.link }
+                  ? { ...x, id: saved.id, journeyWeek: saved.journeyWeek, link: saved.link }
                   : x,
               ),
             );
-          })
-        }
+          }}
         className="flex flex-wrap items-end gap-2"
       >
         <label className="min-w-0 flex-1 basis-36">
@@ -134,11 +136,11 @@ export function ApplicationDesk({
             className={cn("mt-1 w-full", input)}
           />
         </label>
-        <button type="submit" className={cn("py-2", button)}>
-          sent
+        <button type="submit" disabled={add.pending} className={cn("py-2", button)}>
+          log application
         </button>
       </form>
-      <FormError error={error} />
+      <FormError error={error ?? add.error ?? setStatus.error} />
 
       {rows.length === 0 ? (
         <p className="note text-lo">
@@ -152,7 +154,7 @@ export function ApplicationDesk({
             return (
             <li key={a.id} className="flex items-baseline gap-3 py-2">
               <span className="legend w-10 shrink-0 tabular-nums">
-                w{String(a.journeyWeek).padStart(2, "0")}
+                {fmtWeek(a.journeyWeek, true)}
               </span>
               <span className="min-w-0 flex-1">
                 {href ? (
@@ -172,16 +174,15 @@ export function ApplicationDesk({
               <select
                 value={a.status}
                 aria-label={`Status of ${a.company}`}
-                onChange={(e) => {
+                onChange={async (e) => {
                   const next = e.target.value;
-                  startTransition(async () => {
-                    setRows((r) =>
-                      r.map((x) => (x.id === a.id ? { ...x, status: next as typeof a.status } : x)),
-                    );
-                    await setApplicationStatus(a.id, next).catch(() => {
-                      setRows((r) => r.map((x) => (x.id === a.id ? { ...x, status: a.status } : x)));
-                    });
-                  });
+                  setRows((r) =>
+                    r.map((x) => (x.id === a.id ? { ...x, status: next as typeof a.status } : x)),
+                  );
+                  const res = await setStatus.run(a.id, next);
+                  if (!res.ok) {
+                    setRows((r) => r.map((x) => (x.id === a.id ? { ...x, status: a.status } : x)));
+                  }
                 }}
                 className={cn(
                   "shrink-0 rounded-[3px] border border-line bg-ink-900 px-1.5 py-1 text-xs focus:border-phos-dim focus:outline-none",
@@ -205,7 +206,7 @@ export function ApplicationDesk({
 
 /** People, not postings. Referrals move more than applications do. */
 export function ContactDesk({ contacts: initial }: { contacts: CareerView["contacts"] }) {
-  const [, startTransition] = useTransition();
+  const add = useAction(addContact);
   const [rows, setRows] = useState(initial);
   const [name, setName] = useState("");
   const [company, setCompany] = useState("");
@@ -214,8 +215,8 @@ export function ContactDesk({ contacts: initial }: { contacts: CareerView["conta
   return (
     <div className="space-y-3">
       <form
-        action={() =>
-          startTransition(async () => {
+        action={async () => {
+            if (add.pending) return;
             if (!name.trim()) {
               setError("Add a name.");
               return;
@@ -228,17 +229,15 @@ export function ContactDesk({ contacts: initial }: { contacts: CareerView["conta
             setRows((r) => [draft, ...r]);
             setName("");
             setCompany("");
-            const res = await addContact({
+            const res = await add.run({
               name: draft.name, company: draft.company ?? undefined,
-            }).catch(() => ({ ok: false as const, error: OFFLINE }));
+            });
             if (!res.ok) {
               setRows((r) => r.filter((x) => x.id !== draft.id));
               setName(draft.name);
               setCompany(draft.company ?? "");
-              setError(res.error);
             }
-          })
-        }
+          }}
         className="flex flex-wrap items-end gap-2"
       >
         <label className="min-w-0 flex-1 basis-36">
@@ -249,11 +248,11 @@ export function ContactDesk({ contacts: initial }: { contacts: CareerView["conta
           <span className="legend">company</span>
           <input value={company} onChange={(e) => setCompany(e.target.value)} className={cn("mt-1 w-full", input)} />
         </label>
-        <button type="submit" className={cn("py-2", button)}>
+        <button type="submit" disabled={add.pending} className={cn("py-2", button)}>
           add
         </button>
       </form>
-      <FormError error={error} />
+      <FormError error={error ?? add.error} />
 
       {rows.length > 0 && (
         <ul className="divide-y divide-line-soft border-t border-line-soft">
@@ -270,49 +269,40 @@ export function ContactDesk({ contacts: initial }: { contacts: CareerView["conta
   );
 }
 
-/** Sessions logged against this journey week's cadence. */
-export function MockDesk({
-  mocks: initial,
-  journeyWeek,
-}: {
-  mocks: CareerView["mocks"];
-  journeyWeek: number;
-}) {
-  const [, startTransition] = useTransition();
-  const [rows, setRows] = useState(initial);
-  const [kind, setKind] = useState<string>("dsa_pair");
-  const [score, setScore] = useState("");
-  const [error, setError] = useState<string | null>(null);
+type MockRow = CareerView["mocks"][number];
 
+/**
+ * The mock-log form on its own. The career desk wraps it with the week's list;
+ * a cadence block in the day's plan embeds it directly, preset to the quota
+ * that block is chasing, so logging the session is what finishes the block.
+ */
+export function MockLogForm({
+  journeyWeek,
+  defaultKind = "dsa_pair",
+  onLogged,
+}: {
+  journeyWeek: number;
+  defaultKind?: string;
+  onLogged?: (row: MockRow) => void;
+}) {
+  const log = useAction(logMock);
+  const [kind, setKind] = useState<string>(defaultKind);
+  const [score, setScore] = useState("");
   const available = CADENCE.filter((q) => journeyWeek >= q.fromWeek);
-  const label = (k: string) => CADENCE.find((q) => q.kind === k)?.label ?? k;
 
   return (
-    <div className="space-y-3">
+    <>
       <form
-        action={() =>
-          startTransition(async () => {
-            const draft = {
-              id: -Date.now(), kind: kind as never, journeyWeek, dayIndex: 0,
-              score: score.trim() || null, notes: null,
-            };
-            setRows((r) => [draft, ...r]);
-            setScore("");
-            setError(null);
-            const res = await logMock({
-              kind: kind as never, score: score.trim() || undefined,
-            }).catch(() => ({ ok: false as const, error: OFFLINE }));
-            if (!res.ok) {
-              setRows((r) => r.filter((x) => x.id !== draft.id));
-              setScore(draft.score ?? "");
-              setError(res.error);
-              return;
-            }
-            setRows((r) =>
-              r.map((x) => (x.id === draft.id ? { ...x, dayIndex: res.dayIndex, journeyWeek: res.journeyWeek } : x)),
-            );
-          })
-        }
+        action={async () => {
+          const typed = score.trim();
+          setScore("");
+          const res = await log.run({ kind: kind as MockRow["kind"], score: typed || undefined });
+          if (!res.ok) return setScore(typed);
+          onLogged?.({
+            id: -Date.now(), kind: kind as MockRow["kind"], journeyWeek: res.value.journeyWeek,
+            dayIndex: res.value.dayIndex, score: typed || null, notes: null,
+          });
+        }}
         className="flex flex-wrap items-end gap-2"
       >
         <label className="min-w-0 flex-1 basis-44">
@@ -333,18 +323,41 @@ export function MockDesk({
           <span className="legend">score</span>
           <input value={score} onChange={(e) => setScore(e.target.value)} placeholder="optional" className={cn("mt-1 w-full", input)} />
         </label>
-        <button type="submit" className={cn("py-2", button)}>
-          log
+        <button type="submit" disabled={log.pending} className={cn("py-2", button)}>
+          log session
         </button>
       </form>
-      <FormError error={error} />
+      <FormError error={log.error} />
+    </>
+  );
+}
 
-      {rows.length > 0 && (
+/** Sessions logged against this journey week's cadence. */
+export function MockDesk({
+  mocks: initial,
+  journeyWeek,
+}: {
+  mocks: CareerView["mocks"];
+  journeyWeek: number;
+}) {
+  const [rows, setRows] = useState(initial);
+  const label = (k: string) => CADENCE.find((q) => q.kind === k)?.label ?? k;
+
+  return (
+    <div className="space-y-3">
+      <MockLogForm journeyWeek={journeyWeek} onLogged={(row) => setRows((r) => [row, ...r])} />
+
+      {rows.length === 0 ? (
+        <p className="note text-lo">
+          No sessions logged yet. The quotas above are per journey week, so they reset as
+          you work, not as the calendar turns.
+        </p>
+      ) : (
         <ul className="divide-y divide-line-soft border-t border-line-soft">
           {rows.slice(0, 10).map((m) => (
             <li key={m.id} className="flex items-baseline gap-3 py-1.5">
               <span className="legend w-10 shrink-0 tabular-nums">
-                w{String(m.journeyWeek).padStart(2, "0")}
+                {fmtWeek(m.journeyWeek, true)}
               </span>
               <span className="min-w-0 flex-1 truncate text-sm text-hi">{label(m.kind)}</span>
               <span className="legend shrink-0 tabular-nums">{m.score ?? "—"}</span>
@@ -365,13 +378,19 @@ export function MockDesk({
  */
 export function StarBank({ stories: initial }: { stories: CareerView["stories"] }) {
   const reduce = useReducedMotion();
-  const [, startTransition] = useTransition();
+  const rehearse = useAction(rehearseStory);
   const [stories, setStories] = useState(initial);
   const [open, setOpen] = useState<string | null>(null);
 
   const byPrompt = new Map(stories.map((s) => [s.prompt, s]));
 
   return (
+    <>
+    {rehearse.error && (
+      <p role="alert" className="note mb-2 text-bad">
+        {rehearse.error}
+      </p>
+    )}
     <ul className="divide-y divide-line-soft">
       {STAR_PROMPTS.map((prompt) => {
         const s = byPrompt.get(prompt);
@@ -419,16 +438,17 @@ export function StarBank({ stories: initial }: { stories: CareerView["stories"] 
                       return [...rest, next];
                     })
                   }
-                  onRehearsed={() =>
-                    startTransition(async () => {
+                  onRehearsed={async () => {
+                    const bump = (d: number) =>
                       setStories((all) =>
                         all.map((x) =>
-                          x.prompt === prompt ? { ...x, rehearsedCount: x.rehearsedCount + 1 } : x,
+                          x.prompt === prompt ? { ...x, rehearsedCount: x.rehearsedCount + d } : x,
                         ),
                       );
-                      await rehearseStory(prompt);
-                    })
-                  }
+                    bump(1);
+                    const res = await rehearse.run(prompt);
+                    if (!res.ok) bump(-1);
+                  }}
                 />
               </motion.div>
             )}
@@ -436,6 +456,7 @@ export function StarBank({ stories: initial }: { stories: CareerView["stories"] 
         );
       })}
     </ul>
+    </>
   );
 }
 

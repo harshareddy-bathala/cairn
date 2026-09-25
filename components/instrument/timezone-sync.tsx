@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useState } from "react";
+import { useAction } from "@/lib/use-action";
 import { saveReminderSchedule } from "@/app/actions/reminders";
 import type { ReminderKind } from "@/lib/reminder-slots";
 
@@ -34,7 +35,7 @@ export function TimezoneSync({
   slots: { kind: ReminderKind; at: string; enabled: boolean }[];
 }) {
   const [detected, setDetected] = useState<string | null>(null);
-  const [pending, startTransition] = useTransition();
+  const save = useAction(saveReminderSchedule);
 
   useEffect(() => {
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -48,17 +49,16 @@ export function TimezoneSync({
       This browser is in {detected}, the schedule resolves against {timezone}.{" "}
       <button
         type="button"
-        disabled={pending}
-        onClick={() =>
-          startTransition(async () => {
-            await saveReminderSchedule({ slots, timezone: detected });
-            setDetected(null);
-          })
-        }
+        disabled={save.pending}
+        onClick={async () => {
+          const r = await save.run({ slots, timezone: detected });
+          if (r.ok) setDetected(null);
+        }}
         className="underline underline-offset-2 hover:text-hi disabled:opacity-40"
       >
         use {detected}
       </button>
+      {save.error && <span role="alert" className="ml-2 text-bad">{save.error}</span>}
     </p>
   );
 }

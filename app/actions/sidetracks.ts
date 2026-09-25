@@ -101,6 +101,7 @@ export async function logMock(input: z.input<typeof mockSchema>) {
   `);
   revalidatePath("/career");
   revalidatePath("/metrics");
+  revalidatePath("/today");
   const row = res.rows[0]!;
   return { ok: true as const, dayIndex: Number(row.day_index), journeyWeek: Number(row.journey_week) };
 }
@@ -243,6 +244,7 @@ export async function setDeliverable(slug: string, done: boolean, evidenceUrl?: 
     `);
     revalidatePath("/projects");
     revalidatePath("/metrics");
+    revalidatePath("/today");
     return { ok: true as const, done: false, dayIndex: null, evidenceUrl: null };
   }
 

@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { WEEK_REVIEW_PROMPTS } from "@/content/review";
-import type { WeekReview } from "@/lib/week-review";
+import type { DayEntry, WeekReview } from "@/lib/week-review";
 import { submitWeekReview } from "@/app/actions/review";
 import { cn } from "@/lib/cn";
+import { fmtDay, fmtMin } from "@/lib/format";
+import { useAction } from "@/lib/use-action";
 
 const field =
   "w-full rounded-[3px] border border-line bg-ink-900 px-2.5 py-2 text-sm text-hi placeholder:text-lo focus:border-phos-dim focus:outline-none";
@@ -19,11 +21,14 @@ const field =
 export function WeekReviewForm({
   existing,
   dayOfWeek,
+  entries,
 }: {
   /** display only — the server files the review against the week you are in */
   journeyWeek: number;
   existing: WeekReview | null;
   dayOfWeek: number;
+  /** the week's closed days, read back before the questions */
+  entries: DayEntry[];
 }) {
   const [answers, setAnswers] = useState<Record<string, string>>(existing?.answers ?? {});
   const [priorities, setPriorities] = useState<string[]>(() => {
@@ -32,23 +37,16 @@ export function WeekReviewForm({
   });
   const [saved, setSaved] = useState(Boolean(existing));
   const [dirty, setDirty] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [pending, start] = useTransition();
+  const save = useAction(submitWeekReview);
+  const pending = save.pending;
+  const error = save.error && `Could not save. Your answers are still here. ${save.error}`;
 
-  function submit() {
-    setError(null);
-    start(async () => {
-      try {
-        await submitWeekReview({
-          answers,
-          threePriorities: priorities,
-        });
-        setSaved(true);
-        setDirty(false);
-      } catch {
-        setError("Could not save. Your answers are still here — try again.");
-      }
-    });
+  async function submit() {
+    const r = await save.run({ answers, threePriorities: priorities });
+    if (r.ok) {
+      setSaved(true);
+      setDirty(false);
+    }
   }
 
   const answered = WEEK_REVIEW_PROMPTS.filter((p) => (answers[p.id] ?? "").trim()).length;
@@ -68,6 +66,29 @@ export function WeekReviewForm({
           </>
         )}
       </p>
+
+      {/*
+        The week's own words, before the questions. Answering "what could you
+        not explain?" from memory of a week is guessing; from its seven entries
+        it is reading.
+      */}
+      {entries.length > 0 && (
+        <div>
+          <p className="legend mb-1.5">this week, as you logged it</p>
+          <ol className="divide-y divide-line-soft border-y border-line-soft">
+            {entries.map((e) => (
+              <li key={e.dayIndex} className="flex gap-3 py-1.5">
+                <span className="legend w-12 shrink-0 tabular-nums">{fmtDay(e.dayIndex, true)}</span>
+                <span className="min-w-0 flex-1 text-sm text-mid">
+                  {e.learned || <span className="text-lo">nothing written</span>}
+                  {e.mode === "bad_day" && <span className="legend ml-2 text-info">bad day</span>}
+                </span>
+                <span className="legend shrink-0 tabular-nums">{e.minutes ? fmtMin(e.minutes) : "—"}</span>
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
 
       <div className="space-y-3.5">
         {WEEK_REVIEW_PROMPTS.map((p) => (

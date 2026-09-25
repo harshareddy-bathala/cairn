@@ -1,10 +1,13 @@
 "use client";
 
-import { useOptimistic, useState, useTransition } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { motion, useReducedMotion } from "motion/react";
 import { ProblemList } from "./problem-list";
+import { AptitudeLog } from "./aptitude-log";
+import { MockLogForm } from "./career-desk";
 import { tickBlock } from "@/app/actions/day";
+import { useAction } from "@/lib/use-action";
 import type { HydratedBlock } from "@/lib/planner";
 import { cn } from "@/lib/cn";
 import { fmtMin } from "@/lib/format";
@@ -37,14 +40,18 @@ const APTITUDE_SOURCES = [
  * "felt unstructured" was the failure, and deciding what to do at 5:15 AM is
  * where the old roadmap died.
  */
-export function PlanList({ blocks: initial }: { blocks: HydratedBlock[] }) {
-  const [, startTransition] = useTransition();
+export function PlanList({
+  blocks: initial,
+  dayIndex,
+  journeyWeek,
+}: {
+  blocks: HydratedBlock[];
+  dayIndex: number;
+  journeyWeek: number;
+}) {
+  const tick = useAction(tickBlock);
   const [ticked, setTicked] = useState<Record<string, boolean>>({});
-  const [failed, setFailed] = useState(false);
-  const merged = initial.map((b) => (b.id in ticked ? { ...b, done: ticked[b.id] } : b));
-  const [blocks, patch] = useOptimistic(merged, (state, p: { id: string; done: boolean }) =>
-    state.map((b) => (b.id === p.id ? { ...b, done: p.done } : b)),
-  );
+  const blocks = initial.map((b) => (b.id in ticked ? { ...b, done: ticked[b.id]! } : b));
 
   // the first unfinished block is the one you are on — everything else is quiet
   const currentId = blocks.find((b) => !b.done && b.kind !== "close")?.id;
@@ -52,9 +59,9 @@ export function PlanList({ blocks: initial }: { blocks: HydratedBlock[] }) {
 
   return (
     <>
-      {failed && (
+      {tick.error && (
         <p role="alert" className="note mb-2 text-bad">
-          That did not save — the server did not answer. Try again.
+          {tick.error}
         </p>
       )}
       <ul data-plan className="divide-y divide-line-soft">
@@ -65,18 +72,19 @@ export function PlanList({ blocks: initial }: { blocks: HydratedBlock[] }) {
             current={b.id === currentId}
             open={openId === b.id}
             onToggleOpen={() => setOpenId(openId === b.id ? null : b.id)}
-            onTick={(done) =>
-              startTransition(async () => {
-                setFailed(false);
-                patch({ id: b.id, done });
-                const ok = await tickBlock(b.id, done).then(
-                  () => true,
-                  () => false,
-                );
-                if (!ok) return setFailed(true);
-                setTicked((t) => ({ ...t, [b.id]: done }));
-              })
-            }
+            dayIndex={dayIndex}
+            journeyWeek={journeyWeek}
+            onTick={async (done) => {
+              setTicked((t) => ({ ...t, [b.id]: done }));
+              const res = await tick.run(b.id, done);
+              if (!res.ok) {
+                setTicked((t) => {
+                  const next = { ...t };
+                  delete next[b.id];
+                  return next;
+                });
+              }
+            }}
           />
         ))}
       </ul>
@@ -90,18 +98,25 @@ function Block({
   open,
   onToggleOpen,
   onTick,
+  dayIndex,
+  journeyWeek,
 }: {
   block: HydratedBlock;
   current: boolean;
   open: boolean;
   onToggleOpen: () => void;
   onTick: (done: boolean) => void;
+  dayIndex: number;
+  journeyWeek: number;
 }) {
   const reduce = useReducedMotion();
   const glyph = GLYPH[b.kind] ?? GLYPH[b.track ?? ""] ?? "·";
-  const expandable = b.problems.length > 0 || b.kind === "aptitude";
-  // only the aptitude drill has no completion signal of its own
-  const tickable = b.kind === "aptitude";
+  // Each of these finishes itself when the work is logged (see blockDone), and
+  // offers a manual tick for work done somewhere Cairn cannot see.
+  const tickable = b.kind === "aptitude" || b.kind === "project" || b.kind === "cadence";
+  const expandable = b.problems.length > 0 || tickable;
+  // stored plans predate this, so the close row's anchor is decided here
+  const href = b.kind === "close" ? "#close" : b.href;
 
   return (
     // a finished block is quieted by colour, not opacity — at 55% opacity its
@@ -127,13 +142,22 @@ function Block({
         </span>
 
         <span className="min-w-0 flex-1">
-          {b.href && !b.done ? (
-            <Link
-              href={b.href}
-              className="tap line-clamp-2 text-sm text-hi transition-colors duration-[120ms] hover:text-phos sm:truncate"
-            >
-              {b.title}
-            </Link>
+          {href && !b.done ? (
+            href.startsWith("#") ? (
+              <a
+                href={href}
+                className="tap line-clamp-2 text-sm text-hi transition-colors duration-[120ms] hover:text-phos sm:truncate"
+              >
+                {b.title}
+              </a>
+            ) : (
+              <Link
+                href={href}
+                className="tap line-clamp-2 text-sm text-hi transition-colors duration-[120ms] hover:text-phos sm:truncate"
+              >
+                {b.title}
+              </Link>
+            )
           ) : (
             <span className={cn("line-clamp-2 text-sm sm:truncate", b.done ? "text-lo" : "text-hi")}>
               {b.title}
@@ -176,35 +200,59 @@ function Block({
           {b.problems.length > 0 && <ProblemList problems={b.problems} />}
 
           {b.kind === "aptitude" && (
-            <div className="flex flex-wrap items-center gap-3">
-              <p className="note text-lo">
-                25 questions, timed. Log the score, not the excuses.
-              </p>
-              {APTITUDE_SOURCES.map((s) => (
-                <a
-                  key={s.url}
-                  href={s.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="tap inline-block py-1 text-xs text-info underline underline-offset-[3px]"
-                >
-                  {s.title} ↗
-                </a>
-              ))}
-              {tickable && (
-                <button
-                  type="button"
-                  onClick={() => onTick(!b.done)}
-                  className={cn(
-                    "ctl ml-auto rounded-[3px] border px-3 py-1 text-xs transition-colors duration-[120ms]",
-                    b.done
-                      ? "border-phos text-phos"
-                      : "border-line text-mid hover:border-phos-dim hover:text-hi",
-                  )}
-                >
-                  {b.done ? "✓ done" : "mark done"}
-                </button>
-              )}
+            <div className="space-y-3">
+              <div className="flex flex-wrap items-center gap-3">
+                <p className="note text-lo">
+                  25 questions, timed. Logging the score finishes this block.
+                </p>
+                {APTITUDE_SOURCES.map((s) => (
+                  <a
+                    key={s.url}
+                    href={s.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="tap inline-block py-1 text-xs text-info underline underline-offset-[3px]"
+                  >
+                    {s.title} ↗
+                  </a>
+                ))}
+              </div>
+              <AptitudeLog dayIndex={dayIndex} scores={[]} compact />
+            </div>
+          )}
+
+          {b.kind === "cadence" && (
+            <div className="space-y-2">
+              <p className="note text-lo">Logging the session counts it against this week's quota.</p>
+              <MockLogForm journeyWeek={journeyWeek} defaultKind={b.id.slice("cadence:".length)} />
+            </div>
+          )}
+
+          {b.kind === "project" && (
+            <p className="note text-lo">
+              Mark the deliverable done on{" "}
+              <Link href="/projects" className="text-info underline underline-offset-[3px]">
+                the project board
+              </Link>{" "}
+              with a link to the evidence, and this block finishes with it.
+            </p>
+          )}
+
+          {tickable && (
+            <div className="mt-3 flex items-center justify-end gap-3">
+              {!b.done && <span className="text-2xs text-lo">did it somewhere Cairn can't see?</span>}
+              <button
+                type="button"
+                onClick={() => onTick(!b.done)}
+                className={cn(
+                  "ctl rounded-[3px] border px-3 py-1 text-xs transition-colors duration-[120ms]",
+                  b.done
+                    ? "border-phos text-phos"
+                    : "border-line text-mid hover:border-phos-dim hover:text-hi",
+                )}
+              >
+                {b.done ? "✓ done" : "mark done"}
+              </button>
             </div>
           )}
         </motion.div>

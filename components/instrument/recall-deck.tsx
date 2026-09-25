@@ -27,15 +27,34 @@ export function RecallDeck({ cards, dayIndex }: { cards: DueCard[]; dayIndex: nu
   const [flipped, setFlipped] = useState(false);
   const [done, setDone] = useState(0);
   const [again, setAgain] = useState(0);
+  const [lost, setLost] = useState(false);
   const [, start] = useTransition();
   const reduce = useReducedMotion();
 
   const card = queue[0];
 
+  /**
+   * Grading advances at once and saves behind you. If the save fails, the card
+   * comes back to the front of the queue and says so — the old version dropped
+   * the error, so a flaky connection quietly un-reviewed a whole sitting.
+   */
+  const settle = useCallback((c: DueCard, write: () => Promise<unknown>, counted: boolean) => {
+    start(async () => {
+      const saved = await write().then(
+        () => true,
+        () => false,
+      );
+      if (saved) return;
+      setLost(true);
+      setQueue((q) => [c, ...q.filter((x) => x.id !== c.id)]);
+      if (counted) setDone((n) => Math.max(0, n - 1));
+    });
+  }, []);
+
   const advance = useCallback(
     (grade: Grade) => {
       if (!card) return;
-      const id = card.id;
+      setLost(false);
       setFlipped(false);
       setDone((n) => n + 1);
       if (grade === "again") setAgain((n) => n + 1);
@@ -43,32 +62,37 @@ export function RecallDeck({ cards, dayIndex }: { cards: DueCard[]; dayIndex: nu
       // showing it again in this sitting would test the last ten seconds of
       // short-term memory rather than recall.
       setQueue((q) => q.slice(1));
-      start(() => {
-        void gradeCard(id, grade);
-      });
+      settle(card, () => gradeCard(card.id, grade), true);
     },
-    [card],
+    [card, settle],
   );
 
   const bury = useCallback(() => {
     if (!card) return;
-    const id = card.id;
+    setLost(false);
     setFlipped(false);
     setQueue((q) => q.slice(1));
-    start(() => {
-      void buryCard(id);
-    });
-  }, [card]);
+    settle(card, () => buryCard(card.id), false);
+  }, [card, settle]);
 
   // Keyboard is the point of a deck. Space to flip, 1-4 to grade — the same
   // keys every spaced-repetition tool uses, so the muscle memory transfers.
+  //
+  // But only for keys aimed at the deck. The handler used to own Space and
+  // Enter for the whole page, so a focused link, button or the week-review
+  // textarea below could not be activated or typed into.
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (!card) return;
+      if (!card || e.metaKey || e.ctrlKey || e.altKey) return;
       const el = e.target as HTMLElement | null;
-      if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable)) return;
+      const onPage = !el || el === document.body;
+      if (!onPage && !el.closest("[data-deck]")) return;
+      if (el && (el.isContentEditable || el.closest("input, textarea, select"))) return;
+      // a focused control keeps its own Space and Enter; digits still grade
+      const control = !!el?.closest("button, a, summary");
 
       if (e.key === " " || e.key === "Enter") {
+        if (control) return;
         e.preventDefault();
         setFlipped(true);
         return;
@@ -106,7 +130,13 @@ export function RecallDeck({ cards, dayIndex }: { cards: DueCard[]; dayIndex: nu
   const overdue = dayIndex - card.dueDayIndex;
 
   return (
-    <div className="space-y-3">
+    <div data-deck className="space-y-3">
+      {lost && (
+        <p role="alert" className="note text-bad">
+          The last card did not save — it is back at the front. Check the connection and
+          grade it again.
+        </p>
+      )}
       <div className="flex items-center gap-2">
         <span className="legend tabular-nums">
           {done + 1}/{done + queue.length}

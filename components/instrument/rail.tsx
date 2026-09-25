@@ -7,6 +7,7 @@ import { Mark } from "./mark";
 import { NAV, activeHref } from "@/lib/nav";
 import { AccountMenu, type AccountInfo } from "./account";
 import { cn } from "@/lib/cn";
+import { fmtDay } from "@/lib/format";
 
 /**
  * The desktop rail. Hidden below `sm` — see `tab-bar.tsx` for the phone.
@@ -93,9 +94,14 @@ export function Rail({
           <div className="w-full lg:w-10 lg:shrink-0">
             <Cairn stones={stones} max={18} />
           </div>
-          <span className="legend tabular-nums" title="active days">
-            {String(dayIndex).padStart(2, "0")}
-            <span className="hidden lg:inline"> active days</span>
+          {/* today's day number and the closed days are different counts —
+              the open day has no stone yet — so they are labelled apart */}
+          <span className="legend text-center tabular-nums">
+            <span className="lg:hidden">{fmtDay(dayIndex, true)}</span>
+            <span className="hidden lg:inline">
+              {fmtDay(dayIndex)}
+              <span className="block text-lo">{stones.length} closed</span>
+            </span>
           </span>
         </div>
         <AccountMenu account={account} />

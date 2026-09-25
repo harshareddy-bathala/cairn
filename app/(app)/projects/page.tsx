@@ -26,9 +26,8 @@ export default async function ProjectsPage() {
           <p className="legend">three projects · one rule</p>
           <h1 className="mt-1 text-2xl text-hi">Projects</h1>
           <p className="mt-1 max-w-xl note text-lo">
-            These are the only artefacts an interviewer will actually open. Cairn is not
-            among them and never will be — it was built by an AI, which is exactly what
-            disqualifies it as evidence.
+            These are the artefacts an interviewer will actually open, so each deliverable
+            has a definition of done and asks for a link to the evidence.
           </p>
         </header>
       </BootItem>

@@ -6,7 +6,10 @@ import {
 } from "@/db/schema";
 import { openToday, getJourneyState, streaksOf } from "@/lib/journey";
 import { getRedoQueue, recordAttempt, revealHintFor } from "@/lib/progress";
-import { generatePlan, getDayContext, getTodayPlan, budgetWith, cadenceDueFor } from "@/lib/planner";
+import {
+  generatePlan, getDayContext, getTodayPlan, budgetWith, cadenceDueFor, blockDone,
+  type BlockSignals, type PlanBlock,
+} from "@/lib/planner";
 import { aptitudeTopicFor } from "@/content/aptitude";
 import { CADENCE, DSA_CURVE, dsaTargetAt } from "@/content/cadence";
 import { getMetrics } from "@/lib/sidetracks";
@@ -288,6 +291,7 @@ async function checks(u: typeof users.$inferSelect) {
   // a deliverable without a definition of done is a to-do, and to-dos rot
   ok("content validates", validateContent().length === 0, `${CADENCE.length} quotas defined`);
   validatorBites();
+  everyBlockFinishes();
 
   const metrics = await getMetrics(u.id, 1);
   ok("metrics read in one trip",
@@ -496,6 +500,44 @@ function lanes(
   });
   ok("bad day stays dsa", badSql.blocks.find((b) => b.kind === "dsa")?.problems[0]?.slug === "p-arr",
     badSql.blocks.find((b) => b.kind === "dsa")?.problems[0]?.slug ?? "none");
+}
+
+/**
+ * Every kind of block can reach done — from the trace its work leaves, with no
+ * manual tick. A block that cannot finish sits in the plan as "current"
+ * forever, which is what dsa:minimum, dsa:practice, project and cadence did.
+ */
+function everyBlockFinishes() {
+  const blank: BlockSignals = {
+    doneUnits: new Set(), redoDue: new Set(["p1"]), cardsDue: 3, closed: false,
+    attemptedToday: new Set(), aptitudeToday: false, deliverablesDone: new Set(),
+    cadenceShort: new Set(["dsa_pair"]),
+  };
+  const prob = (slug: string) => ({ slug }) as PlanBlock["problems"][number];
+  const blk = (id: string, kind: PlanBlock["kind"], over: Partial<PlanBlock> = {}): PlanBlock => ({
+    id, kind, track: null, title: id, detail: null, href: null, minutes: 10,
+    unitSlug: null, problems: [], stretch: false, ...over,
+  });
+  const table: [PlanBlock, Partial<BlockSignals>][] = [
+    [blk("dsa:u1", "dsa", { unitSlug: "u1" }), { doneUnits: new Set(["u1"]) }],
+    [blk("domain:u2", "domain", { unitSlug: "u2" }), { doneUnits: new Set(["u2"]) }],
+    [blk("redo", "redo", { problems: [prob("p1")] }), { redoDue: new Set() }],
+    [blk("recall", "recall"), { cardsDue: 0 }],
+    [blk("dsa:minimum", "dsa", { problems: [prob("a"), prob("b")] }), { attemptedToday: new Set(["b"]) }],
+    [blk("dsa:practice", "dsa", { problems: [prob("a"), prob("b")] }), { attemptedToday: new Set(["a", "b"]) }],
+    [blk("aptitude", "aptitude"), { aptitudeToday: true }],
+    [blk("project:atlas-ci", "project"), { deliverablesDone: new Set(["atlas-ci"]) }],
+    [blk("cadence:dsa_pair", "cadence"), { cadenceShort: new Set() }],
+    [blk("close", "close"), { closed: true }],
+  ];
+  const none = new Set<string>();
+  const stuck = table.filter(([b, got]) => blockDone(b, blank, none) || !blockDone(b, { ...blank, ...got }, none));
+  ok("every block kind can finish", stuck.length === 0,
+    stuck.length ? `stuck: ${stuck.map(([b]) => b.id).join(", ")}` : `${table.length} kinds, none ticked`);
+  const half = blockDone(table[5]![0], { ...blank, attemptedToday: new Set(["a"]) }, none);
+  const tickable = ["aptitude", "project:atlas-ci", "cadence:dsa_pair"].every((id) =>
+    blockDone(table.find(([b]) => b.id === id)![0], blank, new Set([id])));
+  ok("practice needs all, ticks cover the rest", !half && tickable, "manual tick finishes aptitude/project/cadence");
 }
 
 /**

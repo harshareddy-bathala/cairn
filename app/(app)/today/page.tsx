@@ -8,9 +8,10 @@ import { Boot, BootItem } from "@/components/instrument/boot";
 import { PlanList } from "@/components/instrument/plan-list";
 import { PaceControl } from "@/components/instrument/pace-control";
 import { DayClose } from "@/components/instrument/day-close";
+import { FirstRun } from "@/components/instrument/first-run";
 import { getJourneyStateCached } from "@/lib/journey";
 import { getTodayPlan } from "@/lib/planner";
-import { fmtMin } from "@/lib/format";
+import { fmtDay, fmtMin, fmtWeek } from "@/lib/format";
 
 export const metadata = { title: "Today" };
 
@@ -32,8 +33,7 @@ export default async function TodayPage() {
         <header className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="legend">
-              day {String(journey.dayIndex).padStart(3, "0")} · week{" "}
-              {String(journey.journeyWeek).padStart(2, "0")}
+              {fmtDay(journey.dayIndex)} · {fmtWeek(journey.journeyWeek)}
               {journey.streak > 1 && (
                 <span className="text-phos-dim"> · {journey.streak}-day streak</span>
               )}
@@ -76,6 +76,35 @@ export default async function TodayPage() {
                 place yourself →
               </Link>
             </div>
+          </Panel>
+        </BootItem>
+      )}
+
+      <BootItem>
+        <FirstRun />
+      </BootItem>
+
+      {/*
+        The close asks for tomorrow's first task; this is where it is read back.
+        Written at night and never shown again, it was a note to nobody.
+      */}
+      {today.yesterday && !today.closed && (today.yesterday.firstTask || today.yesterday.learned) && (
+        <BootItem>
+          <Panel legend={`from ${fmtDay(today.yesterday.dayIndex)}`}>
+            <dl className="space-y-2 text-sm">
+              {today.yesterday.firstTask && (
+                <div>
+                  <dt className="legend">first thing today, you said</dt>
+                  <dd className="mt-0.5 text-hi">{today.yesterday.firstTask}</dd>
+                </div>
+              )}
+              {today.yesterday.learned && (
+                <div>
+                  <dt className="legend">what you learned</dt>
+                  <dd className="prose-cairn mt-0.5 text-mid">{today.yesterday.learned}</dd>
+                </div>
+              )}
+            </dl>
           </Panel>
         </BootItem>
       )}
@@ -153,12 +182,12 @@ export default async function TodayPage() {
               <span className="text-phos-dim">+</span> are pulled forward from the next day.
             </p>
           )}
-          <PlanList blocks={plan.blocks} />
+          <PlanList blocks={plan.blocks} dayIndex={plan.dayIndex} journeyWeek={today.journeyWeek} />
         </Panel>
       </BootItem>
 
       <BootItem>
-        <Panel legend={today.closed ? "closed" : "close the day"}>
+        <Panel id="close" className="scroll-mt-6" legend={today.closed ? "closed" : "close the day"}>
           <DayClose
             dayIndex={plan.dayIndex}
             stones={journey.stones}

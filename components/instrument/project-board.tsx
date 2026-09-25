@@ -7,6 +7,8 @@ import type { ProjectView } from "@/lib/sidetracks";
 import { cn } from "@/lib/cn";
 import { safeUrl } from "@/lib/safe-url";
 import { DUR, EASE } from "@/lib/motion";
+import { useAction } from "@/lib/use-action";
+import { fmtDay } from "@/lib/format";
 
 const urlInput =
   "w-full rounded-[3px] border border-line bg-ink-900 px-2.5 py-1.5 text-sm text-hi placeholder:text-lo focus:border-phos-dim focus:outline-none";
@@ -21,6 +23,8 @@ const urlInput =
 export function ProjectBoard({ project }: { project: ProjectView }) {
   const reduce = useReducedMotion();
   const [, startTransition] = useTransition();
+  const tick = useAction(setDeliverable);
+  const pledge = useAction(acceptPledge);
   const [state, setState] = useState(project);
   const [repo, setRepo] = useState(project.repoUrl ?? "");
   const [repoErr, setRepoErr] = useState(false);
@@ -30,27 +34,25 @@ export function ProjectBoard({ project }: { project: ProjectView }) {
   const total = state.deliverables.length;
   const pledged = Boolean(state.pledgeAcceptedAt);
 
-  function toggle(slug: string, next: boolean) {
-    startTransition(async () => {
-      setState((s) => ({
-        ...s,
-        deliverables: s.deliverables.map((d) =>
-          d.slug === slug
-            ? { ...d, doneOnDay: next ? (d.doneOnDay ?? 0) : null, evidenceUrl: next ? d.evidenceUrl : null }
-            : d,
-        ),
-      }));
-      // unticking deletes the row, and the evidence with it — so the local copy
-      // has to drop it too, or a re-tick would show a link that no longer exists
-      const res = await setDeliverable(slug, next);
-      if (!res.ok) return;
-      setState((s) => ({
-        ...s,
-        deliverables: s.deliverables.map((d) =>
-          d.slug === slug ? { ...d, doneOnDay: res.done ? res.dayIndex : null } : d,
-        ),
-      }));
-    });
+  async function toggle(slug: string, next: boolean) {
+    const before = state.deliverables.find((d) => d.slug === slug);
+    setState((s) => ({
+      ...s,
+      deliverables: s.deliverables.map((d) =>
+        d.slug === slug
+          ? { ...d, doneOnDay: next ? (d.doneOnDay ?? 0) : null, evidenceUrl: next ? d.evidenceUrl : null }
+          : d,
+      ),
+    }));
+    // unticking deletes the row, and the evidence with it — so the local copy
+    // has to drop it too, or a re-tick would show a link that no longer exists
+    const res = await tick.run(slug, next);
+    setState((s) => ({
+      ...s,
+      deliverables: s.deliverables.map((d) =>
+        d.slug !== slug ? d : res.ok ? { ...d, doneOnDay: res.value.done ? res.value.dayIndex : null } : before ?? d,
+      ),
+    }));
   }
 
   /** Attaches a link to something already ticked. Null means it was rejected. */
@@ -85,16 +87,21 @@ export function ProjectBoard({ project }: { project: ProjectView }) {
           </p>
           <button
             type="button"
-            onClick={() => {
-              startTransition(async () => {
-                setState((s) => ({ ...s, pledgeAcceptedAt: new Date().toISOString() }));
-                await acceptPledge(state.slug);
-              });
+            disabled={pledge.pending}
+            onClick={async () => {
+              setState((s) => ({ ...s, pledgeAcceptedAt: new Date().toISOString() }));
+              const r = await pledge.run(state.slug);
+              if (!r.ok) setState((s) => ({ ...s, pledgeAcceptedAt: null }));
             }}
             className="ctl mt-3 rounded-[3px] border border-line px-3 py-1.5 text-xs text-mid transition-colors duration-[120ms] hover:border-phos hover:text-phos"
           >
             I accept — no AI codegen in {state.name}
           </button>
+          {pledge.error && (
+            <p role="alert" className="note mt-2 text-bad">
+              {pledge.error}
+            </p>
+          )}
         </div>
       ) : (
         <div className="flex flex-wrap items-end gap-3">
@@ -142,6 +149,12 @@ export function ProjectBoard({ project }: { project: ProjectView }) {
         </div>
       )}
 
+      {tick.error && (
+        <p role="alert" className="note text-bad">
+          {tick.error}
+        </p>
+      )}
+
       <ul className="divide-y divide-line-soft border-t border-line-soft">
         {state.deliverables.map((d) => {
           const isDone = d.doneOnDay != null;
@@ -167,7 +180,7 @@ export function ProjectBoard({ project }: { project: ProjectView }) {
                   </span>
                   {isDone && d.doneOnDay ? (
                     <span className="block text-2xs text-lo">
-                      day {String(d.doneOnDay).padStart(3, "0")}
+                      {fmtDay(d.doneOnDay)}
                       {safeUrl(d.evidenceUrl) ? (
                         <span className="ml-2 text-phos-dim">◈ evidence</span>
                       ) : (

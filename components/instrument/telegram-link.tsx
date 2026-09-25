@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { startTelegramLink, unlinkTelegram } from "@/app/actions/reminders";
 import { cn } from "@/lib/cn";
+import { useAction } from "@/lib/use-action";
 
 /**
  * The handshake, in one button.
@@ -11,7 +12,10 @@ import { cn } from "@/lib/cn";
  * is not — the code is the same either way, and it is spent on first use.
  */
 export function TelegramLink({ linked, configured }: { linked: boolean; configured: boolean }) {
-  const [pending, startTransition] = useTransition();
+  const link = useAction(startTelegramLink);
+  const unlink = useAction(unlinkTelegram);
+  const pending = link.pending || unlink.pending;
+  const error = link.error ?? unlink.error;
   const [issued, setIssued] = useState<{ token: string; url: string | null; qr: string | null } | null>(null);
 
   if (!configured) {
@@ -24,7 +28,7 @@ export function TelegramLink({ linked, configured }: { linked: boolean; configur
 
   if (linked) {
     return (
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <p className="text-sm text-hi">
           <span className="mr-2 inline-block h-1.5 w-1.5 rounded-full bg-phos align-middle" />
           Chat linked
@@ -32,11 +36,16 @@ export function TelegramLink({ linked, configured }: { linked: boolean; configur
         <button
           type="button"
           disabled={pending}
-          onClick={() => startTransition(async () => void (await unlinkTelegram()))}
+          onClick={() => void unlink.run()}
           className="legend px-1 text-lo hover:text-bad disabled:opacity-40"
         >
           unlink
         </button>
+        {error && (
+          <p role="alert" className="note basis-full text-bad">
+            {error}
+          </p>
+        )}
       </div>
     );
   }
@@ -51,7 +60,10 @@ export function TelegramLink({ linked, configured }: { linked: boolean; configur
           <button
             type="button"
             disabled={pending}
-            onClick={() => startTransition(async () => setIssued(await startTelegramLink()))}
+            onClick={async () => {
+              const r = await link.run();
+              if (r.ok) setIssued(r.value);
+            }}
             className={cn(
               "shrink-0 rounded-[3px] border border-line px-4 py-1.5 text-sm text-mid",
               "transition-colors duration-[120ms] hover:border-phos-dim hover:text-hi",
@@ -61,7 +73,13 @@ export function TelegramLink({ linked, configured }: { linked: boolean; configur
             {pending ? "…" : "link Telegram"}
           </button>
         </div>
-      ) : (
+      ) : null}
+      {!issued && error && (
+        <p role="alert" className="note text-bad">
+          {error}
+        </p>
+      )}
+      {issued && (
         <div className="space-y-3">
           {issued.qr && (
             <div className="flex flex-wrap items-start gap-4">

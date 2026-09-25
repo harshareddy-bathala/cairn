@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { Cairn, type Stone } from "./cairn";
 import { closeDay, reopenDay } from "@/app/actions/day";
 import { cn } from "@/lib/cn";
 import { DUR, EASE } from "@/lib/motion";
+import { useAction } from "@/lib/use-action";
+import { fmtDay } from "@/lib/format";
 
 /**
  * Closing the day.
@@ -33,7 +35,8 @@ export function DayClose({
   suggestedMinutes?: number;
 }) {
   const reduce = useReducedMotion();
-  const [, startTransition] = useTransition();
+  const close = useAction(closeDay);
+  const reopen = useAction(reopenDay);
   const [closed, setClosed] = useState(initialClosed);
   const [justClosed, setJustClosed] = useState(false);
   const [learned, setLearned] = useState(initialLearned ?? "");
@@ -41,7 +44,6 @@ export function DayClose({
   const [minutes, setMinutes] = useState(
     String(initialMinutes || suggestedMinutes || ""),
   );
-  const [error, setError] = useState<string | null>(null);
 
   const shown: Stone[] = closed
     ? stones
@@ -61,7 +63,7 @@ export function DayClose({
             transition={{ duration: DUR.slow, ease: EASE, delay: 0.18 }}
             className="text-sm text-hi"
           >
-            Day {String(dayIndex).padStart(3, "0")} closed.{" "}
+            {fmtDay(dayIndex)} closed.{" "}
             <span className="text-lo">
               {shown.length} {shown.length === 1 ? "stone" : "stones"} on the cairn.
             </span>
@@ -73,24 +75,20 @@ export function DayClose({
           )}
           <button
             type="button"
-            onClick={() =>
-              startTransition(async () => {
-                setClosed(false);
-                setJustClosed(false);
-                setError(null);
-                await reopenDay().catch(() => {
-                  setClosed(true);
-                  setError("Could not reopen — try again.");
-                });
-              })
-            }
+            disabled={reopen.pending}
+            onClick={async () => {
+              setClosed(false);
+              setJustClosed(false);
+              const r = await reopen.run();
+              if (!r.ok) setClosed(true);
+            }}
             className="tap mt-2 text-xs text-lo underline underline-offset-[3px] transition-colors duration-[120ms] hover:text-mid"
           >
             reopen — I have more in me
           </button>
-          {error && (
+          {reopen.error && (
             <p role="alert" className="note mt-1 text-bad">
-              {error}
+              {reopen.error}
             </p>
           )}
         </div>
@@ -100,28 +98,23 @@ export function DayClose({
 
   return (
     <form
-      action={() =>
-        startTransition(async () => {
-          setError(null);
-          setClosed(true);
-          setJustClosed(true);
-          // the stone lands optimistically; if the write does not, it is taken
-          // back and the two sentences stay in their fields
-          const r = await closeDay({
-            learned: learned.trim() || undefined,
-            tomorrowFirstTask: task.trim() || undefined,
-            minutes: minutes ? Math.min(Number(minutes), 1440) : undefined,
-          }).catch(() => ({
-            ok: false as const,
-            error: "The day did not close — nothing was lost. Try again.",
-          }));
-          if (!r.ok) {
-            setClosed(false);
-            setJustClosed(false);
-            setError(r.error);
-          }
-        })
-      }
+      action={async () => {
+        // the stone lands optimistically; if the write does not, it is taken
+        // back and the two sentences stay in their fields. A second submit
+        // while the first is in flight is ignored rather than closing twice.
+        if (close.pending) return;
+        setClosed(true);
+        setJustClosed(true);
+        const r = await close.run({
+          learned: learned.trim() || undefined,
+          tomorrowFirstTask: task.trim() || undefined,
+          minutes: minutes ? Math.min(Number(minutes), 1440) : undefined,
+        });
+        if (!r.ok) {
+          setClosed(false);
+          setJustClosed(false);
+        }
+      }}
       className="space-y-3"
     >
       <label className="block">
@@ -161,6 +154,7 @@ export function DayClose({
 
         <button
           type="submit"
+          disabled={close.pending}
           className={cn(
             "ctl rounded-[3px] border border-line px-4 py-1.5 text-sm text-hi",
             "transition-colors duration-[120ms] hover:border-phos hover:text-phos",
@@ -170,15 +164,15 @@ export function DayClose({
         </button>
       </div>
 
-      {error && (
+      {close.error && (
         <p role="alert" className="note text-bad">
-          {error}
+          {close.error}
         </p>
       )}
 
       <p className="note text-lo">
         Closing is what moves you along the trail — not the calendar. Skip a week and
-        tomorrow is still day {String(dayIndex + 1).padStart(3, "0")}.
+        tomorrow is still {fmtDay(dayIndex + 1)}.
       </p>
     </form>
   );

@@ -12,6 +12,7 @@ import { REVIEW_OPENS_ON_DAY } from "@/content/review";
 import { getMisses } from "@/lib/misses";
 import { getRedoQueue } from "@/lib/progress";
 import { cn } from "@/lib/cn";
+import { fmtDay, fmtWeek } from "@/lib/format";
 
 export const metadata = { title: "Review" };
 
@@ -49,8 +50,7 @@ export default async function ReviewPage() {
       <BootItem>
         <header>
           <p className="legend">
-            day {String(journey.dayIndex).padStart(3, "0")} · week{" "}
-            {String(journey.journeyWeek).padStart(2, "0")}
+            {fmtDay(journey.dayIndex)} · {fmtWeek(journey.journeyWeek)}
           </p>
           <h1 className="mt-1 text-2xl text-hi">Review</h1>
           <p className="mt-1 max-w-xl note text-lo">
@@ -74,9 +74,9 @@ export default async function ReviewPage() {
                 href="/today"
                 className="text-info underline underline-offset-[3px] hover:text-phos"
               >
-                Go and close a day
+                Finish a unit
               </Link>{" "}
-              — the first cards arrive tomorrow.
+              — its cards come due on your next active day.
             </p>
           </Panel>
         </BootItem>
@@ -245,6 +245,7 @@ export default async function ReviewPage() {
               journeyWeek={week.currentWeek}
               existing={week.existing}
               dayOfWeek={week.dayOfWeek}
+              entries={week.entries}
             />
           ) : (
             <p className="note text-lo">

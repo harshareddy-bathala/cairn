@@ -75,14 +75,14 @@ await go("/career");
 say("career renders", await p.getByRole("heading", { name: "Career desk" }).isVisible());
 say("star prompts listed", await p.getByText(/Tell me about yourself/).first().isVisible());
 
-const apps = p.locator("section").filter({ has: p.getByRole("button", { name: "sent" }) });
+const apps = p.locator("section").filter({ has: p.getByRole("button", { name: "log application" }) });
 await apps.getByLabel("company").fill("Zerodha");
 await apps.getByLabel("role").fill("SRE Intern");
-await p.getByRole("button", { name: "sent" }).click();
+await p.getByRole("button", { name: "log application" }).click();
 await p.waitForTimeout(3000);
 say("application recorded", await p.getByText("Zerodha").first().isVisible().catch(() => false));
 
-await p.getByRole("button", { name: "log", exact: true }).click();
+await p.getByRole("button", { name: "log session", exact: true }).click();
 await p.waitForTimeout(3000);
 say("mock session logged", (await p.getByText("Timed DSA pair").count()) >= 2);
 
@@ -139,11 +139,11 @@ const repoHref = await p.getByRole("link", { name: "open repo" }).first().getAtt
 say("repo url normalises", repoHref === "https://github.com/me/sentinel");
 
 await go("/career");
-const desk = p.locator("section").filter({ has: p.getByRole("button", { name: "sent" }) });
+const desk = p.locator("section").filter({ has: p.getByRole("button", { name: "log application" }) });
 await desk.getByLabel("company").fill("Linkable Co");
 await desk.getByLabel("role").fill("SRE");
 await desk.getByLabel("link").fill("careers.example.com/jobs/42");
-await p.getByRole("button", { name: "sent" }).click();
+await p.getByRole("button", { name: "log application" }).click();
 await p.waitForTimeout(3500);
 await p.reload({ waitUntil: "domcontentloaded" });
 await p.waitForTimeout(2500);

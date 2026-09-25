@@ -79,7 +79,7 @@ export default async function SignInPage({
             </p>
           )}
           <p className="note mt-3 text-lo">
-            Your email must be on the allowlist. Ask Reddy for an invite.
+            Cairn is invite-only: your email has to be on the allowlist before a sign-in link will arrive.
           </p>
         </Panel>
       </div>

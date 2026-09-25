@@ -47,7 +47,7 @@ export default async function UnitPage({ params }: { params: Promise<{ slug: str
 
   if (!unit) notFound();
 
-  const [res, probs, progress, attempts, reveals] = await Promise.all([
+  const [res, probs, progress, attempts, reveals, siblings] = await Promise.all([
     db.select().from(resources).where(eq(resources.unitSlug, slug)).orderBy(asc(resources.order)),
     db
       .select()
@@ -75,7 +75,13 @@ export default async function UnitPage({ params }: { params: Promise<{ slug: str
       .select({ problemSlug: hintReveals.problemSlug })
       .from(hintReveals)
       .where(eq(hintReveals.userId, session.user.id)),
+    db
+      .select({ slug: units.slug, title: units.title })
+      .from(units)
+      .where(eq(units.moduleSlug, unit.moduleSlug))
+      .orderBy(asc(units.order)),
   ]);
+  const next = siblings[siblings.findIndex((u) => u.slug === slug) + 1] ?? null;
   const pendingReveal = new Set(reveals.map((r) => r.problemSlug));
 
   // last attempt wins; an earlier revealed hint stays revealed
@@ -89,7 +95,7 @@ export default async function UnitPage({ params }: { params: Promise<{ slug: str
     <Boot className="mx-auto max-w-3xl space-y-6 px-4 py-8 sm:px-6 sm:py-10">
       <BootItem>
         <header>
-          <Link href="/roadmap" className="tap legend hover:text-mid">
+          <Link href={`/module/${unit.moduleSlug}`} className="tap legend hover:text-mid">
             ← {unit.moduleTitle}
           </Link>
           <h1 className="mt-2 text-2xl leading-tight text-hi">{unit.title}</h1>
@@ -176,16 +182,6 @@ export default async function UnitPage({ params }: { params: Promise<{ slug: str
         </Panel>
       </BootItem>
 
-      <BootItem>
-        <Panel legend="progress" active={progress[0]?.state !== "done"}>
-          <UnitComplete
-            unitSlug={unit.slug}
-            done={progress[0]?.state === "done"}
-            completedOnDayIndex={progress[0]?.completedOnDayIndex}
-          />
-        </Panel>
-      </BootItem>
-
       {probs.length > 0 && (
         <BootItem>
           <Panel legend="practice" aux={`${probs.length} problems`}>
@@ -211,6 +207,18 @@ export default async function UnitPage({ params }: { params: Promise<{ slug: str
           </Panel>
         </BootItem>
       )}
+      <BootItem>
+        <Panel legend="progress" active={progress[0]?.state !== "done"}>
+          <UnitComplete
+            unitSlug={unit.slug}
+            done={progress[0]?.state === "done"}
+            completedOnDayIndex={progress[0]?.completedOnDayIndex}
+            next={next}
+            moduleSlug={unit.moduleSlug}
+          />
+        </Panel>
+      </BootItem>
+
     </Boot>
   );
 }
