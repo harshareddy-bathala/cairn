@@ -137,7 +137,7 @@ Record types worth knowing cold: **A** (IPv4), **AAAA** (IPv6), **CNAME** (alias
       ],
       resources: [
         {
-          title: "Julia Evans — How DNS works / dig",
+          title: "Julia Evans — Mess With DNS",
           url: "https://jvns.ca/blog/2021/12/15/mess-with-dns/",
           kind: "read",
           minutes: 30,

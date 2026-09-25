@@ -279,6 +279,7 @@ async function checks(u: typeof users.$inferSelect) {
 
   // a deliverable without a definition of done is a to-do, and to-dos rot
   ok("content validates", validateContent().length === 0, `${CADENCE.length} quotas defined`);
+  validatorBites();
 
   const metrics = await getMetrics(u.id, 1);
   ok("metrics read in one trip",
@@ -404,6 +405,67 @@ async function checks(u: typeof users.$inferSelect) {
  * same functions the server actions call. Last, because it banks units and
  * advances the day — both of which the checks above assume have not happened.
  */
+/**
+ * The validator is only worth its rules if each one fires. A broken module is
+ * spliced into the registry, validated, and taken back out — nothing touches
+ * the database.
+ */
+function validatorBites() {
+  const base = contentModules.find((m) => m.slug === "dsa-linked-lists")!;
+  const unit = (slug: string, over: Partial<(typeof base.units)[number]> = {}) => ({
+    ...base.units[0]!,
+    slug,
+    recall: base.units[0]!.recall!.map((c) => ({ ...c, front: `${slug}: ${c.front}` })),
+    ...over,
+  });
+  const bad = [
+    {
+      // same place on the trail as the real linked-lists module
+      ...base, slug: "zz-a", phaseSlug: "foundations", prereqSlugs: ["zz-b"],
+      units: [
+        unit("zz-a-long", { estMinutes: 400 }),
+        unit("zz-a-noprimary", { resources: base.units[0]!.resources.map((r) => ({ ...r, isPrimary: false })) }),
+      ],
+      problems: [{ ...base.problems![0]!, slug: "zz-a-p", platform: "leetcode" as const, url: "https://www.geeksforgeeks.org/x/" }],
+    },
+    { ...base, slug: "zz-b", order: 99, phaseSlug: "depth", prereqSlugs: ["zz-a"], units: [unit("zz-b-1")], problems: [] },
+  ];
+  const q = (id: string, moduleSlug: string, answer: 0 | 1 | 2 | 3, last = "d") => ({
+    id, moduleSlug, prompt: "p", why: "w", answer,
+    options: ["a", "b", "c", last] as [string, string, string, string],
+  });
+  const qs = [
+    ...[0, 1, 2, 3, 4, 5].map((i) => q(`zz-a-${i}`, "zz-a", 1)),
+    ...[0, 1, 2, 3, 4].map((i) => q(`zz-b-${i}`, "zz-b", (i % 4) as 0 | 1 | 2 | 3, i === 0 ? "All of the above" : "d")),
+  ];
+
+  contentModules.push(...bad);
+  questions.push(...qs);
+  let errors: string[];
+  try {
+    errors = validateContent();
+  } finally {
+    contentModules.splice(contentModules.length - bad.length, bad.length);
+    questions.splice(questions.length - qs.length, qs.length);
+  }
+  const fired = (re: RegExp) => errors.some((e) => re.test(e));
+  const rules: [string, RegExp][] = [
+    ["unit minutes", /zz-a-long: estMinutes 400/],
+    ["exactly one primary", /zz-a-noprimary: 0 primary/],
+    ["problem host", /zz-a-p: platform leetcode but the link goes to www\.geeksforgeeks\.org/],
+    ["track/phase/order", /zz-a: same track, phase and order as dsa-linked-lists/],
+    ["prereq phase", /zz-a: prereq zz-b is in a later phase/],
+    ["prereq cycle", /prereq cycle: zz-a -> zz-b -> zz-a|prereq cycle: zz-b -> zz-a -> zz-b/],
+    ["answer balance", /zz-a: 6 of 6 answers in one position/],
+    ["answer spread", /zz-a: answers use only 1 positions/],
+    ["positional option", /zz-b-0: option depends on its position/],
+  ];
+  const missed = rules.filter(([, re]) => !fired(re)).map(([name]) => name);
+  ok("validator rules all fire", missed.length === 0,
+    missed.length ? `missed: ${missed.join(", ")}` : `${rules.length} rules`);
+  ok("validator leaves registry", validateContent().length === 0, "clean after splice");
+}
+
 async function sittings(userId: string) {
   console.log("");
   const byId = new Map(questions.map((q) => [q.id, q]));

@@ -271,8 +271,9 @@ Also know **spinlock** (busy-waits — right only for very short critical sectio
           front:
             "Which strategy do databases use, and what does that require of your application?",
           back:
-            "Detection and recovery — Postgres finds the cycle and aborts one transaction with " +
-            "a serialization failure. Your application has to catch that and retry.",
+            "Detection and recovery — Postgres finds the cycle in its lock waits and aborts one " +
+            "transaction with a deadlock error (SQLSTATE `40P01`). Your application has to catch " +
+            "that and retry.",
         },
       ],
       resources: [

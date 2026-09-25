@@ -293,11 +293,12 @@ Also: **never put secrets in a JWT payload.** It is base64, not encryption — a
           isPrimary: true,
         },
         {
-          title: "Google SRE Book — ch. 16, Tracking Outages",
-          url: "https://sre.google/sre-book/tracking-outages/",
+          title: "Slack Engineering — Evolving API pagination at Slack",
+          url: "https://slack.engineering/evolving-api-pagination-at-slack/",
           kind: "read",
-          minutes: 25,
-          whyThisOne: "Shows why structured, correlated logs matter — from the operator's side of the fence.",
+          minutes: 20,
+          whyThisOne:
+            "Offset versus cursor pagination, argued from a real API that had to migrate — the drift problem made concrete.",
         },
       ],
     },

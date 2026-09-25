@@ -102,11 +102,11 @@ export const corecsQuestions: Question[] = [
     options: [
       "Dirty reads",
       "Non-repeatable reads — the same row read twice in one transaction can differ",
-      "Lost updates",
+      "Write skew — two transactions each update what the other read",
       "Phantom reads only",
     ],
     answer: 1,
-    why: "READ COMMITTED blocks dirty reads only. REPEATABLE READ additionally pins the rows you have read; phantoms — new rows matching your predicate — need SERIALIZABLE.",
+    why: "READ COMMITTED blocks dirty reads only; REPEATABLE READ additionally pins the rows you have read. Per the standard, phantoms still need SERIALIZABLE — though Postgres's REPEATABLE READ is a snapshot and stops them too. Write skew survives both levels; only SERIALIZABLE prevents it.",
   },
   {
     id: "db-4",

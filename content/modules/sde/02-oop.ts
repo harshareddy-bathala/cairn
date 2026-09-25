@@ -66,11 +66,12 @@ Your \`sentinel\` project has natural homes for all four — use it as your exam
       ],
       resources: [
         {
-          title: "Refactoring Guru — OOP basics",
-          url: "https://refactoring.guru/design-patterns/what-is-pattern",
+          title: "learncpp — Introduction to object-oriented programming",
+          url: "https://www.learncpp.com/cpp-tutorial/introduction-to-object-oriented-programming/",
           kind: "read",
           minutes: 30,
-          whyThisOne: "Frames the pillars around the problems they solve, which is what makes examples come easily.",
+          whyThisOne:
+            "Starts from the procedural version and shows what bundling data with behaviour buys you — which is what makes your own examples come easily.",
           isPrimary: true,
         },
       ],

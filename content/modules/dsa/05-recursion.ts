@@ -28,11 +28,11 @@ void solve(int i, vector<int>& cur) {
 
 The \`pop_back\` **is** the backtracking. You mutate on the way down and undo on the way up, so a single shared buffer serves the whole tree instead of copying at every node.
 
-Draw the tree for \`n = 3\` once, by hand. Every leaf is one subset, there are 2ⁿ of them, and the depth is n — which is exactly the O(2ⁿ) time and O(n) stack space you will be asked to state.`,
+Draw the tree for \`n = 3\` once, by hand. Every leaf is one subset, there are 2ⁿ of them, and the depth is n. Copying each subset out costs up to n, so the honest answer is **O(n · 2ⁿ) time and O(n) stack** — 2ⁿ leaves times the copy, plus the depth.`,
       interviewAngle:
         "This template is the ancestor of every DP question in phase 3. Being asked to state " +
-        "the complexity of your own recursion — and answering `2^n leaves, depth n, so O(2^n) " +
-        "time and O(n) stack` — is the routine follow-up.",
+        "the complexity of your own recursion — and answering `2^n leaves, each copied out in " +
+        "O(n), so O(n * 2^n) time and O(n) stack` — is the routine follow-up.",
       pitfalls: [
         "Forgetting the `pop_back`. The undo *is* the backtracking; without it the shared " +
           "buffer leaks state into sibling branches and the answers are quietly wrong rather " +
@@ -66,11 +66,12 @@ Draw the tree for \`n = 3\` once, by hand. Every leaf is one subset, there are 2
       ],
       resources: [
         {
-          title: "Striver — recursion playlist (subsequences)",
-          url: "https://takeuforward.org/data-structure/print-all-subsequences-of-an-array/",
-          kind: "watch",
-          minutes: 45,
-          whyThisOne: "Builds the template incrementally and draws the tree, which is the part that has to stick.",
+          title: "GeeksforGeeks — subsets of a given array",
+          url: "https://www.geeksforgeeks.org/dsa/backtracking-to-find-all-subsets/",
+          kind: "read",
+          minutes: 30,
+          whyThisOne:
+            "The pick / not-pick backtracking first, then the iterative and bitmask versions — seeing all three is how the template stops being magic.",
           isPrimary: true,
         },
       ],
@@ -151,11 +152,12 @@ The \`j > i\` guard is doing precise work: it permits a repeated value *deeper* 
       ],
       resources: [
         {
-          title: "Striver A2Z — Step 9: recursion (subsets, combinations)",
-          url: "https://takeuforward.org/data-structure/combination-sum-1/",
-          kind: "do",
-          minutes: 75,
-          whyThisOne: "The whole family in order, so the duplicate-skipping guard is introduced where it makes sense.",
+          title: "GeeksforGeeks — find all unique subsets",
+          url: "https://www.geeksforgeeks.org/dsa/find-distinct-subsets-given-set/",
+          kind: "read",
+          minutes: 30,
+          whyThisOne:
+            "Sort, then skip a repeated value at the same level — the duplicate guard this unit is built around, set against the lazy fix of deduplicating with a set.",
           isPrimary: true,
         },
       ],
@@ -204,12 +206,20 @@ For permutations II, sort and skip \`if (i > 0 && a[i] == a[i-1] && !used[i-1]) 
       ],
       resources: [
         {
-          title: "Striver — permutations of an array",
-          url: "https://takeuforward.org/data-structure/print-all-permutations-of-a-string-array/",
-          kind: "watch",
-          minutes: 35,
-          whyThisOne: "Shows both approaches back to back, which is exactly the comparison an interviewer probes.",
+          title: "GeeksforGeeks — permutations of a string",
+          url: "https://www.geeksforgeeks.org/dsa/write-a-c-program-to-print-all-permutations-of-a-given-string/",
+          kind: "read",
+          minutes: 25,
+          whyThisOne: "The swap-based version, with the swap back that makes it backtracking.",
           isPrimary: true,
+        },
+        {
+          title: "USACO Guide — complete search with recursion",
+          url: "https://usaco.guide/bronze/complete-rec",
+          kind: "read",
+          minutes: 25,
+          whyThisOne:
+            "The used-array version and next_permutation — the other half of the comparison an interviewer probes.",
         },
       ],
     },
@@ -265,11 +275,12 @@ The universal shape: **choose → explore → un-choose.** Forgetting the un-cho
       ],
       resources: [
         {
-          title: "Striver — N-Queens",
-          url: "https://takeuforward.org/data-structure/n-queen-problem-return-all-distinct-solutions-to-the-n-queens-puzzle/",
-          kind: "watch",
+          title: "GeeksforGeeks — N-Queen problem",
+          url: "https://www.geeksforgeeks.org/dsa/n-queen-problem-backtracking-3/",
+          kind: "read",
           minutes: 40,
-          whyThisOne: "Derives the diagonal hashing rather than asserting it, so you can rebuild it under pressure.",
+          whyThisOne:
+            "Goes from scanning the board for attacks to O(1) row and diagonal lookups — the step that makes pruning cheap enough to matter.",
           isPrimary: true,
         },
       ],

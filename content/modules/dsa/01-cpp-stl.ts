@@ -136,7 +136,7 @@ first = 5;           // undefined behaviour
 
 **2D vectors** are built by nesting the fill constructor — \`vector<vector<int>> g(rows, vector<int>(cols, 0));\`. Read it inside out: the inner vector is the row that gets copied \`rows\` times.
 
-**string** is a vector of \`char\` with extra methods. \`s.substr(i, len)\` takes a *length*, not an end index, and \`s.find(t)\` returns \`string::npos\` — not \`-1\` — when it fails. Compare against \`string::npos\` explicitly. Building a string with \`+=\` in a loop is fine; building it with \`s = s + c\` is quadratic.`,
+**string** is a vector of \`char\` with extra methods. \`s.substr(i, len)\` takes a *length*, not an end index, and \`s.find(t)\` returns \`string::npos\` — the largest \`size_t\` — when it fails. Compare against \`string::npos\` explicitly: the return type is unsigned, so \`s.find(t) < 0\` is never true, and \`if (s.find(t))\` is false exactly when the match is at index 0. Building a string with \`+=\` in a loop is fine; building it with \`s = s + c\` is quadratic.`,
       interviewAngle:
         "`Why is push_back amortised O(1)?` is a standard probe, and the answer they want is " +
         "the geometric series, not the phrase `it doubles`. Iterator invalidation is the " +
@@ -148,8 +148,9 @@ first = 5;           // undefined behaviour
           "kills it, and the read that follows is undefined.",
         "Writing `for (auto x : v)` over a `vector<string>` — that copies every string. Use " +
           "`const auto &`.",
-        "Comparing `s.find(t)` against -1. It returns `string::npos`, which is an unsigned " +
-          "maximum, so the comparison is false even when the search failed.",
+        "Testing `s.find(t) < 0` or `if (s.find(t))`. The result is an unsigned `size_t`, so " +
+          "`< 0` is never true, and a match at index 0 reads as false. Compare with " +
+          "`!= string::npos`.",
       ],
       recall: [
         {
@@ -182,11 +183,12 @@ first = 5;           // undefined behaviour
       ],
       resources: [
         {
-          title: "Striver A2Z — C++ STL playlist",
-          url: "https://takeuforward.org/c/c-stl-tutorial-most-frequent-used-stl-containers/",
-          kind: "watch",
-          minutes: 55,
-          whyThisOne: "One pass over every container you will actually use, in the sheet's own order.",
+          title: "learncpp — std::vector resizing and capacity",
+          url: "https://www.learncpp.com/cpp-tutorial/stdvector-resizing-and-capacity/",
+          kind: "read",
+          minutes: 25,
+          whyThisOne:
+            "Separates length from capacity and resize from reserve with runnable examples — the exact distinction this unit is about.",
           isPrimary: true,
         },
         {
@@ -273,11 +275,12 @@ Read the constraints backwards: *n ≤ 10⁵* rules out O(n²) and points at O(n
       ],
       resources: [
         {
-          title: "Striver — Time and space complexity",
-          url: "https://takeuforward.org/data-structure/time-and-space-complexity-of-an-algorithm/",
+          title: "USACO Guide — Time complexity",
+          url: "https://usaco.guide/bronze/time-comp",
           kind: "read",
           minutes: 25,
-          whyThisOne: "Short, derivation-first, and matched to the sheet you are solving.",
+          whyThisOne:
+            "Derives complexity from loop shapes and ends with the constraint-to-complexity table you should be reading problems against.",
           isPrimary: true,
         },
       ],
@@ -357,8 +360,8 @@ ms.erase(ms.find(value));   // removes exactly one
       ],
       resources: [
         {
-          title: "Striver A2Z — Step 1.3: hashing",
-          url: "https://takeuforward.org/data-structure/hashing-maps-time-complexity-collisions-division-rule-of-hashing-strivers-a2z-dsa-course/",
+          title: "Striver — Hashing: hash maps and collisions",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/hashing-data-structures",
           kind: "read",
           minutes: 30,
           whyThisOne: "Covers collisions and the division rule, which is where the follow-up questions go.",
@@ -453,12 +456,20 @@ Also worth having in hand: \`next_permutation\`, \`accumulate\` (pass \`0LL\` as
       ],
       resources: [
         {
-          title: "Striver — sorting and comparators in STL",
-          url: "https://takeuforward.org/c/c-stl-tutorial-most-frequent-used-stl-containers/",
-          kind: "watch",
+          title: "learncpp — Introduction to standard library algorithms",
+          url: "https://www.learncpp.com/cpp-tutorial/introduction-to-standard-library-algorithms/",
+          kind: "read",
           minutes: 30,
-          whyThisOne: "The comparator section is the part people get wrong under time pressure.",
+          whyThisOne:
+            "Passing your own comparator to std::sort, alongside find_if and count_if — the algorithms you will reach for weekly.",
           isPrimary: true,
+        },
+        {
+          title: "cppreference — the Compare requirement",
+          url: "https://en.cppreference.com/w/cpp/named_req/Compare",
+          kind: "docs",
+          whyThisOne:
+            "The strict-weak-ordering rules, stated exactly. Read it once and `>=` in a comparator will look wrong forever.",
         },
         {
           title: "cppreference — std::lower_bound",
@@ -483,7 +494,7 @@ int sumTo(int n) {
 }
 \`\`\`
 
-Check the step really does shrink. \`sumTo(n - 1)\` terminates; \`sumTo(n / 2)\` on \`n = 1\` does not, because \`1 / 2 == 0\` only if your base case covers 0.
+Check the step really does *reach* the base case, not just shrink toward it. \`sumTo(n - 1)\` with \`if (n == 0)\` terminates for every n ≥ 0 — and recurses until the stack overflows for n = -1, because -2, -3, … never equal 0. A guard of \`n <= 0\` catches both.
 
 **Drill the primitives** until they are automatic: sum to n, factorial, reverse an array in place, check a palindrome, print 1..n without a loop. Each is five lines, and having them cold means the recursion is never the hard part of a harder problem.
 
@@ -506,8 +517,8 @@ Check the step really does shrink. \`sumTo(n - 1)\` terminates; \`sumTo(n / 2)\`
       pitfalls: [
         "Writing the recursive step before the base case. A missing base case is not a wrong " +
           "answer, it is a stack overflow.",
-        "Assuming any smaller argument terminates. `f(n / 2)` never reaches 1 by halving from " +
-          "1 unless the base case covers 0.",
+        "Assuming a shrinking argument must land on the base case. With `if (n == 0)` and a " +
+          "step of `n - 2`, an odd n jumps over 0 and never stops. Guard with `n <= 0`.",
         "Recursing over n = 1e6. The default stack holds roughly 1e4 to 1e5 frames — the " +
           "equivalent loop is fine, the recursion crashes.",
       ],
@@ -535,11 +546,12 @@ Check the step really does shrink. \`sumTo(n - 1)\` terminates; \`sumTo(n / 2)\`
       ],
       resources: [
         {
-          title: "Striver A2Z — Step 1.4: basic recursion",
-          url: "https://takeuforward.org/recursion/introduction-to-recursion-understand-recursion-by-print-something-n-times/",
+          title: "Striver — basic recursion: print a name N times",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/print-name-n-times-using-recursion",
           kind: "do",
           minutes: 45,
-          whyThisOne: "Builds the pick/not-pick template you will reuse for the rest of the sheet.",
+          whyThisOne:
+            "The smallest possible recursion, with the call stack traced by hand. Work on through the sheet's 1-to-N, sum and factorial pages after it.",
           isPrimary: true,
         },
         {

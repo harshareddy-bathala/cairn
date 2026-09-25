@@ -24,7 +24,7 @@ A **branch is just a file containing a commit SHA.** That is the whole thing. Cr
 
 This explains the three resets. \`--soft\` moves the branch pointer only, leaving your changes staged. \`--mixed\` (the default) moves the pointer and unstages. \`--hard\` moves the pointer and **discards working tree changes** — the only genuinely destructive one.
 
-And it explains \`reflog\`: git records where HEAD has been, so almost nothing is truly lost for about 90 days. \`git reflog\` has recovered more "deleted" work than any other command.`,
+And it explains \`reflog\`: git records where HEAD and each branch have been, so a commit you *committed* is almost never truly lost. The entries expire, though — after 90 days by default, but after **30** for an entry the current branch can no longer reach, which is exactly the commit you just reset away. \`git reflog\` has recovered more "deleted" work than any other command; the one thing it cannot bring back is a change you never committed, which is why \`--hard\` deserves the respect.`,
       interviewAngle:
         "`What actually is a branch?` sounds trivial and is a real filter. `A file containing a " +
         "commit SHA` is the answer, and every reset and reflog question follows from it.",
@@ -33,8 +33,8 @@ And it explains \`reflog\`: git records where HEAD has been, so almost nothing i
           "which is why creating one is instant.",
         "Using `reset --hard` as a general undo. It is the only reset that discards " +
           "working-tree changes.",
-        "Believing work is gone after a bad reset. `git reflog` records where HEAD has been " +
-          "for about 90 days.",
+        "Believing committed work is gone after a bad reset. `git reflog` records where HEAD " +
+          "has been — though an entry the branch can no longer reach expires after 30 days.",
       ],
       recall: [
         {
@@ -62,8 +62,9 @@ And it explains \`reflog\`: git records where HEAD has been, so almost nothing i
         {
           front: "You reset --hard and lost a commit you needed. What now?",
           back:
-            "`git reflog` — git records every position HEAD has held for roughly 90 days, so " +
-            "the commit is still reachable by SHA even though no branch points at it.",
+            "`git reflog` — git records every position HEAD has held, so the commit is still " +
+            "there by SHA even though no branch points at it. Move fast-ish: an entry the " +
+            "branch can no longer reach expires after 30 days by default, not 90.",
         },
       ],
       resources: [

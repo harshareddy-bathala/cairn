@@ -259,11 +259,12 @@ A **zombie** has exited but its parent has not reaped its exit status — it hol
       ],
       resources: [
         {
-          title: "Linux Journey — Processes",
-          url: "https://linuxjourney.com/lesson/monitor-processes-ps-command",
+          title: "LinuxCommand — Job control: ps, kill and signals",
+          url: "https://linuxcommand.org/lc3_lts0100.php",
           kind: "read",
           minutes: 30,
-          whyThisOne: "Walks through reading process state with ps; the signal half of this unit is covered by man 7 signal below.",
+          whyThisOne:
+            "Reading process state with ps, then sending signals with kill, at a terminal — man 7 signal below fills in the semantics.",
           isPrimary: true,
         },
         {
@@ -345,7 +346,7 @@ This unit is a direct prerequisite for shipping \`sentinel\` — you will write 
       resources: [
         {
           title: "systemd.service — man page",
-          url: "https://www.freedesktop.org/software/systemd/man/systemd.service.html",
+          url: "https://www.freedesktop.org/software/systemd/man/latest/systemd.service.html",
           kind: "docs",
           minutes: 30,
           whyThisOne: "The Type= section alone resolves most first-service confusion.",

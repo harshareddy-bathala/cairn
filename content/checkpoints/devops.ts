@@ -114,12 +114,12 @@ export const devopsQuestions: Question[] = [
     prompt: "You force-pushed over a colleague's commits. Are they gone?",
     options: [
       "Yes, permanently",
-      "No — if anyone still has them locally, git reflog finds the old tip and it can be restored",
+      "No — any clone that had them still does, and the old tip can be pushed back",
       "Only if garbage collection has run on the server",
       "Yes, unless there was a tag",
     ],
     answer: 1,
-    why: "Reflog is the undo history for branch tips and is the answer to almost every 'I destroyed something' question. Objects survive until gc prunes unreachable ones.",
+    why: "A force-push moves one ref on one server; it deletes nothing anyone else holds. Your colleague's branch still points at their commits, and anyone who fetched has the old tip in the reflog of the remote-tracking branch (git reflog origin/main). Push it back.",
   },
   {
     id: "git-5",
@@ -245,15 +245,15 @@ export const devopsQuestions: Question[] = [
   {
     id: "dkr-4",
     moduleSlug: "devops-docker",
-    prompt: "You baked a secret into a Dockerfile with ENV and then removed it in a later layer. Is it safe?",
+    prompt: "A Dockerfile COPYs a credentials file in, uses it, and deletes it with RUN rm in the next instruction. Is the published image safe?",
     options: [
-      "Yes, the final image no longer has it",
-      "No — every layer is retained in the image history and the value is recoverable",
-      "Yes, if you squash the image",
-      "Only if the image is private",
+      "Yes, the final filesystem no longer has the file",
+      "No — the COPY layer still contains the file, and anyone who pulls the image can extract it",
+      "Yes, because RUN rm runs as root",
+      "Yes, because layers are compressed",
     ],
     answer: 1,
-    why: "Layers are additive and inspectable with docker history. Secrets belong in build secrets or runtime environment injection, never in a layer.",
+    why: "Layers are additive: the rm only adds a whiteout on top, and the earlier layer still holds the file — docker save and tar get it back. Secrets belong in BuildKit secret mounts (RUN --mount=type=secret) or runtime injection, never in a layer.",
   },
   {
     id: "dkr-5",

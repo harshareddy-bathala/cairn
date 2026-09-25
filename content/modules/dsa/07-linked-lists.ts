@@ -63,11 +63,12 @@ Saving \`next\` before overwriting \`cur->next\` is the entire trick; skip it an
       ],
       resources: [
         {
-          title: "Striver A2Z — Step 6: linked lists",
-          url: "https://takeuforward.org/data-structure/reverse-a-linked-list/",
+          title: "Striver — reverse a singly linked list",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/reverse-a-singly-linked-list",
           kind: "do",
           minutes: 60,
-          whyThisOne: "Introduces the dummy head early and reuses it consistently, which is the habit worth copying.",
+          whyThisOne:
+            "From the value-copying brute force to the three-pointer rewiring, and why the iterative version beats the recursive one on space.",
           isPrimary: true,
         },
       ],
@@ -128,9 +129,9 @@ Removing the nth node from the end is the same family: advance one pointer n ste
       ],
       resources: [
         {
-          title: "Striver — detect and remove a loop in a linked list",
-          url: "https://takeuforward.org/data-structure/starting-point-of-loop-in-a-linked-list/",
-          kind: "watch",
+          title: "Striver — find the starting node of a cycle",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/find-start-of-cycle-linked-list",
+          kind: "read",
           minutes: 35,
           whyThisOne: "Actually proves why resetting to the head finds the entrance instead of asserting it.",
           isPrimary: true,
@@ -181,9 +182,9 @@ Removing the nth node from the end is the same family: advance one pointer n ste
       ],
       resources: [
         {
-          title: "Striver — sort a linked list",
-          url: "https://takeuforward.org/data-structure/sort-a-linked-list/",
-          kind: "watch",
+          title: "Striver — sort a linked list using merge sort",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/sort-a-linked-list-using-merge-sort",
+          kind: "read",
           minutes: 30,
           whyThisOne: "Makes the case for why merge sort is the right choice here, not just how to write it.",
           isPrimary: true,
@@ -254,6 +255,7 @@ Two dummy nodes — head and tail sentinels — remove every null check from the
     { slug: "lc-middle-of-linked-list", title: "Middle of the Linked List", platform: "leetcode", url: "https://leetcode.com/problems/middle-of-the-linked-list/", difficulty: "easy", patternTag: "fast-slow", triggerHint: "Positional query in one pass without knowing the length.", approachHint: "slow += 1, fast += 2. Your loop condition decides first-vs-second middle on even lengths.", estMinutes: 10, unitSlug: "dsa-ll-fast-slow" },
     { slug: "lc-linked-list-cycle", title: "Linked List Cycle", platform: "leetcode", url: "https://leetcode.com/problems/linked-list-cycle/", difficulty: "easy", patternTag: "fast-slow", triggerHint: "Cycle detection with O(1) space.", approachHint: "Floyd's. Fast gains one position per step inside a loop, so it must catch slow.", estMinutes: 15, unitSlug: "dsa-ll-fast-slow" },
     { slug: "lc-linked-list-cycle-ii", title: "Linked List Cycle II", platform: "leetcode", url: "https://leetcode.com/problems/linked-list-cycle-ii/", difficulty: "medium", patternTag: "fast-slow", triggerHint: "Not just whether there is a cycle, but where it starts.", approachHint: "After they meet, reset one pointer to head and step both by one. They meet at the entrance — be able to justify it.", estMinutes: 25, unitSlug: "dsa-ll-fast-slow" },
+    { slug: "lc-find-duplicate-number", title: "Find the Duplicate Number", platform: "leetcode", url: "https://leetcode.com/problems/find-the-duplicate-number/", difficulty: "medium", patternTag: "cycle-detection", triggerHint: "Read-only array, O(1) space, values in 1..n.", approachHint: "Treat index i -> nums[i] as a next-pointer: the values form a linked list with a cycle, and the cycle entrance is the duplicate. Floyd, then reset one pointer to the start.", estMinutes: 35, unitSlug: "dsa-ll-fast-slow" },
     { slug: "lc-remove-nth-from-end", title: "Remove Nth Node From End of List", platform: "leetcode", url: "https://leetcode.com/problems/remove-nth-node-from-end-of-list/", difficulty: "medium", patternTag: "fast-slow", triggerHint: "Position from the end, one pass.", approachHint: "Advance one pointer n steps, then move both. Use a dummy head so removing the head is not a special case.", estMinutes: 20, unitSlug: "dsa-ll-fast-slow" },
     { slug: "lc-merge-two-sorted-lists", title: "Merge Two Sorted Lists", platform: "leetcode", url: "https://leetcode.com/problems/merge-two-sorted-lists/", difficulty: "easy", patternTag: "linked-list", triggerHint: "Interleave two sorted sequences.", approachHint: "Dummy head, append the smaller front each time, attach the remaining tail at the end.", estMinutes: 15, unitSlug: "dsa-ll-merge-sort" },
     { slug: "lc-palindrome-linked-list", title: "Palindrome Linked List", platform: "leetcode", url: "https://leetcode.com/problems/palindrome-linked-list/", difficulty: "easy", patternTag: "linked-list", triggerHint: "Symmetry check with O(1) space.", approachHint: "Find the middle, reverse the second half, compare — then restore the list before returning.", estMinutes: 25, unitSlug: "dsa-ll-merge-sort" },

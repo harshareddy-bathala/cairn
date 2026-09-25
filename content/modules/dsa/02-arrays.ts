@@ -60,8 +60,8 @@ Know why \`std::sort\` is introsort: quicksort until the recursion gets too deep
       ],
       resources: [
         {
-          title: "Striver A2Z — Step 2: sorting techniques",
-          url: "https://takeuforward.org/sorting/merge-sort-algorithm/",
+          title: "Striver — merge sort",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/merge-sort-algorithm",
           kind: "do",
           minutes: 60,
           whyThisOne: "Walks the merge step index by index, which is exactly where hand-written merge sort breaks.",
@@ -119,8 +119,8 @@ Rotation by k has three approaches worth knowing: extra array O(n) space; one-by
       ],
       resources: [
         {
-          title: "Striver A2Z — Step 3.1: arrays easy",
-          url: "https://takeuforward.org/arrays/find-the-largest-element-in-an-array/",
+          title: "Striver — arrays easy, from the largest element on",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/find-the-largest-element-in-an-array",
           kind: "do",
           minutes: 50,
           whyThisOne: "The easy tier exists to build speed. Move through it fast; do not linger.",
@@ -176,11 +176,12 @@ The same running-state shape appears in the stock-buying problems — carry the 
       ],
       resources: [
         {
-          title: "Striver — Kadane's algorithm",
-          url: "https://takeuforward.org/data-structure/kadanes-algorithm-maximum-subarray-sum-in-an-array/",
-          kind: "watch",
+          title: "cp-algorithms — the subarray with the maximum sum",
+          url: "https://cp-algorithms.com/others/maximum_average_segment.html",
+          kind: "read",
           minutes: 25,
-          whyThisOne: "Derives it from brute force in stages, so you can reconstruct it under pressure.",
+          whyThisOne:
+            "Derives Kadane from prefix sums — the best subarray ending here is this prefix minus the smallest earlier one — so you can rebuild it rather than recite it.",
           isPrimary: true,
         },
       ],
@@ -235,8 +236,8 @@ This is also quicksort's partition step, so the two units reinforce each other.`
       resources: [
         {
           title: "Striver — sort an array of 0s, 1s and 2s",
-          url: "https://takeuforward.org/data-structure/sort-an-array-of-0s-1s-and-2s/",
-          kind: "watch",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/sort-array-0s-1s-2s",
+          kind: "read",
           minutes: 25,
           whyThisOne: "Spells out the invariant, which is the only way this stays memorable.",
           isPrimary: true,
@@ -300,8 +301,8 @@ Two shapes to keep separate:
       ],
       resources: [
         {
-          title: "Striver A2Z — Step 3.3: arrays medium",
-          url: "https://takeuforward.org/data-structure/2-sum-check-if-a-pair-with-given-sum-exists-in-array/",
+          title: "Striver — two sum, then the sheet's 3Sum and 4Sum",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/two-sum",
           kind: "do",
           minutes: 60,
           whyThisOne: "Covers the family in sequence so the shared shape becomes obvious.",
@@ -371,11 +372,12 @@ The same trick with a map of remainders solves "subarrays divisible by k", and w
       ],
       resources: [
         {
-          title: "Striver — longest subarray with sum k",
-          url: "https://takeuforward.org/data-structure/longest-subarray-with-given-sum-k/",
-          kind: "watch",
+          title: "Striver — subarray sum equals k",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/subarray-sum-equals-k",
+          kind: "read",
           minutes: 30,
-          whyThisOne: "Shows the positives-only sliding window and the general hashmap version side by side.",
+          whyThisOne:
+            "Builds the prefix-sum-plus-hashmap count from the brute force, including why the map has to start with {0: 1}.",
           isPrimary: true,
         },
       ],
@@ -395,7 +397,6 @@ The same trick with a map of remainders solves "subarrays divisible by k", and w
     { slug: "lc-next-permutation", title: "Next Permutation", platform: "leetcode", url: "https://leetcode.com/problems/next-permutation/", difficulty: "medium", patternTag: "array-manipulation", triggerHint: "The lexicographically next arrangement, in place.", approachHint: "Scan from the right for the first a[i] < a[i+1]; swap it with the rightmost value greater than it; reverse the suffix.", estMinutes: 30, unitSlug: "dsa-arrays-traversal" },
     { slug: "lc-merge-sorted-array", title: "Merge Sorted Array", platform: "leetcode", url: "https://leetcode.com/problems/merge-sorted-array/", difficulty: "easy", patternTag: "merge", triggerHint: "Merging into a buffer that already has room at the end.", approachHint: "Fill from the back. Writing forwards would clobber unread elements of the first array.", estMinutes: 20, unitSlug: "dsa-arrays-sorts-from-scratch" },
     { slug: "lc-sort-an-array", title: "Sort an Array", platform: "leetcode", url: "https://leetcode.com/problems/sort-an-array/", difficulty: "medium", patternTag: "sorting", triggerHint: "You are explicitly not allowed to call the library sort.", approachHint: "Write merge sort end to end. This is the whiteboard exercise — do it without looking.", estMinutes: 35, unitSlug: "dsa-arrays-sorts-from-scratch" },
-    { slug: "lc-find-duplicate-number", title: "Find the Duplicate Number", platform: "leetcode", url: "https://leetcode.com/problems/find-the-duplicate-number/", difficulty: "medium", patternTag: "cycle-detection", triggerHint: "Read-only array, O(1) space, values in 1..n.", approachHint: "Treat values as next-pointers and run Floyd's cycle detection. The cycle entrance is the duplicate.", estMinutes: 35, unitSlug: "dsa-arrays-traversal" },
     { slug: "lc-set-matrix-zeroes", title: "Set Matrix Zeroes", platform: "leetcode", url: "https://leetcode.com/problems/set-matrix-zeroes/", difficulty: "medium", patternTag: "matrix", triggerHint: "In-place marking where writes would corrupt later reads.", approachHint: "Use row 0 and column 0 as the marker storage, with one extra flag for column 0 itself.", estMinutes: 30, unitSlug: "dsa-arrays-traversal" },
     { slug: "lc-spiral-matrix", title: "Spiral Matrix", platform: "leetcode", url: "https://leetcode.com/problems/spiral-matrix/", difficulty: "medium", patternTag: "matrix", triggerHint: "Boundary-walking traversal.", approachHint: "Four bounds — top, bottom, left, right — shrunk after each edge. Guard against re-walking a single remaining row or column.", estMinutes: 30, unitSlug: "dsa-arrays-traversal" },
     { slug: "lc-pascals-triangle", title: "Pascal's Triangle", platform: "leetcode", url: "https://leetcode.com/problems/pascals-triangle/", difficulty: "easy", patternTag: "construction", triggerHint: "Each row built from the one above.", approachHint: "Row i starts and ends with 1; the interior is the pairwise sum of the previous row.", estMinutes: 15, unitSlug: "dsa-arrays-traversal" },

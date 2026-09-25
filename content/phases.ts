@@ -15,7 +15,7 @@ export const phases: Phase[] = [
     order: 2,
     title: "Depth & Automation",
     mission:
-      "Automate everything: CI/CD, Terraform, observability, SRE principles. Trees and graphs. Ship atlas to real users, finalise resumes, open the off-campus lane.",
+      "Automate everything: CI/CD, Terraform, observability, SRE principles. Stacks, trees, heaps and greedy — the tree/stack month. Ship atlas to real users, finalise resumes, open the off-campus lane.",
     identity: "Someone who runs systems",
   },
   {
@@ -23,7 +23,7 @@ export const phases: Phase[] = [
     order: 3,
     title: "Orchestration & Interview Mode",
     mission:
-      "Kubernetes, dynamic programming, system design. Ship atlas-k8s, then freeze features and switch fully to mocks, applications and interviews.",
+      "Kubernetes, graphs and dynamic programming, system design. Ship atlas-k8s, then freeze features and switch fully to mocks, applications and interviews.",
     identity: "A candidate performing",
   },
 ];

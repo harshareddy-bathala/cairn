@@ -227,6 +227,20 @@ async function seed(tx: Tx) {
   const recallCount = unitRows.reduce((n, u) => n + u.recall.length, 0);
   console.log(`${"recall".padEnd(13)} ${recallCount} cards across ${unitRows.length} units`);
 
+  // A card is copied into someone's deck the day they finish its unit, so a
+  // corrected answer would otherwise never reach a deck that already holds the
+  // wrong one. Same unit, same front: the back follows content. The schedule
+  // (ease, interval, due day) is untouched — it measures the person, not the text.
+  const refreshed = await tx.execute(sql`
+    update flashcards f set back = c.back
+    from (
+      select u.slug as unit_slug, card->>'front' as front, card->>'back' as back
+      from units u, jsonb_array_elements(u.recall) card
+    ) c
+    where f.unit_slug = c.unit_slug and f.front = c.front and f.back is distinct from c.back
+  `);
+  console.log(`${"decks".padEnd(13)} ${refreshed.rowCount ?? 0} stored cards given a corrected back`);
+
   const stale = await findStale(tx);
   if (!stale.length) {
     console.log("stale         none");

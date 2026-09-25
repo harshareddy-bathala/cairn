@@ -18,7 +18,7 @@ export const strings: Module = {
       estMinutes: 45,
       conceptMd: `\`std::string\` is a \`vector<char>\` with extra methods. \`substr(pos, len)\` **copies** — calling it inside a loop is a quiet O(n²).
 
-Useful and often forgotten: \`find\` returns \`string::npos\` (not \`-1\`) when absent, \`stoi\`/\`to_string\` convert, \`+=\` appends cheaply while \`s = s + c\` may reallocate, and \`isalnum\`/\`tolower\` from \`<cctype>\` save hand-rolled character checks.
+Useful and often forgotten: \`find\` returns \`string::npos\` — the largest \`size_t\` — when absent, so test \`!= string::npos\` and never \`< 0\`. Beyond that, \`stoi\`/\`to_string\` convert, \`+=\` appends cheaply while \`s = s + c\` may reallocate, and \`isalnum\`/\`tolower\` from \`<cctype>\` save hand-rolled character checks.
 
 For building a result, \`reserve()\` the expected size and \`push_back\`. For splitting on a delimiter, \`istringstream\` plus \`getline(ss, token, ',')\` is the idiomatic route.
 
@@ -47,7 +47,9 @@ Two more that come up: \`s.back()\` on an empty string is undefined behaviour, s
       pitfalls: [
         "Calling `substr` inside a loop. Each call copies, so a scan that looks linear is " +
           "quietly O(n^2) — use `compare(i, m, t)` to compare in place.",
-        "Comparing `find`'s result against -1. It returns `string::npos`, an unsigned maximum.",
+        "Testing `s.find(t) < 0` or `if (s.find(t))`. The result is an unsigned `size_t`: " +
+          "`< 0` is never true, and a match at index 0 reads as false. Compare with " +
+          "`!= string::npos`.",
         "Reading `substr(pos, len)` as `substr(begin, end)`. The second argument is a length.",
       ],
       recall: [
@@ -61,12 +63,12 @@ Two more that come up: \`s.back()\` on an empty string is undefined behaviour, s
         },
         {
           front:
-            "What does `s.find(t)` return when the substring is absent, and why does comparing " +
-            "to -1 fail?",
+            "What does `s.find(t)` return when the substring is absent, and why is " +
+            "`if (s.find(t) < 0)` a bug?",
           back:
-            "It returns `string::npos`, which is the maximum value of an unsigned type. " +
-            "Comparing against -1 does not match it under the usual integer conversions, so the " +
-            "failure goes undetected.",
+            "It returns `string::npos`, the maximum value of the unsigned `size_t`. An " +
+            "unsigned value is never below zero, so the test is always false and the miss goes " +
+            "undetected. Compare with `!= string::npos`.",
         },
         {
           front: "What are the two arguments to `substr`?",
@@ -154,11 +156,12 @@ Every inner \`while\` repeats the \`l < r\` test — without it a string of only
       ],
       resources: [
         {
-          title: "Striver A2Z — Step 5: strings",
-          url: "https://takeuforward.org/data-structure/reverse-words-in-a-string/",
+          title: "Striver — reverse every word in a string",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/reverse-every-word-in-a-string",
           kind: "do",
           minutes: 45,
-          whyThisOne: "The sheet's string tier in order; short enough to clear in two sittings.",
+          whyThisOne:
+            "Reverse-the-whole-then-each-word, with the runs of spaces handled — the one two-pointer string question that keeps getting asked.",
           isPrimary: true,
         },
       ],
@@ -230,8 +233,8 @@ The 26-slot assumption is worth stating out loud rather than assuming: it holds 
       resources: [
         {
           title: "Striver — sort characters by frequency",
-          url: "https://takeuforward.org/data-structure/sort-characters-by-frequency/",
-          kind: "watch",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/sort-characters-by-frequency",
+          kind: "read",
           minutes: 20,
           whyThisOne: "Covers the counting-plus-ordering shape that the whole family reuses.",
           isPrimary: true,

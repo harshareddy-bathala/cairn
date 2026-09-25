@@ -257,9 +257,11 @@ The levels map onto them exactly, and this table is the interview answer:
 | Repeatable Read | prevented | prevented | possible |
 | Serializable | prevented | prevented | prevented |
 
+That table is the SQL standard's *minimum*, and it is the answer to draw — but say "per the standard", because Postgres is stricter. Its Repeatable Read is snapshot isolation: the whole transaction reads one snapshot, so phantoms cannot appear either. What it still allows is **write skew** — two transactions each read, each write something the other read, and both commit — which only Serializable prevents. (And Postgres's Read Uncommitted behaves as Read Committed.)
+
 Higher isolation costs concurrency — that is the trade-off, and naming it is the point. Postgres defaults to Read Committed.
 
-**Database deadlocks** happen when two transactions lock rows in opposite orders. The database detects the cycle and aborts one with a serialization failure. Your application must be prepared to **retry** — which is the same reliability thinking as the retry-with-backoff pattern in the SRE track.`,
+**Database deadlocks** happen when two transactions lock rows in opposite orders. The database detects the cycle and aborts one with a **deadlock error** (Postgres SQLSTATE \`40P01\`). It is a different error from a **serialization failure** (\`40001\`), which Repeatable Read and Serializable raise when concurrent transactions conflict — but the response to both is the same. Your application must be prepared to **retry** — which is the same reliability thinking as the retry-with-backoff pattern in the SRE track.`,
       interviewAngle:
         "The isolation-level table is the answer, and being able to draw it beats describing " +
         "it. The deadlock-retry point connects it to real production work.",
@@ -268,8 +270,12 @@ Higher isolation costs concurrency — that is the trade-off, and naming it is t
           "value; the other is the same *query* returning different *rows*.",
         "Assuming Serializable is free. Higher isolation costs concurrency — naming that " +
           "trade is the point of the question.",
-        "Not retrying on a serialization failure. The database aborts one of the deadlocked " +
-          "transactions and expects the application to try again.",
+        "Not retrying on a deadlock (`40P01`) or a serialization failure (`40001`). Either way " +
+          "the database aborted your transaction on purpose and expects the application to run " +
+          "it again.",
+        "Drawing the standard's table and calling it Postgres. Postgres's Repeatable Read is " +
+          "a snapshot and already prevents phantoms; the anomaly left for Serializable is " +
+          "write skew.",
       ],
       recall: [
         {
@@ -289,15 +295,16 @@ Higher isolation costs concurrency — that is the trade-off, and naming it is t
         {
           front: "Which anomaly survives Repeatable Read?",
           back:
-            "Phantom reads. The rows you already read are stable, but new matching rows can " +
-            "appear.",
+            "Per the SQL standard, phantom reads: the rows you read are stable, but new matching " +
+            "rows can appear. Postgres goes further — its Repeatable Read is a snapshot, so no " +
+            "phantoms either; what survives is write skew, which only Serializable stops.",
         },
         {
           front: "A database deadlock — what causes it and whose job is the fix?",
           back:
             "Two transactions locking rows in opposite orders. The database detects the cycle " +
-            "and aborts one with a serialization failure; the application is responsible for " +
-            "catching that and retrying.",
+            "and aborts one with a deadlock error (Postgres `40P01`); the application is " +
+            "responsible for catching that and retrying.",
         },
       ],
       resources: [

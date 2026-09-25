@@ -82,7 +82,7 @@ export const dsaQuestions: Question[] = [
       "The running value is the maximum subarray sum seen so far",
       "The running value is the best subarray sum *ending at the current index*",
       "The running value is the sum of all positive elements so far",
-      "The running value is the prefix sum minus the minimum prefix",
+      "The running value is the largest single element seen so far",
     ],
     answer: 1,
     why: "The state is 'best sum ending here', which is why the transition is max(x, best + x). Confusing it with the global answer is why people cannot reconstruct Kadane's under pressure.",
@@ -325,7 +325,7 @@ export const dsaQuestions: Question[] = [
       "Use a 2D visited matrix",
     ],
     answer: 1,
-    why: "Each diagonal has a constant row+col; each anti-diagonal a constant row-col. Two sets (plus one for columns) replace the board scan and are what makes the solution fast.",
+    why: "Along a ↘ diagonal row − col is constant; along a ↗ anti-diagonal row + col is. Two sets — or arrays of size 2n − 1, with row − col offset by n − 1 — plus one for columns replace the board scan, and that is what makes the pruning cheap.",
   },
   {
     id: "rec-5",
@@ -387,12 +387,12 @@ export const dsaQuestions: Question[] = [
     prompt: "1 << 31 on a 32-bit signed int is a problem. Why?",
     options: [
       "It is always zero",
-      "It overflows into the sign bit — undefined behaviour in C++; use 1u or 1LL",
+      "It lands in the sign bit, so the mask comes out negative; use 1u or 1LL",
       "The compiler rejects it",
       "It is fine, but slow",
     ],
     answer: 1,
-    why: "Shifting into the sign bit of a signed type is UB. Every bitmask over 31 elements needs 1LL or an unsigned literal — a real bug that only appears on large inputs.",
+    why: "1 << 31 is INT_MIN: comparisons against it go the wrong way and widening it to long long sign-extends. (In C, and in C++ before C++14, it is undefined outright; 1 << 32 on an int is undefined everywhere.) A mask over 31 or more elements needs 1LL or an unsigned literal — a bug that only appears on large inputs.",
   },
   {
     id: "bit-5",

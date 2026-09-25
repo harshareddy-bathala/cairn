@@ -76,8 +76,8 @@ When the loop exits, \`lo\` is the insertion point — which is precisely \`lowe
       ],
       resources: [
         {
-          title: "Striver A2Z — Step 4: binary search",
-          url: "https://takeuforward.org/data-structure/binary-search-explained/",
+          title: "Striver — binary search, introduction",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/binary-search-introduction",
           kind: "do",
           minutes: 45,
           whyThisOne: "Sets the boundary convention early and holds it for the whole step. Follow its convention, not a mixture.",
@@ -158,8 +158,8 @@ For the last occurrence, change exactly one line: \`lo = mid + 1\` in the match 
       resources: [
         {
           title: "Striver — first and last occurrence in a sorted array",
-          url: "https://takeuforward.org/arrays/first-and-last-occurrences-in-array/",
-          kind: "watch",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/first-last-occurrences-and-count-in-an-array",
+          kind: "read",
           minutes: 25,
           whyThisOne: "Shows the record-and-continue variant explicitly instead of hiding it behind lower_bound.",
           isPrimary: true,
@@ -226,12 +226,19 @@ Finding the minimum is the same skill: the unsorted half always contains the piv
       ],
       resources: [
         {
-          title: "Striver — search in rotated sorted array I & II",
-          url: "https://takeuforward.org/data-structure/search-element-in-a-rotated-sorted-array/",
-          kind: "watch",
-          minutes: 35,
-          whyThisOne: "Handles the duplicates case honestly, including why the complexity guarantee is lost.",
+          title: "Striver — search in rotated sorted array I",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/search-in-rotated-sorted-array",
+          kind: "read",
+          minutes: 20,
+          whyThisOne: "Which half is sorted, decided at every step — the one idea the whole family turns on.",
           isPrimary: true,
+        },
+        {
+          title: "Striver — search in rotated sorted array II",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/search-in-rotated-sorted-array-ii",
+          kind: "read",
+          minutes: 15,
+          whyThisOne: "Handles the duplicates case honestly, including why the O(log n) guarantee is lost.",
         },
       ],
     },
@@ -308,8 +315,8 @@ Allocate books, split array, minimum days for bouquets, smallest divisor and pai
       ],
       resources: [
         {
-          title: "Striver A2Z — Step 4.2: BS on answers",
-          url: "https://takeuforward.org/arrays/koko-eating-bananas/",
+          title: "Striver — binary search on answers: Koko eating bananas",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/koko-eating-bananas",
           kind: "do",
           minutes: 75,
           whyThisOne: "The entire family in one sequence, which is how you see that it is one pattern and not six problems.",
@@ -386,8 +393,8 @@ Deciding which of the two problems you are looking at takes one question: *does 
       resources: [
         {
           title: "Striver — search in a 2D matrix",
-          url: "https://takeuforward.org/data-structure/search-in-a-sorted-2d-matrix/",
-          kind: "watch",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/search-in-sorted-2d-matrix",
+          kind: "read",
           minutes: 25,
           whyThisOne: "Separates the two variants clearly — the distinction is the whole trap.",
           isPrimary: true,
@@ -412,7 +419,7 @@ Deciding which of the two problems you are looking at takes one question: *does 
     { slug: "lc-split-array-largest-sum", title: "Split Array Largest Sum", platform: "leetcode", url: "https://leetcode.com/problems/split-array-largest-sum/", difficulty: "hard", patternTag: "binary-search-answer", triggerHint: "Minimise the maximum subarray sum across k splits.", approachHint: "Identical to allocate-books and painter's partition. feasible(limit) counts greedy splits; lo = max(a), hi = sum(a).", estMinutes: 40, unitSlug: "dsa-bs-answer-space" },
     { slug: "lc-search-2d-matrix", title: "Search a 2D Matrix", platform: "leetcode", url: "https://leetcode.com/problems/search-a-2d-matrix/", difficulty: "medium", patternTag: "binary-search-2d", triggerHint: "Fully sorted matrix — rows chain end to end.", approachHint: "Treat it as one flat array of length m*n; map idx to (idx/n, idx%n).", estMinutes: 20, unitSlug: "dsa-bs-matrix" },
     { slug: "lc-search-2d-matrix-ii", title: "Search a 2D Matrix II", platform: "leetcode", url: "https://leetcode.com/problems/search-a-2d-matrix-ii/", difficulty: "medium", patternTag: "binary-search-2d", triggerHint: "Rows and columns sorted, but rows do not chain — flattening is invalid.", approachHint: "Start top-right. Too big, move left; too small, move down. O(m+n).", estMinutes: 25, unitSlug: "dsa-bs-matrix" },
-    { slug: "lc-median-two-sorted", title: "Median of Two Sorted Arrays", platform: "leetcode", url: "https://leetcode.com/problems/median-of-two-sorted-arrays/", difficulty: "hard", patternTag: "binary-search", triggerHint: "O(log(m+n)) demanded across two sorted arrays.", approachHint: "Binary search the partition point of the shorter array so that left halves total half the elements and maxLeft <= minRight. Stretch goal — attempt it, do not grind it.", estMinutes: 50, isMust: false, unitSlug: "dsa-bs-matrix" },
+    { slug: "lc-median-two-sorted", title: "Median of Two Sorted Arrays", platform: "leetcode", url: "https://leetcode.com/problems/median-of-two-sorted-arrays/", difficulty: "hard", patternTag: "binary-search", triggerHint: "O(log(m+n)) demanded across two sorted arrays.", approachHint: "Binary search the partition point of the shorter array so that left halves total half the elements and maxLeft <= minRight. Stretch goal — attempt it, do not grind it.", estMinutes: 50, isMust: false, unitSlug: "dsa-bs-answer-space" },
     { slug: "gfg-aggressive-cows", title: "Aggressive Cows", platform: "gfg", url: "https://www.geeksforgeeks.org/problems/aggressive-cows/1", difficulty: "medium", patternTag: "binary-search-answer", triggerHint: "Maximise the minimum distance — the mirror image of the minimise-maximum family.", approachHint: "Sort, then binary search the distance. feasible(d) greedily places cows at least d apart and checks the count. Note the flipped bound update.", estMinutes: 35, unitSlug: "dsa-bs-answer-space" },
   ],
 };

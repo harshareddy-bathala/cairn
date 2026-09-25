@@ -27,15 +27,15 @@ n & (n - 1)           // clear the LOWEST set bit
 n & (-n)              // isolate the lowest set bit
 \`\`\`
 
-\`n & (n - 1)\` is the one that pays off. Subtracting 1 flips the lowest set bit to 0 and everything below it to 1; ANDing therefore removes exactly that bit. So **counting set bits** is a loop that runs once per set bit rather than once per bit position — Brian Kernighan's algorithm. And \`n && !(n & (n-1))\` tests for a power of two.
+\`n & (n - 1)\` is the one that pays off. Subtracting 1 flips the lowest set bit to 0 and everything below it to 1; ANDing therefore removes exactly that bit. So **counting set bits** is a loop that runs once per set bit rather than once per bit position — Brian Kernighan's algorithm. And \`n > 0 && (n & (n - 1)) == 0\` tests for a power of two — the \`n > 0\` is not decoration: 0 has no set bits and passes the AND, and for \`INT_MIN\` the \`n - 1\` overflows.
 
-Two traps: shifting by more than the type's width is undefined behaviour, and \`1 << 31\` overflows a signed int — use \`1LL << i\` when i can reach 31 or more.`,
+Two traps: shifting by the type's width or more is undefined behaviour, and \`1 << 31\` lands in the sign bit of an \`int\` — it comes out as \`INT_MIN\`, a negative mask (and in C, or C++ before C++14, it is undefined outright). Use \`1LL << i\` when i can reach 31 or more.`,
       interviewAngle:
         "Rarely a whole question, frequently the follow-up that turns an O(n) answer into an " +
         "O(1) one. `n & (n - 1)` is the single most useful thing in this module.",
       pitfalls: [
-        "Writing `1 << i` when i can reach 31 or more. That overflows a signed int — use `1LL " +
-          "<< i`.",
+        "Writing `1 << i` when i can reach 31 or more. At 31 it lands in the sign bit and " +
+          "comes out negative; past that it is undefined. Use `1LL << i`.",
         "Shifting by more than the type's width. That is undefined behaviour, not a zero.",
         "Counting set bits by looping over all 32 positions when the input is sparse. " +
           "Kernighan's loop runs once per set bit.",
@@ -68,8 +68,8 @@ Two traps: shifting by more than the type's width is undefined behaviour, and \`
       ],
       resources: [
         {
-          title: "Striver A2Z — Step 8: bit manipulation",
-          url: "https://takeuforward.org/bit-manipulation/introduction-to-bit-manipulation",
+          title: "Striver — bit basics and operators",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/bit-basics-and-operators",
           kind: "do",
           minutes: 45,
           whyThisOne: "Compact and complete for interview purposes; no need to go further than this.",
@@ -128,9 +128,9 @@ The harder one, worth doing once: **two numbers appear once, everything else twi
       ],
       resources: [
         {
-          title: "Striver — single number II & III",
-          url: "https://takeuforward.org/arrays/find-the-number-that-appears-once-and-the-other-numbers-twice/",
-          kind: "watch",
+          title: "Striver — single number III",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/single-number-iii",
+          kind: "read",
           minutes: 30,
           whyThisOne: "The partition-on-a-differing-bit idea is hard to invent cold and easy to keep once seen.",
           isPrimary: true,
@@ -186,12 +186,20 @@ Also worth knowing: \`__builtin_popcount(mask)\` counts set bits in one instruct
       ],
       resources: [
         {
-          title: "Striver — power set using bit manipulation",
-          url: "https://takeuforward.org/data-structure/power-set-print-all-the-possible-subsequences-of-the-string/",
-          kind: "watch",
+          title: "GeeksforGeeks — power set",
+          url: "https://www.geeksforgeeks.org/dsa/power-set/",
+          kind: "read",
           minutes: 20,
           whyThisOne: "Connects the mask loop to the recursive version you already wrote, so both stay available.",
           isPrimary: true,
+        },
+        {
+          title: "cp-algorithms — enumerating submasks",
+          url: "https://cp-algorithms.com/algebra/all-submasks.html",
+          kind: "read",
+          minutes: 15,
+          whyThisOne:
+            "Why `(s - 1) & mask` visits every submask, and why doing it for every mask costs 3^n rather than 4^n.",
         },
       ],
     },

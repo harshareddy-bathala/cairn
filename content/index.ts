@@ -38,6 +38,34 @@ export const modules: Module[] = [
 
 export { phases, tracks, projects, questions };
 
+/**
+ * Modules whose checkpoints were authored before the answer-balance rule.
+ *
+ * Their answers sit almost entirely in position b. Rewriting them to spread
+ * the key would change what every stored attempt's canonical index means, and
+ * the sitting already shuffles options per question (lib/quiz-paper.ts), so
+ * the browser never sees the authored order anyway. New modules get no such
+ * pass: a bank whose key is one letter is a bank written on autopilot.
+ */
+export const LEGACY_ANSWER_ORDER = new Set([
+  "dsa-cpp-stl", "dsa-arrays-sorting", "dsa-binary-search", "dsa-strings",
+  "dsa-recursion-backtracking", "dsa-bit-manipulation", "dsa-linked-lists",
+  "devops-linux-foundations", "devops-git", "devops-networking", "devops-docker",
+  "sde-cpp-internals", "sde-oop", "sde-rest-fastapi",
+  "corecs-os", "corecs-dbms", "corecs-cn",
+]);
+
+/** a problem link has to live where its platform says it does */
+const PLATFORM_HOSTS: Record<string, RegExp> = {
+  leetcode: /^(www\.)?leetcode\.com$/,
+  gfg: /^(www\.)?geeksforgeeks\.org$/,
+  codestudio: /^(www\.)?naukri\.com$/,
+  hackerrank: /^(www\.)?hackerrank\.com$/,
+};
+
+/** options that only mean something in a fixed order, which the shuffle breaks */
+const POSITIONAL = /\b(all|none|both|neither) of the (above|below)\b|\b(options?|answers?) \(?[a-d]\)?\b|\bboth [a-d] and [a-d]\b/i;
+
 /** fail the seed loudly rather than writing a broken curriculum */
 export function validateContent() {
   const errors: string[] = [];
@@ -48,6 +76,9 @@ export function validateContent() {
   const recallFronts = new Map<string, string>();
   const trackSlugs = new Set(tracks.map((t) => t.slug));
   const phaseSlugs = new Set(phases.map((p) => p.slug));
+  const phaseOrder = new Map(phases.map((p) => [p.slug, p.order]));
+  /** track:phase:order -> module, so two modules cannot claim one place on the trail */
+  const places = new Map<string, string>();
 
   for (const m of modules) {
     if (moduleSlugs.has(m.slug)) errors.push(`duplicate module slug: ${m.slug}`);
@@ -55,17 +86,25 @@ export function validateContent() {
     if (!trackSlugs.has(m.trackSlug)) errors.push(`${m.slug}: unknown track ${m.trackSlug}`);
     if (!phaseSlugs.has(m.phaseSlug)) errors.push(`${m.slug}: unknown phase ${m.phaseSlug}`);
     if (!m.units.length) errors.push(`${m.slug}: has no units`);
+    const place = `${m.trackSlug}:${m.phaseSlug}:${m.order}`;
+    if (places.has(place)) errors.push(`${m.slug}: same track, phase and order as ${places.get(place)}`);
+    else places.set(place, m.slug);
 
     for (const u of m.units) {
       if (unitSlugs.has(u.slug)) errors.push(`duplicate unit slug: ${u.slug}`);
       unitSlugs.add(u.slug);
+      if (!(u.estMinutes >= 1 && u.estMinutes <= 180))
+        errors.push(`${u.slug}: estMinutes ${u.estMinutes} — a unit is 1 to 180 minutes; split a longer one`);
       if (!u.resources.length) errors.push(`${u.slug}: no resources — every unit needs at least one`);
       if (u.resources.length > 3)
         errors.push(`${u.slug}: ${u.resources.length} resources — the cap is 3, on purpose`);
       if (u.resources.some((r) => !r.whyThisOne.trim()))
         errors.push(`${u.slug}: a resource is missing whyThisOne`);
-      if (u.resources.filter((r) => r.isPrimary).length > 1)
-        errors.push(`${u.slug}: more than one primary resource`);
+      // exactly one: the unit page leads with it, and "which do I open first" is the question
+      const primaries = u.resources.filter((r) => r.isPrimary).length;
+      if (primaries !== 1) errors.push(`${u.slug}: ${primaries} primary resources — mark exactly one`);
+      const urls = u.resources.map((r) => r.url);
+      if (new Set(urls).size !== urls.length) errors.push(`${u.slug}: the same link listed twice`);
 
       // Retrieval practice is not optional decoration — it is the only part of
       // a unit that survives to November. A unit that cannot be asked about is
@@ -100,12 +139,43 @@ export function validateContent() {
       problemSlugs.add(p.slug);
       if (p.unitSlug && !m.units.some((u) => u.slug === p.unitSlug))
         errors.push(`${p.slug}: unitSlug ${p.unitSlug} is not in module ${m.slug}`);
+      if (p.estMinutes != null && !(p.estMinutes >= 1 && p.estMinutes <= 180))
+        errors.push(`${p.slug}: estMinutes ${p.estMinutes} is outside 1 to 180`);
+      const host = PLATFORM_HOSTS[p.platform];
+      let url: URL | null = null;
+      try {
+        url = new URL(p.url);
+      } catch {
+        errors.push(`${p.slug}: url is not a url`);
+      }
+      if (url && url.protocol !== "https:") errors.push(`${p.slug}: url is not https`);
+      if (url && host && !host.test(url.hostname))
+        errors.push(`${p.slug}: platform ${p.platform} but the link goes to ${url.hostname}`);
     }
   }
 
+  const bySlug = new Map(modules.map((m) => [m.slug, m]));
   for (const m of modules)
-    for (const pre of m.prereqSlugs ?? [])
-      if (!moduleSlugs.has(pre)) errors.push(`${m.slug}: unknown prereq ${pre}`);
+    for (const pre of m.prereqSlugs ?? []) {
+      const p = bySlug.get(pre);
+      if (!p) errors.push(`${m.slug}: unknown prereq ${pre}`);
+      // the planner walks phases in order, so a prereq from a later phase can never be met first
+      else if ((phaseOrder.get(p.phaseSlug) ?? 0) > (phaseOrder.get(m.phaseSlug) ?? 0))
+        errors.push(`${m.slug}: prereq ${pre} is in a later phase (${p.phaseSlug})`);
+    }
+  // and no cycles: a module that transitively requires itself is never startable
+  const state = new Map<string, "visiting" | "done">();
+  const visit = (slug: string, path: string[]): void => {
+    if (state.get(slug) === "done") return;
+    if (state.get(slug) === "visiting") {
+      errors.push(`prereq cycle: ${[...path.slice(path.indexOf(slug)), slug].join(" -> ")}`);
+      return;
+    }
+    state.set(slug, "visiting");
+    for (const pre of bySlug.get(slug)?.prereqSlugs ?? []) if (bySlug.has(pre)) visit(pre, [...path, slug]);
+    state.set(slug, "done");
+  };
+  for (const m of modules) visit(m.slug, []);
 
   // projects
   const projectSlugs = new Set<string>();
@@ -137,11 +207,29 @@ export function validateContent() {
       errors.push(`${q.id}: duplicate options — one of them cannot be wrong`);
     // the explanation is the point of a checkpoint; a question without one only tests recall
     if (!q.why.trim()) errors.push(`${q.id}: no explanation`);
+    // options are shuffled per sitting, so "all of the above" might be read first
+    for (const o of q.options)
+      if (POSITIONAL.test(o)) errors.push(`${q.id}: option depends on its position: "${o}"`);
   }
   for (const m of modules) {
-    const n = questionsForModule(m.slug).length;
+    const bank = questionsForModule(m.slug);
+    const n = bank.length;
     if (n < 5) errors.push(`${m.slug}: ${n} checkpoint questions — the floor is 5`);
+    if (LEGACY_ANSWER_ORDER.has(m.slug) || n === 0) continue;
+    // Answer balance. The shuffle hides authored order from the browser, but a
+    // bank keyed to one letter is a sign the distractors were written as an
+    // afterthought — and it is what made "always b" pass sixteen checkpoints.
+    const counts = [0, 0, 0, 0];
+    for (const q of bank) counts[q.answer]!++;
+    const cap = Math.ceil(n / 4) + 1;
+    const worst = Math.max(...counts);
+    if (worst > cap)
+      errors.push(`${m.slug}: ${worst} of ${n} answers in one position (a-d: ${counts.join("/")}) — the cap is ${cap}`);
+    if (counts.filter((c) => c > 0).length < Math.min(3, n))
+      errors.push(`${m.slug}: answers use only ${counts.filter((c) => c > 0).length} positions — spread them over at least 3`);
   }
+  for (const slug of LEGACY_ANSWER_ORDER)
+    if (!moduleSlugs.has(slug)) errors.push(`LEGACY_ANSWER_ORDER names ${slug}, which is not a module`);
 
   return errors;
 }

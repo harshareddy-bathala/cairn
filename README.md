@@ -115,7 +115,8 @@ enforces the allowlist.
 | | |
 |---|---|
 | `npm run dev` | dev server |
-| `npm run seed` | validate and load `content/` in one transaction; `-- --dry-run` to preview |
+| `npm run seed` | validate and load `content/` in one transaction; `-- --dry-run` to preview. Also corrects the back of recall cards already in someone's deck |
+| `npm run links` | check every resource, problem and aptitude link (LeetCode via its API); exits non-zero on a dead one |
 | `npm run db:push` | create the schema in an empty database — never against a live one |
 | `npm run migrate` | apply the additive schema changes in `scripts/migrate.ts` (idempotent) |
 | `npm run typecheck` | `tsc --noEmit` |
