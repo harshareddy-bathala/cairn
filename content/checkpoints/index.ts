@@ -1,5 +1,6 @@
 import type { Question } from "./types";
 import { dsaQuestions } from "./dsa";
+import { dsaDepthQuestions } from "./dsa-depth";
 import { devopsQuestions } from "./devops";
 import { sdeQuestions } from "./sde";
 import { corecsQuestions } from "./corecs";
@@ -17,6 +18,7 @@ export type { Question };
  */
 export const questions: Question[] = [
   ...dsaQuestions,
+  ...dsaDepthQuestions,
   ...devopsQuestions,
   ...sdeQuestions,
   ...corecsQuestions,

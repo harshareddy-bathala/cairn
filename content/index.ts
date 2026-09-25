@@ -8,6 +8,11 @@ import { strings } from "./modules/dsa/04-strings";
 import { recursionBacktracking } from "./modules/dsa/05-recursion";
 import { bitManipulation } from "./modules/dsa/06-bits";
 import { linkedLists } from "./modules/dsa/07-linked-lists";
+import { stacksQueues } from "./modules/dsa/08-stacks-queues";
+import { binaryTrees } from "./modules/dsa/09-binary-trees";
+import { bst } from "./modules/dsa/10-bst";
+import { heapsTries } from "./modules/dsa/11-heaps-tries";
+import { greedy } from "./modules/dsa/12-greedy";
 import { linuxFoundations } from "./modules/devops/01-linux";
 import { git } from "./modules/devops/02-git";
 import { networking } from "./modules/devops/03-networking";
@@ -39,6 +44,8 @@ export const modules: Module[] = [
   os, dbms, cn,
 
   /* ---------------- phase 2 · depth ---------------- */
+  // dsa
+  stacksQueues, binaryTrees, bst, heapsTries, greedy,
   // career
   storyBank, offCampus,
 ];

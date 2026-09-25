@@ -642,19 +642,6 @@ Check the step really does *reach* the base case, not just shrink toward it. \`s
       unitSlug: "dsa-cpp-stl-sort-search",
     },
     {
-      slug: "lc-kth-largest-in-array",
-      title: "Kth Largest Element in an Array",
-      platform: "leetcode",
-      url: "https://leetcode.com/problems/kth-largest-element-in-an-array/",
-      difficulty: "medium",
-      patternTag: "sorting",
-      triggerHint: "You need order statistics, not the full sorted order.",
-      approachHint:
-        "Sort is the throwaway answer. Reach for a size-k min-heap (priority_queue with greater<int>) — O(n log k).",
-      estMinutes: 25,
-      unitSlug: "dsa-cpp-stl-sort-search",
-    },
-    {
       slug: "lc-search-insert-position",
       title: "Search Insert Position",
       platform: "leetcode",
