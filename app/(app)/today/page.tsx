@@ -9,9 +9,11 @@ import { PlanList } from "@/components/instrument/plan-list";
 import { PaceControl } from "@/components/instrument/pace-control";
 import { DayClose } from "@/components/instrument/day-close";
 import { FirstRun } from "@/components/instrument/first-run";
+import { buttonClass } from "@/components/instrument/button";
 import { getJourneyStateCached } from "@/lib/journey";
 import { getTodayPlan } from "@/lib/planner";
 import { fmtDay, fmtMin, fmtWeek } from "@/lib/format";
+import { ROUTES } from "@/lib/routes";
 
 export const metadata = { title: "Today" };
 
@@ -70,8 +72,8 @@ export default async function TodayPage() {
                 you skip it.
               </p>
               <Link
-                href="/start"
-                className="ctl inline-flex shrink-0 items-center rounded-[3px] border border-phos-dim px-4 py-1.5 text-sm text-hi transition-colors duration-[120ms] hover:border-phos hover:text-phos"
+                href={ROUTES.start}
+                className={buttonClass("primary", "md", "shrink-0 py-1.5")}
               >
                 place yourself →
               </Link>

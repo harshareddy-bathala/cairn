@@ -16,6 +16,18 @@ export const cppDepth: Module = {
       objective:
         "Predict sizeof and member offsets for a struct, reorder members to remove padding, and explain what packing and cache lines cost.",
       estMinutes: 60,
+      primer: `\`sizeof\` a struct is often bigger than the sum of its fields. The reason is **alignment**: the CPU reads memory fastest when, for example, a 4-byte \`int\` starts at an address divisible by 4. So the compiler inserts invisible **padding** bytes to line fields up.
+
+\`\`\`cpp
+struct A { char c; int i; char d; };  // 1 + 3 pad + 4 + 1 + 3 pad = 12 bytes
+struct B { int i; char c; char d; };  // 4 + 1 + 1 + 2 pad = 8 bytes
+\`\`\`
+
+Same fields, different order, a third less memory. Ordering fields from largest to smallest usually removes most padding.
+
+This matters when you store millions of structs, send them over a network, or share them between threads (two threads writing fields on the same 64-byte **cache line** slow each other down).
+
+**You need already:** C++ structs and \`sizeof\`.`,
       conceptMd: `Every type has an **alignment** — the address it must start at is a multiple of it. On a typical 64-bit platform: \`char\` 1, \`short\` 2, \`int\` 4, \`double\` and pointers 8.
 
 The compiler lays members out **in declaration order** and inserts **padding** so each is aligned; then it pads the end so the whole struct's size is a multiple of its largest alignment (so arrays of it stay aligned).
@@ -66,16 +78,30 @@ Other layout facts that come up:
           title: "The Lost Art of Structure Packing",
           url: "http://www.catb.org/esr/structure-packing/",
           kind: "read",
-          minutes: 35,
-          whyThisOne: "Alignment, padding and reordering, worked through with many examples.",
+          minutes: 40,
+          whyThisOne:
+            "Alignment, padding and reordering, worked through with many examples.",
+          steps: [
+            "Read sections on alignment requirements and padding, predicting each struct's size before the text does.",
+            "Check your predictions with `sizeof` and `offsetof` in a small program.",
+            "Read the section on structure reordering and shrink one struct of your own.",
+            "Skip bitfields for now.",
+          ],
           isPrimary: true,
         },
         {
-          title: "cppreference — object representation and alignment",
-          url: "https://en.cppreference.com/w/cpp/language/object",
+          title: "learncpp 4.3 — Object sizes and the sizeof operator",
+          url: "https://www.learncpp.com/cpp-tutorial/object-sizes-and-the-sizeof-operator/",
+          kind: "read",
+          whyThisOne:
+            "The basics of sizeof, if they are rusty.",
+        },
+        {
+          title: "cppreference — Object representation and alignment",
+          url: "https://en.cppreference.com/cpp/language/object",
           kind: "docs",
-          minutes: 15,
-          whyThisOne: "The precise rules behind sizeof, alignment and object layout.",
+          whyThisOne:
+            "The precise rules behind sizeof, alignment and layout.",
         },
       ],
     },
@@ -85,6 +111,15 @@ Other layout facts that come up:
       objective:
         "Reason about pointer arithmetic and its bounds, and explain the strict aliasing rule and the safe ways to reinterpret bytes.",
       estMinutes: 70,
+      primer: `Two rules that surprise people who learned pointers casually.
+
+**Pointer arithmetic moves in elements, not bytes.** If \`p\` is an \`int*\`, \`p + 1\` points to the next \`int\`, 4 bytes later. It is only valid *within one array* (and one past its end); stepping outside is undefined behaviour even if you never read the memory.
+
+**Strict aliasing.** The compiler assumes that pointers of unrelated types — an \`int*\` and a \`float*\` — never point at the same memory, and optimises on that assumption. Code that reinterprets bytes through a cast (\`*(float*)&someInt\`) can therefore work at \`-O0\` and break at \`-O2\`. The safe ways to reinterpret bytes are \`memcpy\` and, in C++20, \`std::bit_cast\`.
+
+**Undefined behaviour** means the standard makes no promise at all — the optimiser may assume it never happens.
+
+**You need already:** pointers, and compiling with different \`-O\` levels.`,
       conceptMd: `**Pointer arithmetic is scaled by the pointee's size.** If \`p\` is an \`int*\`, \`p + 1\` is 4 bytes further on, and \`q - p\` counts *elements* (a \`ptrdiff_t\`), not bytes. \`a[i]\` is defined as \`*(a + i)\`.
 
 **The bounds rule.** Arithmetic is only defined within one array, plus the position **one past the end**. You may form and compare that one-past-the-end pointer (it is how \`end()\` works), but not dereference it. Anything further — even computing \`p + 10\` on a 5-element array without dereferencing — is **undefined behaviour**.
@@ -136,19 +171,25 @@ The exceptions: you may always inspect any object's bytes through \`char\`, \`un
       ],
       resources: [
         {
-          title: "Shafik Yaghmour — what is strict aliasing and why do we care?",
+          title: "Shafik Yaghmour — What is strict aliasing and why do we care?",
           url: "https://gist.github.com/shafik/848ae25ee209f698763cffee272a58f8",
           kind: "read",
-          minutes: 35,
-          whyThisOne: "The definitive explainer, with the compiler output that shows the optimisation happening.",
+          minutes: 40,
+          whyThisOne:
+            "The definitive explainer, with compiler output showing the optimisation happen.",
+          steps: [
+            "Read the introduction and the first examples; run one at `-O0` and `-O2` and compare.",
+            "Read the part on the allowed ways to type-pun (`memcpy`, `bit_cast`).",
+            "Skim the C-standard details.",
+          ],
           isPrimary: true,
         },
         {
-          title: "cppreference — undefined behavior",
-          url: "https://en.cppreference.com/w/cpp/language/ub",
+          title: "cppreference — Undefined behavior",
+          url: "https://en.cppreference.com/cpp/language/ub",
           kind: "docs",
-          minutes: 15,
-          whyThisOne: "Examples of UB and how optimisers exploit it.",
+          whyThisOne:
+            "Examples of UB and how optimisers take advantage of it.",
         },
       ],
     },
@@ -158,6 +199,14 @@ The exceptions: you may always inspect any object's bytes through \`char\`, \`un
       objective:
         "Find memory errors with AddressSanitizer and Valgrind, and apply the rule of zero, three and five to classes that own resources.",
       estMinutes: 75,
+      primer: `Memory bugs rarely crash where they are caused, so you find them with tools rather than by reading code.
+
+- **AddressSanitizer** (ASan): compile with \`-fsanitize=address -g\` and run. It stops at the exact line of an out-of-bounds access, a use-after-free or a double free, and at exit it reports leaks.
+- **Valgrind**: runs an existing program under a checker, with no recompiling — slower, but handy.
+
+Preventing the bugs is about ownership. A class that owns a resource (memory, a file) must handle copying and destruction correctly. The **rule of three/five**: if you write any of the destructor, copy constructor or copy assignment (plus the two move operations), you almost certainly need all of them. The **rule of zero** is better: hold resources in \`unique_ptr\`, \`vector\` and friends, write none of them, and let the defaults be correct.
+
+**You need already:** RAII and smart pointers from Phase 1.`,
       conceptMd: `**Finding memory bugs.** Do not hunt them by reading code — let tools do it.
 
 **AddressSanitizer** instruments the program at compile time:
@@ -222,26 +271,33 @@ A class following the rule of zero with a \`unique_ptr\` member is movable and n
       ],
       resources: [
         {
-          title: "cppreference — the rule of three/five/zero",
-          url: "https://en.cppreference.com/w/cpp/language/rule_of_three",
+          title: "cppreference — The rule of three/five/zero",
+          url: "https://en.cppreference.com/cpp/language/rule_of_three",
           kind: "docs",
-          minutes: 15,
-          whyThisOne: "All three rules on one page, with the canonical example for each.",
+          minutes: 20,
+          whyThisOne:
+            "All three rules on one page, with the canonical example for each.",
+          steps: [
+            "Read the three rules and their examples.",
+            "Write a class owning a raw `new[]` buffer that breaks the rule of three, and copy it.",
+            "Compile with `-fsanitize=address -g` and read the report (next link explains the output).",
+            "Fix it by switching to `vector` — the rule of zero.",
+          ],
           isPrimary: true,
         },
         {
           title: "Clang — AddressSanitizer",
           url: "https://clang.llvm.org/docs/AddressSanitizer.html",
           kind: "docs",
-          minutes: 20,
-          whyThisOne: "Flags, what it detects and how to read its reports; the same flags work with GCC.",
+          whyThisOne:
+            "Flags, what it detects, and how to read its reports; the same flags work with GCC.",
         },
         {
-          title: "Valgrind — quick start",
+          title: "Valgrind — Quick start",
           url: "https://valgrind.org/docs/manual/quick-start.html",
-          kind: "docs",
-          minutes: 10,
-          whyThisOne: "Memcheck on an existing binary in five minutes.",
+          kind: "lab",
+          whyThisOne:
+            "Memcheck on an existing binary in five minutes.",
         },
       ],
     },

@@ -1,8 +1,5 @@
 import type { Module } from "@/content/types";
 
-const HI = "https://www.hellointerview.com/learn/system-design";
-const PRIMER = "https://github.com/donnemartin/system-design-primer";
-
 export const systemDesign: Module = {
   slug: "sde-system-design",
   trackSlug: "sde",
@@ -19,6 +16,18 @@ export const systemDesign: Module = {
       objective:
         "Run a 45-minute design interview in stages — requirements, estimates, API, data model, high-level design, deep dive — and keep the interviewer with you.",
       estMinutes: 60,
+      primer: `In a **system design interview** you are asked to design something like "a URL shortener" in about 45 minutes, talking as you go. Nobody expects a perfect design. They are watching *how you think*: do you ask what is actually needed, do you size the problem, can you explain your choices and their costs?
+
+So the interview has a shape, and following it keeps you from rambling or freezing:
+
+1. **Requirements** — what must it do, and how big, fast and reliable must it be?
+2. **Core entities and API** — the main objects, and the endpoints.
+3. **High-level design** — boxes and arrows: clients, servers, database, cache.
+4. **Deep dive** — pick one hard part and go into detail.
+
+Throughout, say the **trade-off** out loud: "I chose X, which costs Y."
+
+**You need already:** REST APIs, databases and the networking module.`,
       conceptMd: `A system design interview is scored on **how you think**, not on whether your design matches a reference answer. The structure is what makes your thinking visible:
 
 | Stage | Minutes | What you produce |
@@ -70,19 +79,25 @@ For a fresher, the bar is a coherent design that works, with honest trade-offs �
       ],
       resources: [
         {
-          title: "Hello Interview — the delivery framework",
-          url: `${HI}/in-a-hurry/delivery`,
+          title: "Hello Interview — The delivery framework",
+          url: "https://www.hellointerview.com/learn/system-design/in-a-hurry/delivery",
           kind: "read",
           minutes: 25,
-          whyThisOne: "The stages with time budgets, written for exactly this interview.",
+          whyThisOne:
+            "The stages with time budgets, written for exactly this interview.",
+          steps: [
+            "Read each stage and copy its time budget into your notes.",
+            "Read **Requirements** closely — functional, non-functional, capacity — it is where most candidates go wrong.",
+            "Practise out loud: run the first three stages for 'a to-do app' in ten minutes, timed.",
+          ],
           isPrimary: true,
         },
         {
-          title: "System Design Primer",
-          url: PRIMER,
+          title: "System Design Primer — How to approach a system design interview question",
+          url: "https://github.com/donnemartin/system-design-primer#how-to-approach-a-system-design-interview-question",
           kind: "read",
-          minutes: 40,
-          whyThisOne: "The standard free reference; read \"How to approach a system design interview question\".",
+          whyThisOne:
+            "The same four steps in the most-used free reference — a second phrasing to compare with.",
         },
       ],
     },
@@ -92,6 +107,15 @@ For a fresher, the bar is a coherent design that works, with honest trade-offs �
       objective:
         "Estimate QPS, storage and bandwidth from user numbers in under five minutes, and know the latency numbers that decide designs.",
       estMinutes: 60,
+      primer: `Designs depend on numbers. A system with 100 requests a second and one with 100,000 need very different things, so early in the interview you **estimate**.
+
+Start from users and work down: 10 million daily users × 10 requests each = 100 million requests a day. A day has about 100,000 seconds (86,400, rounded), so that is roughly **1,000 requests per second**, with peaks maybe 3× higher. Each record is about 500 bytes, so a year of writes is a known number of gigabytes.
+
+Round aggressively — only the order of magnitude matters. The goal is to find out whether one database is enough or whether you need caching and sharding.
+
+It also helps to know rough speeds: memory is about a thousand times faster than an SSD read, and a network round trip between data centres takes tens of milliseconds.
+
+**You need already:** comfort with powers of ten.`,
       conceptMd: `Estimation is not about precision. It answers one question: **does this fit on one machine, or not?**
 
 **The shortcuts:**
@@ -150,16 +174,22 @@ The lesson in the table: memory is ~1,000× faster than a network hop, and a cro
           title: "napkin-math",
           url: "https://github.com/sirupsen/napkin-math",
           kind: "read",
-          minutes: 30,
-          whyThisOne: "Measured numbers for modern hardware and the method for using them.",
+          minutes: 25,
+          whyThisOne:
+            "Measured numbers for modern hardware, and the method for using them.",
+          steps: [
+            "Read the introduction and the table of numbers; note the order of magnitude for memory, SSD and network.",
+            "Estimate requests per second and yearly storage for a URL shortener with 10 million users a day.",
+            "Compare with the classic latency table (next link).",
+          ],
           isPrimary: true,
         },
         {
           title: "Latency numbers every programmer should know",
           url: "https://gist.github.com/jboner/2841832",
           kind: "read",
-          minutes: 10,
-          whyThisOne: "The classic table — learn the orders of magnitude, not the digits.",
+          whyThisOne:
+            "The classic table — learn the orders of magnitude, not the digits.",
         },
       ],
     },
@@ -169,6 +199,13 @@ The lesson in the table: memory is ~1,000× faster than a network hop, and a cro
       objective:
         "Design a URL shortener end to end, with a defensible key-generation scheme, a redirect path that handles the read load, and a reasoned 301-versus-302 choice.",
       estMinutes: 90,
+      primer: `A **URL shortener** (like bit.ly) turns a long link into a short one, and sends anyone who opens the short link to the original. It is the most common entry-level design question because it is small enough to finish yet has real decisions in it:
+
+- **Generating the short code** — a counter converted to base-62 characters, a hash of the URL, or random codes checked for collisions. Each has a different collision and predictability story.
+- **Reads far outnumber writes** — a link is created once and opened thousands of times, so the redirect path needs a **cache**.
+- **301 or 302 redirect?** — a permanent redirect lets browsers skip your server next time (faster, but you lose click counts); a temporary one keeps every click visible.
+
+**You need already:** the framework and estimation units, and caching basics.`,
       conceptMd: `**Requirements.** Shorten a long URL to a short code; redirect the short URL to the long one; optional custom aliases and expiry. Non-functional: redirects are fast (tens of ms) and highly available; codes are unique; reads far exceed writes (≈100:1).
 
 **API.**
@@ -224,19 +261,26 @@ A strong answer: counter ranges (or random codes checked against a unique index)
       ],
       resources: [
         {
-          title: "Hello Interview — design a URL shortener",
-          url: `${HI}/problem-breakdowns/bitly`,
+          title: "Hello Interview — Design a URL shortener",
+          url: "https://www.hellointerview.com/learn/system-design/problem-breakdowns/bitly",
           kind: "read",
-          minutes: 40,
-          whyThisOne: "A full walkthrough in the framework's order, with the key-generation options compared.",
+          minutes: 45,
+          whyThisOne:
+            "A full walkthrough in the framework's order, with the key-generation options compared.",
+          steps: [
+            "Before reading, spend 15 minutes designing it yourself on paper using the framework.",
+            "Read the walkthrough and mark every place your design differed.",
+            "Read the deep dive on generating short codes and say which option you would choose, and why.",
+            "Explain your 301-versus-302 choice out loud.",
+          ],
           isPrimary: true,
         },
         {
-          title: "System Design Primer — Pastebin / Bit.ly solution",
-          url: `${PRIMER}/blob/master/solutions/system_design/pastebin/README.md`,
+          title: "System Design Primer — Pastebin / bit.ly solution",
+          url: "https://github.com/donnemartin/system-design-primer/blob/master/solutions/system_design/pastebin/README.md",
           kind: "read",
-          minutes: 30,
-          whyThisOne: "A second design of the same problem, with the estimation written out.",
+          whyThisOne:
+            "A second design of the same problem, with the estimation written out.",
         },
       ],
     },
@@ -246,6 +290,17 @@ A strong answer: counter ranges (or random codes checked against a unique index)
       objective:
         "Compare token bucket, fixed window and sliding window rate limiting, make one distributed with Redis, and adapt the URL-shortener design to a pastebin.",
       estMinutes: 90,
+      primer: `A **rate limiter** caps how many requests a client may make — say 100 per minute — to protect a service from abuse and overload. Three algorithms come up:
+
+- **Fixed window** — count requests per calendar minute. Simple, but a burst at 0:59 plus another at 1:00 lets twice the limit through.
+- **Sliding window** — smooths that out by looking at the last 60 seconds, not the current minute.
+- **Token bucket** — tokens refill at a steady rate and each request spends one; short bursts are fine, a sustained flood is not.
+
+With many servers, the counts must be shared, usually in **Redis**, updated atomically.
+
+A **pastebin** (store text, get a link) is the URL shortener again with bigger values — so the text goes in object storage like S3, and only the metadata goes in the database.
+
+**You need already:** the URL shortener unit.`,
       conceptMd: `**Rate limiter.** Limit each client (API key, user or IP) to N requests per window; reject the rest with **429 Too Many Requests** and a \`Retry-After\` header.
 
 | Algorithm | How | Strength | Weakness |
@@ -296,19 +351,25 @@ A strong answer: counter ranges (or random codes checked against a unique index)
       ],
       resources: [
         {
-          title: "Stripe — scaling your API with rate limiters",
+          title: "Stripe — Scaling your API with rate limiters",
           url: "https://stripe.com/blog/rate-limiters",
           kind: "read",
-          minutes: 20,
-          whyThisOne: "Four kinds of limiter in production at Stripe, with the token bucket in Redis.",
+          minutes: 25,
+          whyThisOne:
+            "Four kinds of limiter running in production, with the token bucket in Redis.",
+          steps: [
+            "Read the article and list Stripe's four limiters with what each protects against.",
+            "Draw the token bucket and trace ten requests arriving at once.",
+            "Read Cloudflare's sliding window (next link), then design a pastebin by adapting your URL shortener.",
+          ],
           isPrimary: true,
         },
         {
-          title: "Cloudflare — rate limiting millions of domains",
+          title: "Cloudflare — Rate limiting millions of domains",
           url: "https://blog.cloudflare.com/counting-things-a-lot-of-different-things/",
           kind: "read",
-          minutes: 20,
-          whyThisOne: "The sliding window counter, with the maths and why they chose it.",
+          whyThisOne:
+            "The sliding window counter, with the maths and why they chose it.",
         },
       ],
     },

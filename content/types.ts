@@ -24,6 +24,15 @@ export type Resource = {
   minutes?: number;
   /** the sentence that earns this link its place. Required — no bare link dumps. */
   whyThisOne: string;
+  /**
+   * What to do once the page is open, in order: which part to read or watch,
+   * what to skip, what to try before moving on. Required on the primary.
+   *
+   * A link on its own is a place, not an instruction — "follow Striver's
+   * sheet" dropped a beginner onto a hub of four hundred items with no idea
+   * which one this unit meant. Each step names something on the page itself.
+   */
+  steps?: string[];
   isPrimary?: boolean;
 };
 
@@ -51,6 +60,17 @@ export type Unit = {
   title: string;
   objective: string;
   estMinutes: number;
+  /**
+   * Start here: the idea in plain words, for someone meeting it for the first
+   * time. What the thing is, the everyday problem it solves, one small example,
+   * and what you need to know already. No jargon that has not been explained.
+   *
+   * `conceptMd` is written for the interview — dense, precise, full of the
+   * edge cases that lose marks. Read cold, it assumes the reader already knows
+   * the topic, which is exactly the reader who does not need it. The primer is
+   * the on-ramp, the resource does the teaching, and the notes come after.
+   */
+  primer: string;
   conceptMd?: string;
   /** max 3. A longer list is a reading list, and reading lists are procrastination. */
   resources: Resource[];

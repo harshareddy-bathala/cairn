@@ -16,6 +16,15 @@ export const revisionSheets: Module = {
       objective:
         "Write a one-page OS sheet from memory — processes, scheduling, synchronisation, deadlock, memory — then check it against this model and fill the gaps.",
       estMinutes: 75,
+      primer: `This unit is not new material. It is how you make the OS module stick until November.
+
+The method: **write a one-page OS sheet from memory first**, with no notes open — processes and threads, scheduling, synchronisation, deadlock, memory. Then compare it with the model sheet in this unit's notes, and with GfG's last-minute notes. Every gap you find is something you would have lost in an interview; add it in your own words.
+
+Writing it yourself is the point. Recalling is what builds memory; a sheet you downloaded is one you have only read.
+
+Keep the finished sheet — it is what you read the night before an interview.
+
+**You need already:** the Phase 1 OS module.`,
       conceptMd: `**Processes & threads**
 
 - Process = own address space; threads share it (plus heap, files) and have their own stack and registers.
@@ -75,19 +84,25 @@ export const revisionSheets: Module = {
       ],
       resources: [
         {
-          title: "Operating Systems: Three Easy Pieces",
-          url: "https://pages.cs.wisc.edu/~remzi/OSTEP/",
+          title: "GeeksforGeeks — Last-minute notes: operating systems",
+          url: "https://www.geeksforgeeks.org/operating-systems/last-minute-notes-operating-systems/",
           kind: "read",
-          minutes: 45,
-          whyThisOne: "Free, clear chapters to check any line of your sheet you are unsure of.",
+          minutes: 30,
+          whyThisOne:
+            "The campus-exam view of the whole syllabus on one page — a checklist for gaps.",
+          steps: [
+            "Write your own one-page sheet first, from memory, with the page closed.",
+            "Then read these notes section by section and mark every topic missing from your sheet.",
+            "Add the missing topics in your own words, and check any doubtful line against the notes in this unit.",
+          ],
           isPrimary: true,
         },
         {
-          title: "GeeksforGeeks — last-minute notes: operating systems",
-          url: "https://www.geeksforgeeks.org/operating-systems/last-minute-notes-operating-systems/",
+          title: "OSTEP ch. 32 — Common concurrency problems (PDF)",
+          url: "https://pages.cs.wisc.edu/~remzi/OSTEP/threads-bugs.pdf",
           kind: "read",
-          minutes: 25,
-          whyThisOne: "The campus-exam view of the syllabus — compare it with your sheet for missing topics.",
+          whyThisOne:
+            "For the deadlock and concurrency lines: the textbook chapter to check them against.",
         },
       ],
     },
@@ -97,6 +112,13 @@ export const revisionSheets: Module = {
       objective:
         "Write a one-page DBMS sheet from memory — keys, normal forms, SQL order of execution, transactions, indexes — then check and fix it.",
       estMinutes: 75,
+      primer: `The same method as the OS sheet, for databases.
+
+**Write one page from memory first**: keys, normal forms, the order SQL clauses run in (FROM → WHERE → GROUP BY → HAVING → SELECT → ORDER BY), joins, ACID, isolation levels and their anomalies, and when indexes help or hurt. Then compare against the model in this unit's notes and GfG's last-minute notes, and fill every gap in your own words.
+
+The SQL execution order deserves a line of its own: it explains why you cannot use a \`SELECT\` alias in \`WHERE\`, but can in \`ORDER BY\`.
+
+**You need already:** the Phase 1 DBMS module and Databases in depth.`,
       conceptMd: `**Keys**: super key ⊇ candidate key (minimal) → one chosen as primary; the rest are alternate keys. Foreign key references another table's key.
 
 **Normal forms**
@@ -157,19 +179,25 @@ So \`WHERE\` cannot use an aggregate (use \`HAVING\`), and a \`SELECT\` alias is
       ],
       resources: [
         {
-          title: "GeeksforGeeks — last-minute notes: DBMS",
+          title: "GeeksforGeeks — Last-minute notes: DBMS",
           url: "https://www.geeksforgeeks.org/dbms/last-minute-notes-dbms/",
           kind: "read",
-          minutes: 25,
-          whyThisOne: "The syllabus view — use it to spot topics missing from your sheet.",
+          minutes: 30,
+          whyThisOne:
+            "The syllabus view on one page — use it to spot topics missing from your sheet.",
+          steps: [
+            "Write your sheet from memory first.",
+            "Read these notes and mark what your sheet is missing.",
+            "Fill the gaps in your own words; check index lines against the next link.",
+          ],
           isPrimary: true,
         },
         {
-          title: "Use The Index, Luke",
-          url: "https://use-the-index-luke.com/",
+          title: "Use The Index, Luke — Anatomy of an SQL index",
+          url: "https://use-the-index-luke.com/sql/anatomy",
           kind: "read",
-          minutes: 20,
-          whyThisOne: "For the index lines on your sheet: B-trees, clustering and why order matters.",
+          whyThisOne:
+            "For the index lines on your sheet: B-trees, leaf nodes and why lookups can still be slow.",
         },
       ],
     },
@@ -179,6 +207,13 @@ So \`WHERE\` cannot use an aggregate (use \`HAVING\`), and a \`SELECT\` alias is
       objective:
         "Write a one-page networks sheet from memory — layers, TCP and UDP, addressing, the core protocols and the URL walkthrough — then check and fix it.",
       estMinutes: 75,
+      primer: `The same method again, for networks.
+
+**Write one page from memory**: the OSI and TCP/IP layers with a protocol at each, TCP versus UDP, the three-way handshake, IPv4 addressing and a subnetting example, DNS resolution, HTTP status families and the TLS handshake — and the "what happens when you type a URL" walk-through in six lines. Then compare against this unit's notes and GfG's last-minute notes, and fill the gaps in your own words.
+
+The URL walk-through is the line to rehearse out loud: it ties every other line on the sheet together, and it is asked constantly.
+
+**You need already:** the CN module and the SRE networking module.`,
       conceptMd: `**Layers**
 
 | OSI | TCP/IP | Examples | Device |
@@ -238,19 +273,25 @@ So \`WHERE\` cannot use an aggregate (use \`HAVING\`), and a \`SELECT\` alias is
       ],
       resources: [
         {
-          title: "GeeksforGeeks — last-minute notes: computer networks",
+          title: "GeeksforGeeks — Last-minute notes: computer networks",
           url: "https://www.geeksforgeeks.org/computer-networks/last-minute-notes-computer-network/",
           kind: "read",
-          minutes: 25,
-          whyThisOne: "The syllabus view — use it to find gaps in your own sheet.",
+          minutes: 30,
+          whyThisOne:
+            "The syllabus view on one page — use it to find gaps in your own sheet.",
+          steps: [
+            "Write your sheet from memory first.",
+            "Read these notes and mark what your sheet is missing.",
+            "Fill the gaps, then say the URL walk-through out loud in under two minutes.",
+          ],
           isPrimary: true,
         },
         {
-          title: "High Performance Browser Networking",
-          url: "https://hpbn.co/",
+          title: "High Performance Browser Networking — ch. 2, Building blocks of TCP",
+          url: "https://hpbn.co/building-blocks-of-tcp/",
           kind: "read",
-          minutes: 30,
-          whyThisOne: "Free; the TCP and TLS chapters explain the handshake lines on your sheet properly.",
+          whyThisOne:
+            "For the handshake and congestion lines on your sheet.",
         },
       ],
     },
@@ -260,6 +301,13 @@ So \`WHERE\` cannot use an aggregate (use \`HAVING\`), and a \`SELECT\` alias is
       objective:
         "Write a one-page OOP sheet from memory — pillars, polymorphism kinds, abstract classes and interfaces, SOLID, and a few patterns — then check and fix it.",
       estMinutes: 60,
+      primer: `The last sheet: object-oriented design.
+
+**Write one page from memory**: the four pillars with one example of your own each; compile-time versus run-time polymorphism (overloading versus virtual functions); abstract classes versus interfaces; composition versus inheritance; the five SOLID principles in one line each; and four design patterns with when *not* to use them. Then compare against this unit's notes and fill the gaps.
+
+Interviewers rarely want definitions alone. For every line on the sheet, have an example from code you wrote ready to say out loud.
+
+**You need already:** the OOP module and C++ internals.`,
       conceptMd: `**Four pillars**: encapsulation (hide state behind methods), abstraction (expose what, hide how), inheritance (reuse and "is-a"), polymorphism (one interface, many behaviours).
 
 **Polymorphism, two kinds**
@@ -316,12 +364,26 @@ So \`WHERE\` cannot use an aggregate (use \`HAVING\`), and a \`SELECT\` alias is
       ],
       resources: [
         {
-          title: "Refactoring.Guru — design patterns",
-          url: "https://refactoring.guru/design-patterns",
+          title: "GeeksforGeeks — Object oriented programming in C++",
+          url: "https://www.geeksforgeeks.org/cpp/object-oriented-programming-in-cpp/",
           kind: "read",
-          minutes: 30,
-          whyThisOne: "Clear pages for the patterns on your sheet, with C++ examples.",
+          minutes: 25,
+          whyThisOne:
+            "The pillars with C++ examples on one page — a checklist for your sheet.",
+          steps: [
+            "Write your sheet from memory first.",
+            "Read this page and check each pillar line on your sheet against it.",
+            "Check your SOLID lines against the DigitalOcean article (next link).",
+            "Add an example from your own code beside every line.",
+          ],
           isPrimary: true,
+        },
+        {
+          title: "DigitalOcean — SOLID: the first five principles",
+          url: "https://www.digitalocean.com/community/conceptual-articles/s-o-l-i-d-the-first-five-principles-of-object-oriented-design",
+          kind: "read",
+          whyThisOne:
+            "For the SOLID lines: each principle with a before-and-after example.",
         },
       ],
     },

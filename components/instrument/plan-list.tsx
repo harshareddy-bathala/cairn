@@ -13,7 +13,7 @@ import { cn } from "@/lib/cn";
 import { fmtMin } from "@/lib/format";
 import { DUR, EASE } from "@/lib/motion";
 import { ROUTES } from "@/lib/routes";
-import { APTITUDE_SOURCES } from "@/content/aptitude";
+import { APTITUDE_SOURCES, aptitudeTopicFor, practiceUrlFor } from "@/content/aptitude";
 
 const GLYPH: Record<string, string> = {
   redo: "↺",
@@ -202,22 +202,7 @@ function Block({
 
           {b.kind === "aptitude" && (
             <div className="space-y-3">
-              <div className="flex flex-wrap items-center gap-3">
-                <p className="note text-lo">
-                  25 questions, timed. Logging the score finishes this block.
-                </p>
-                {APTITUDE_SOURCES.map((s) => (
-                  <a
-                    key={s.url}
-                    href={s.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="tap inline-block py-1 text-xs text-info underline underline-offset-[3px]"
-                  >
-                    {s.title} ↗
-                  </a>
-                ))}
-              </div>
+              <AptitudeDrill dayIndex={dayIndex} />
               <AptitudeLog dayIndex={dayIndex} scores={[]} compact />
             </div>
           )}
@@ -259,5 +244,46 @@ function Block({
         </motion.div>
       )}
     </li>
+  );
+}
+
+/**
+ * Where today's 25 questions are: the topic's own page first, the pool's
+ * sections after it for a second round.
+ */
+function AptitudeDrill({ dayIndex }: { dayIndex: number }) {
+  const { pool, topic } = aptitudeTopicFor(dayIndex);
+  const url = practiceUrlFor(pool, topic);
+  return (
+    <div className="space-y-1.5">
+      <p className="note text-lo">
+        25 questions, timed.{" "}
+        {url && (
+          <a
+            href={url}
+            target="_blank"
+            rel="noreferrer"
+            className="tap text-info underline underline-offset-[3px]"
+          >
+            Open the {topic} questions ↗
+          </a>
+        )}{" "}
+        Logging the score finishes this block.
+      </p>
+      <p className="flex flex-wrap items-baseline gap-x-3 note text-lo">
+        other sections
+        {APTITUDE_SOURCES.map((s) => (
+          <a
+            key={s.url}
+            href={s.url}
+            target="_blank"
+            rel="noreferrer"
+            className="tap inline-block py-1 text-xs text-info underline underline-offset-[3px]"
+          >
+            {s.title} ↗
+          </a>
+        ))}
+      </p>
+    </div>
   );
 }

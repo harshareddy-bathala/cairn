@@ -15,6 +15,10 @@ import { cn } from "@/lib/cn";
 const KIND_GLYPH: Record<string, string> = {
   read: "▤", watch: "▷", do: "▶", lab: "⌘", docs: "▦",
 };
+/** what the page asks of you, said before you open it */
+const KIND_VERB: Record<string, string> = {
+  read: "read", watch: "watch", do: "work through", lab: "hands-on", docs: "reference",
+};
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -33,6 +37,7 @@ export default async function UnitPage({ params }: { params: Promise<{ slug: str
       title: units.title,
       objective: units.objective,
       estMinutes: units.estMinutes,
+      primerMd: units.primerMd,
       conceptMd: units.conceptMd,
       pitfalls: units.pitfalls,
       interviewAngle: units.interviewAngle,
@@ -91,6 +96,21 @@ export default async function UnitPage({ params }: { params: Promise<{ slug: str
     latest.set(a.problemSlug, { ...a, everRevealed: Boolean(prev?.everRevealed || a.hintRevealed) });
   }
 
+  // The page is a path, in the order a first-timer should take it: the idea in
+  // plain words, then one resource that teaches it, then the notes that sharpen
+  // it for an interview. It used to open on the notes — written for someone
+  // who already knew the topic — with the resources at the bottom.
+  const primary = res.find((r) => r.isPrimary) ?? null;
+  const others = res.filter((r) => r !== primary);
+  const sections = [
+    unit.primerMd.trim() && "primer",
+    res.length > 0 && "learn",
+    (unit.conceptMd || unit.pitfalls.length > 0 || unit.interviewAngle) && "notes",
+    unit.recall.length > 0 && "check",
+    probs.length > 0 && "practice",
+    "finish",
+  ].filter((k): k is string => Boolean(k));
+
   return (
     <Boot className="mx-auto max-w-3xl space-y-6 px-4 py-8 sm:px-6 sm:py-10">
       <BootItem>
@@ -104,121 +124,201 @@ export default async function UnitPage({ params }: { params: Promise<{ slug: str
         </header>
       </BootItem>
 
-      {unit.conceptMd && (
-        <BootItem>
-          <Panel legend="concept">
-            <Markdown source={unit.conceptMd} />
-          </Panel>
-        </BootItem>
-      )}
+      {sections.map((key, i) => {
+        const n = i + 1;
+        if (key === "primer")
+          return (
+            <BootItem key={key}>
+              <Panel legend={`${n} · start here`}>
+                <Markdown source={unit.primerMd} />
+              </Panel>
+            </BootItem>
+          );
+        if (key === "learn")
+          return (
+            <BootItem key={key}>
+              <Panel
+                legend={`${n} · learn it`}
+                aux={primary?.minutes ? `~${primary.minutes} min` : undefined}
+              >
+                {primary && <PrimaryResource r={primary} />}
+                {others.length > 0 && (
+                  <div className={cn(primary && "mt-5 border-t border-line-soft pt-4")}>
+                    <h3 className="legend">also for this unit</h3>
+                    <ul className="mt-2.5 space-y-3">
+                      {others.map((r) => (
+                        <li key={r.id}>
+                          <ResourceLink r={r} />
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </Panel>
+            </BootItem>
+          );
+        if (key === "notes")
+          return (
+            <BootItem key={key}>
+              <Panel legend={`${n} · the notes`}>
+                <p className="mb-4 note text-lo">
+                  Read after step {n - 1}. These are the exact rules and the traps an
+                  interviewer probes — the part a tutorial skims.
+                </p>
+                {unit.conceptMd && <Markdown source={unit.conceptMd} />}
+                {unit.pitfalls.length > 0 && (
+                  <div className={cn(unit.conceptMd && "mt-6 border-t border-line-soft pt-4")}>
+                    <h3 className="legend">where this goes wrong</h3>
+                    <ul className="mt-2.5 space-y-2.5">
+                      {unit.pitfalls.map((x, j) => (
+                        <li key={j} className="flex gap-2.5">
+                          <span className="mt-[3px] shrink-0 text-2xs text-warn" aria-hidden>
+                            ▲
+                          </span>
+                          <Markdown source={x} className="text-base" />
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {unit.interviewAngle && (
+                  <div className="mt-6 border-t border-line-soft pt-4">
+                    <h3 className="legend">in the room</h3>
+                    <Markdown source={unit.interviewAngle} className="mt-2 text-base" />
+                  </div>
+                )}
+              </Panel>
+            </BootItem>
+          );
+        if (key === "check")
+          return (
+            <BootItem key={key}>
+              <SelfCheck cards={unit.recall} legend={`${n} · check yourself`} />
+            </BootItem>
+          );
+        if (key === "practice")
+          return (
+            <BootItem key={key}>
+              <Panel legend={`${n} · practice`} aux={`${probs.length} problems`}>
+                <ProblemList
+                  problems={probs.map((p) => ({
+                    slug: p.slug,
+                    title: p.title,
+                    url: p.url,
+                    platform: p.platform,
+                    difficulty: p.difficulty,
+                    patternTag: p.patternTag,
+                    triggerHint: p.triggerHint,
+                    approachHint: p.approachHint,
+                    estMinutes: p.estMinutes,
+                    isMust: p.isMust,
+                    outcome: latest.get(p.slug)?.outcome ?? null,
+                    hintRevealed:
+                      pendingReveal.has(p.slug) || (latest.get(p.slug)?.everRevealed ?? false),
+                    redoDueDay: latest.get(p.slug)?.redoClearedAt
+                      ? null
+                      : (latest.get(p.slug)?.redoDueDay ?? null),
+                  }))}
+                />
+              </Panel>
+            </BootItem>
+          );
+        return (
+          <BootItem key={key}>
+            <Panel legend={`${n} · finish`} active={progress[0]?.state !== "done"}>
+              <UnitComplete
+                unitSlug={unit.slug}
+                done={progress[0]?.state === "done"}
+                completedOnDayIndex={progress[0]?.completedOnDayIndex}
+                next={next}
+                moduleSlug={unit.moduleSlug}
+              />
+            </Panel>
+          </BootItem>
+        );
+      })}
+    </Boot>
+  );
+}
 
-      {unit.pitfalls.length > 0 && (
-        <BootItem>
-          <Panel legend="where this goes wrong" aux={`${unit.pitfalls.length}`}>
-            <p className="mb-3 note text-lo">
-              Not everything that can go wrong — what goes wrong for someone who has just
-              read the above and believes they understood it.
-            </p>
-            <ul className="space-y-2.5">
-              {unit.pitfalls.map((x, i) => (
-                <li key={i} className="flex gap-2.5">
-                  <span className="mt-[3px] shrink-0 text-2xs text-warn" aria-hidden>
-                    ▲
-                  </span>
-                  <Markdown source={x} className="text-base" />
-                </li>
-              ))}
-            </ul>
-          </Panel>
-        </BootItem>
-      )}
+type Res = typeof resources.$inferSelect;
 
-      {unit.interviewAngle && (
-        <BootItem>
-          <Panel legend="in the room">
-            <Markdown source={unit.interviewAngle} className="text-base" />
-          </Panel>
-        </BootItem>
-      )}
-
-      {unit.recall.length > 0 && (
-        <BootItem>
-          <SelfCheck cards={unit.recall} />
-        </BootItem>
-      )}
-
-      <BootItem>
-        <Panel legend="resources" aux={`${res.length} handpicked`}>
-          <ul className="space-y-3">
-            {res.map((r) => (
-              <li key={r.id}>
-                <a
-                  href={r.url}
-                  target="_blank"
-                  rel="noreferrer noopener"
-                  className="group flex items-baseline gap-2.5"
-                >
-                  <span className={cn("shrink-0 text-2xs", r.isPrimary ? "text-phos" : "text-lo")}>
-                    {KIND_GLYPH[r.kind] ?? "▦"}
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="flex items-baseline gap-2">
-                      <span className="min-w-0 text-sm text-hi underline-offset-4 group-hover:underline">
-                        {r.title}
-                      </span>
-                      {r.isPrimary && <span className="legend shrink-0 text-phos">primary</span>}
-                      {r.minutes && (
-                        <span className="legend ml-auto shrink-0 tabular-nums">~{r.minutes}m</span>
-                      )}
-                    </span>
-                    <span className="mt-0.5 block note text-lo">
-                      {r.whyThisOne}
-                    </span>
-                  </span>
-                </a>
+/** the one page this unit sends you to, and what to do once it is open */
+function PrimaryResource({ r }: { r: Res }) {
+  return (
+    <div>
+      <a
+        href={r.url}
+        target="_blank"
+        rel="noreferrer noopener"
+        className="group flex items-baseline gap-2.5"
+      >
+        <span className="shrink-0 text-2xs text-phos" aria-hidden>
+          {KIND_GLYPH[r.kind] ?? "▦"}
+        </span>
+        <span className="min-w-0">
+          <span className="legend block text-phos-dim">{KIND_VERB[r.kind] ?? r.kind}</span>
+          <span className="mt-0.5 block text-base text-hi underline-offset-4 group-hover:underline">
+            {r.title} <span className="text-lo" aria-hidden>↗</span>
+            <span className="sr-only"> (opens in a new tab)</span>
+          </span>
+        </span>
+      </a>
+      <p className="mt-1.5 pl-5 note text-mid">{r.whyThisOne}</p>
+      {r.steps.length > 0 && (
+        <div className="mt-3.5 pl-5">
+          <h3 className="legend">on that page</h3>
+          <ol className="mt-2 space-y-1.5">
+            {r.steps.map((st, i) => (
+              <li key={i} className="flex gap-2.5">
+                <span className="w-4 shrink-0 text-right text-2xs tabular-nums leading-6 text-phos-dim">
+                  {i + 1}.
+                </span>
+                <Markdown source={st} className="min-w-0 text-base" />
               </li>
             ))}
-          </ul>
-        </Panel>
-      </BootItem>
-
-      {probs.length > 0 && (
-        <BootItem>
-          <Panel legend="practice" aux={`${probs.length} problems`}>
-            <ProblemList
-              problems={probs.map((p) => ({
-                slug: p.slug,
-                title: p.title,
-                url: p.url,
-                platform: p.platform,
-                difficulty: p.difficulty,
-                patternTag: p.patternTag,
-                triggerHint: p.triggerHint,
-                approachHint: p.approachHint,
-                estMinutes: p.estMinutes,
-                isMust: p.isMust,
-                outcome: latest.get(p.slug)?.outcome ?? null,
-                hintRevealed: pendingReveal.has(p.slug) || (latest.get(p.slug)?.everRevealed ?? false),
-                redoDueDay: latest.get(p.slug)?.redoClearedAt
-                  ? null
-                  : (latest.get(p.slug)?.redoDueDay ?? null),
-              }))}
-            />
-          </Panel>
-        </BootItem>
+          </ol>
+        </div>
       )}
-      <BootItem>
-        <Panel legend="progress" active={progress[0]?.state !== "done"}>
-          <UnitComplete
-            unitSlug={unit.slug}
-            done={progress[0]?.state === "done"}
-            completedOnDayIndex={progress[0]?.completedOnDayIndex}
-            next={next}
-            moduleSlug={unit.moduleSlug}
-          />
-        </Panel>
-      </BootItem>
+    </div>
+  );
+}
 
-    </Boot>
+/** a secondary resource: the link, why it is here and, if it has them, its steps */
+function ResourceLink({ r }: { r: Res }) {
+  return (
+    <div>
+      <a
+        href={r.url}
+        target="_blank"
+        rel="noreferrer noopener"
+        className="group flex items-baseline gap-2.5"
+      >
+        <span className="shrink-0 text-2xs text-lo" aria-hidden>
+          {KIND_GLYPH[r.kind] ?? "▦"}
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="flex items-baseline gap-2">
+            <span className="min-w-0 text-sm text-hi underline-offset-4 group-hover:underline">
+              {r.title}
+              <span className="sr-only"> (opens in a new tab)</span>
+            </span>
+            {r.minutes && (
+              <span className="legend ml-auto shrink-0 tabular-nums">~{r.minutes}m</span>
+            )}
+          </span>
+        </span>
+      </a>
+      <p className="mt-0.5 pl-5 note text-lo">{r.whyThisOne}</p>
+      {r.steps.length > 0 && (
+        <p className="mt-1 pl-5 note text-lo">
+          {r.steps.map((st, i) => (
+            <span key={i}>
+              <span className="tabular-nums text-mid">{i + 1}.</span> {st}{" "}
+            </span>
+          ))}
+        </p>
+      )}
+    </div>
   );
 }

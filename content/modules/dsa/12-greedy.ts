@@ -1,7 +1,5 @@
 import type { Module } from "@/content/types";
 
-const TUF = "https://takeuforward.org/blogs/data-structure-and-algorithm";
-
 export const greedy: Module = {
   slug: "dsa-greedy",
   trackSlug: "dsa",
@@ -18,6 +16,13 @@ export const greedy: Module = {
       objective:
         "Justify a greedy choice with an exchange argument, and solve interval scheduling, merging and arrow problems by sorting on the right key.",
       estMinutes: 85,
+      primer: `A **greedy** algorithm makes the choice that looks best right now and never reconsiders. When it works it is the simplest and fastest solution — but it does not always work, so you need a reason to trust it.
+
+The classic: many meetings, one room — fit in as many as possible. Picking the *shortest* meeting first fails; picking the one that *starts* first fails. Picking the one that **ends first** always works: whatever an optimal schedule does, swapping its first meeting for the earliest-ending one cannot make it worse, because that one leaves the room free soonest. That swap reasoning is called an **exchange argument**, and it is how you justify a greedy.
+
+Most interval problems start with **sorting by the right key** — usually the end time.
+
+**You need already:** sorting with a comparator.`,
       conceptMd: `A greedy algorithm is correct only if **some optimal solution agrees with its first choice**. The standard proof is the **exchange argument**: take any optimal solution that disagrees with greedy, swap in greedy's choice, and show the result is no worse. Repeat, and the optimum becomes greedy's answer.
 
 **Interval scheduling** — keep as many non-overlapping intervals as possible (or, equivalently, remove as few as possible):
@@ -77,26 +82,34 @@ Get the boundary right: whether touching intervals ([1,2] and [2,3]) overlap dif
       ],
       resources: [
         {
-          title: "Jeff Erickson — Algorithms, chapter 4: greedy",
-          url: "https://jeffe.cs.illinois.edu/teaching/algorithms/book/04-greedy.pdf",
-          kind: "read",
-          minutes: 40,
-          whyThisOne: "The clearest treatment of the exchange argument, with interval scheduling as the worked example.",
+          title: "Striver — N meetings in one room",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/n-meetings-in-one-room",
+          kind: "do",
+          minutes: 30,
+          whyThisOne:
+            "The classic first greedy: brute force, then sort by end time, and why.",
+          steps: [
+            "Read the problem and examples, and try it yourself for 10–15 minutes.",
+            "Read the approaches in order — brute force first — following each **Dry Run** on paper.",
+            "Answer *Why do we sort by end time instead of start time?* with a counterexample for start time.",
+            "Then solve *Non-overlapping Intervals* (next link) — the same idea.",
+          ],
           isPrimary: true,
         },
         {
-          title: "Striver — non-overlapping intervals",
-          url: `${TUF}/non-overlapping-intervals`,
-          kind: "read",
-          minutes: 15,
-          whyThisOne: "The sort-by-end greedy applied to the interview version of the problem.",
+          title: "Striver — Non-overlapping intervals",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/non-overlapping-intervals",
+          kind: "do",
+          minutes: 30,
+          whyThisOne:
+            "The sort-by-end greedy on the interview version of the problem.",
         },
         {
-          title: "Striver — minimum platforms for a railway station",
-          url: `${TUF}/minimum-platforms-required-for-a-railway-station`,
+          title: "Jeff Erickson — Algorithms, ch. 4: Greedy (PDF)",
+          url: "https://jeffe.cs.illinois.edu/teaching/algorithms/book/04-greedy.pdf",
           kind: "read",
-          minutes: 15,
-          whyThisOne: "The start/end sweep, which is the meeting-rooms problem under another name.",
+          whyThisOne:
+            "Optional: the careful proof, with interval scheduling as the worked example.",
         },
       ],
     },
@@ -106,6 +119,15 @@ Get the boundary right: whether touching intervals ([1,2] and [2,3]) overlap dif
       objective:
         "Solve reachability, matching and circular-tour problems greedily, and recognise the two-pass pattern for constraints from both sides.",
       estMinutes: 80,
+      primer: `More greedy problems, each with its own "obvious" choice that needs checking.
+
+- **Jump game**: can you reach the last index, and in how few jumps? Track the farthest index reachable so far; when you run out of range, take a jump.
+- **Gas station**: if the total fuel is at least the total cost, a valid start exists; whenever the running tank goes negative, the start must be after that point.
+- **Candy**: each child with a higher rating than a neighbour gets more candy. One pass left-to-right handles left neighbours, a second pass right-to-left handles right ones — **two passes for constraints from two sides**.
+
+For each problem, before coding, say *why* the greedy choice cannot hurt.
+
+**You need already:** the intervals unit.`,
       conceptMd: `Most classic greedy problems fall into a few shapes.
 
 **Sort both sides and match.** Assign Cookies: sort children by greed and cookies by size; give each child the smallest cookie that satisfies them. A bigger cookie spent on a small greed is never better. Two pointers, O(n log n).
@@ -155,26 +177,33 @@ for (int i = 0; i + 1 < n; i++) {
       ],
       resources: [
         {
-          title: "Striver — jump game II",
-          url: `${TUF}/jump-game-ii-minimum-jumps`,
-          kind: "read",
-          minutes: 20,
-          whyThisOne: "Recursion to DP to the greedy window, so you see what greedy saves.",
+          title: "Striver — Jump game II",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/jump-game-ii-minimum-jumps",
+          kind: "do",
+          minutes: 35,
+          whyThisOne:
+            "From trying every jump to the greedy window, so you see what greedy saves.",
+          steps: [
+            "Read the problem and examples, and try it yourself for 10–15 minutes.",
+            "Read the approaches in order — brute force first — following each **Dry Run** on paper.",
+            "Answer *Why do we increase jumps only when i == currentEnd?*",
+          ],
           isPrimary: true,
         },
         {
-          title: "Striver — candy",
-          url: `${TUF}/candy-distribution-problem`,
-          kind: "read",
-          minutes: 20,
-          whyThisOne: "The two-pass version, then the one-pass slope version for the follow-up.",
+          title: "Striver — Candy",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/candy-distribution-problem",
+          kind: "do",
+          minutes: 35,
+          whyThisOne:
+            "The two-pass solution, then the one-pass version for the follow-up.",
         },
         {
-          title: "USACO Guide — greedy with sorting",
+          title: "USACO Guide — Greedy with sorting",
           url: "https://usaco.guide/silver/greedy-sorting",
           kind: "read",
-          minutes: 25,
-          whyThisOne: "More sort-then-greedy problems, each with the reason the greedy is safe.",
+          whyThisOne:
+            "More sort-then-greedy problems, each with the reason the greedy is safe.",
         },
       ],
     },
@@ -184,6 +213,15 @@ for (int i = 0; i + 1 < n; i++) {
       objective:
         "Break a plausible greedy with a counterexample, and recognise when a problem needs dynamic programming instead.",
       estMinutes: 60,
+      primer: `Greedy fails more often than it works, and the skill is spotting when.
+
+Making change with the fewest coins: with coins {1, 5, 10}, always taking the largest coin that fits is optimal. With coins {1, 3, 4} and amount 6, greedy takes 4 + 1 + 1 = three coins, but 3 + 3 = two coins is better. One small **counterexample** is enough to kill a greedy idea.
+
+When greedy fails, it is usually because a choice now changes which choices are available later, so you need to compare several options — which is **dynamic programming**, the big topic of Phase 3. This unit is the bridge.
+
+The habit: before trusting any greedy, spend two minutes trying to break it with tiny inputs.
+
+**You need already:** the greedy units.`,
       conceptMd: `The fastest way to test a greedy idea is to **hunt for a counterexample** on small inputs before writing any code.
 
 **Coin change.** With coins {1, 5, 10, 25}, taking the largest coin that fits is optimal. With coins {1, 3, 4} and amount 6, greedy takes 4 + 1 + 1 (three coins) but 3 + 3 uses two. Greedy is safe only for "canonical" coin systems, and an interview problem never promises that — so Coin Change is a **DP** problem:
@@ -231,19 +269,26 @@ Greedy and DP are two answers to the same question — "is the local choice safe
       ],
       resources: [
         {
-          title: "Striver — minimum number of coins",
-          url: `${TUF}/minimum-number-of-coins`,
-          kind: "read",
-          minutes: 15,
-          whyThisOne: "The greedy that works for canonical coins, and the reason it does not in general.",
+          title: "Striver — Minimum number of coins",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/minimum-number-of-coins",
+          kind: "do",
+          minutes: 25,
+          whyThisOne:
+            "The greedy that works for normal coin systems, and why it does not in general.",
+          steps: [
+            "Read the problem and examples, and try it yourself for 10–15 minutes.",
+            "Read the approaches in order — brute force first — following each **Dry Run** on paper.",
+            "Answer *Does the greedy approach always work for any set of coins?* with your own counterexample.",
+          ],
           isPrimary: true,
         },
         {
-          title: "USACO Guide — introduction to greedy",
+          title: "USACO Guide — Introduction to greedy",
           url: "https://usaco.guide/bronze/intro-greedy",
           kind: "read",
           minutes: 20,
-          whyThisOne: "Short, with explicit examples of greedy ideas that fail and how to find the counterexample.",
+          whyThisOne:
+            "Short, with greedy ideas that fail and how to find the counterexample.",
         },
       ],
     },

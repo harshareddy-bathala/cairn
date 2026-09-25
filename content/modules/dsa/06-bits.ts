@@ -16,6 +16,13 @@ export const bitManipulation: Module = {
       objective:
         "Set, clear, toggle and test the ith bit from memory, and count set bits three ways.",
       estMinutes: 60,
+      primer: `Computers store every integer in **binary** — base 2, only 0s and 1s. 13 is \`1101\`: 8 + 4 + 0 + 1. Each 0 or 1 is a **bit**, numbered from the right starting at 0.
+
+**Bitwise operators** work on those bits directly, one position at a time: \`&\` (AND — 1 only if both are 1), \`|\` (OR — 1 if either is), \`^\` (XOR — 1 if they differ), \`~\` (NOT — flip every bit), and the shifts \`<<\` and \`>>\`, which slide the bits left or right. \`1 << i\` is a number with only bit i set.
+
+With those you can check, set, clear or flip any single bit in one step — faster and shorter than arithmetic, and the basis of a whole family of interview tricks.
+
+**You need already:** nothing beyond integers. Converting a few small numbers to binary by hand helps.`,
       conceptMd: `Six idioms carry almost everything:
 
 \`\`\`cpp
@@ -68,12 +75,29 @@ Two traps: shifting by the type's width or more is undefined behaviour, and \`1 
       ],
       resources: [
         {
-          title: "Striver — bit basics and operators",
+          title: "Striver — Bit basics and operators",
           url: "https://takeuforward.org/blogs/data-structure-and-algorithm/bit-basics-and-operators",
-          kind: "do",
-          minutes: 45,
-          whyThisOne: "Compact and complete for interview purposes; no need to go further than this.",
+          kind: "read",
+          minutes: 35,
+          whyThisOne:
+            "Starts from binary numbers themselves, then each operator with its truth table and an example.",
+          steps: [
+            "Read **Understanding Binary Numbers**, then do **Decimal to Binary** and **Binary to Decimal** for 13 and 22 by hand.",
+            "Read **Truth Table for Bitwise Operators** and **Core Bitwise Operators** one operator at a time.",
+            "For each operator, predict `12 op 10` on paper before checking.",
+          ],
           isPrimary: true,
+        },
+        {
+          title: "Striver — Bit counting tricks",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/bit-counting-tricks",
+          kind: "read",
+          minutes: 20,
+          whyThisOne:
+            "Counting set bits two ways, and why `n & (n - 1)` clears the lowest set bit.",
+          steps: [
+            "Read **Approach 2 — Brian Kernighan's Algorithm** and **Why Does N & (N - 1) Clear the Lowest Set Bit?**",
+          ],
         },
       ],
     },
@@ -83,6 +107,17 @@ Two traps: shifting by the type's width or more is undefined behaviour, and \`1 
       objective:
         "Use XOR's self-inverse property to find loners without extra space.",
       estMinutes: 60,
+      primer: `**XOR** (\`^\`) gives 1 where two bits differ and 0 where they match. Three facts make it useful:
+
+- \`x ^ x = 0\` — anything XORed with itself vanishes.
+- \`x ^ 0 = x\` — XOR with zero changes nothing.
+- The order does not matter: \`a ^ b ^ a\` is the same as \`a ^ a ^ b\`, which is \`b\`.
+
+So if every number in an array appears twice except one, XOR them all together: the pairs cancel and the loner is left. No map, no sorting, O(1) extra space.
+
+The harder version has **two** loners. XOR of everything gives \`a ^ b\`; any 1 bit in that result is a position where \`a\` and \`b\` differ, so it splits the array into two groups with one loner each.
+
+**You need already:** the bit basics unit.`,
       conceptMd: `Three properties do all the work: \`x ^ x = 0\`, \`x ^ 0 = x\`, and XOR is commutative and associative — **so order does not matter and pairs annihilate.**
 
 That immediately gives: single number in an array of pairs (XOR everything), missing number in 0..n (XOR all indices and all values), and swapping without a temporary.
@@ -128,12 +163,30 @@ The harder one, worth doing once: **two numbers appear once, everything else twi
       ],
       resources: [
         {
-          title: "Striver — single number III",
-          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/single-number-iii",
+          title: "Striver — XOR basics",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/xor-basics",
           kind: "read",
-          minutes: 30,
-          whyThisOne: "The partition-on-a-differing-bit idea is hard to invent cold and easy to keep once seen.",
+          minutes: 20,
+          whyThisOne:
+            "Each XOR property with a small example — the properties are the whole technique.",
+          steps: [
+            "Read **What Is XOR?** and the **XOR Truth Table**.",
+            "Read **Core Properties of XOR**, 1 to 6, and check each with two small numbers.",
+            "Read **Important XOR Identities**.",
+            "Then solve *Single Number III* (next link).",
+          ],
           isPrimary: true,
+        },
+        {
+          title: "Striver — Single number III",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/single-number-iii",
+          kind: "do",
+          minutes: 30,
+          whyThisOne:
+            "Splitting the array on a bit where the two answers differ — hard to invent, easy to keep once seen.",
+          steps: [
+            "Try it; then read **Optimal Approach** and its **Dry Run**.",
+          ],
         },
       ],
     },
@@ -143,6 +196,13 @@ The harder one, worth doing once: **two numbers appear once, everything else twi
       objective:
         "Enumerate all subsets with a mask loop, and see why this is the substrate for bitmask DP.",
       estMinutes: 45,
+      primer: `In the recursion module you generated subsets with take-or-leave recursion. Bits give a second way with no recursion at all.
+
+For n elements, write each number from 0 to 2ⁿ − 1 in binary using n bits. Read each bit as a yes/no: bit i is 1 means "element i is in the subset". With 3 elements, 5 = \`101\` means {element 0, element 2}. Counting from 0 to 7 therefore lists all 8 subsets, each exactly once.
+
+This only works while 2ⁿ is small (n up to about 20), but it is short, fast, and the foundation of "bitmask DP" later in the course.
+
+**You need already:** bit basics (\`1 << i\`, \`&\`), and the subsets unit from the recursion module.`,
       conceptMd: `For \`n <= 20\` or so, every subset can be enumerated without recursion at all:
 
 \`\`\`cpp
@@ -186,20 +246,25 @@ Also worth knowing: \`__builtin_popcount(mask)\` counts set bits in one instruct
       ],
       resources: [
         {
-          title: "GeeksforGeeks — power set",
+          title: "GeeksforGeeks — Power set",
           url: "https://www.geeksforgeeks.org/dsa/power-set/",
           kind: "read",
           minutes: 20,
-          whyThisOne: "Connects the mask loop to the recursive version you already wrote, so both stay available.",
+          whyThisOne:
+            "Lists all subsets with the counting loop and connects it to the binary numbers directly.",
+          steps: [
+            "Read **Approach: By Using Binary Representation of Numbers from 0 to 2^n - 1**.",
+            "By hand, write masks 0 to 7 for `[a, b, c]` and the subset each one means.",
+            "Skip the *Previous Permutation* approach.",
+          ],
           isPrimary: true,
         },
         {
-          title: "cp-algorithms — enumerating submasks",
+          title: "cp-algorithms — Enumerating submasks",
           url: "https://cp-algorithms.com/algebra/all-submasks.html",
           kind: "read",
-          minutes: 15,
           whyThisOne:
-            "Why `(s - 1) & mask` visits every submask, and why doing it for every mask costs 3^n rather than 4^n.",
+            "Optional, for later: why `(s - 1) & mask` visits every submask, and why doing it for every mask costs 3ⁿ.",
         },
       ],
     },

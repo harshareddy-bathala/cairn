@@ -1,9 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { motion, useReducedMotion } from "motion/react";
 import { cn } from "@/lib/cn";
-import { DUR, EASE } from "@/lib/motion";
 import { fmtDay } from "@/lib/format";
 import { DIFFICULTY } from "@/lib/marks";
 
@@ -50,7 +48,6 @@ export function ProblemRow({
 }) {
   const [revealed, setRevealed] = useState(Boolean(p.hintRevealed));
   const [open, setOpen] = useState(false);
-  const reduce = useReducedMotion();
   const mark = p.outcome ? OUTCOME_MARK[p.outcome] : null;
 
   function reveal() {
@@ -130,13 +127,9 @@ export function ProblemRow({
               </p>
 
               {!revealed && (
-                <motion.button
+                <button
                   type="button"
                   onClick={reveal}
-                  initial={false}
-                  animate={{ clipPath: "inset(0 0 0 0)" }}
-                  exit={{ clipPath: "inset(0 0 0 100%)" }}
-                  transition={{ duration: reduce ? 0 : DUR.slow, ease: EASE }}
                   className="absolute inset-0 flex items-center rounded-[2px] border border-line-soft bg-ink-800/90 px-2 text-left text-2xs text-lo transition-colors duration-[120ms] hover:border-line hover:text-mid"
                   style={{
                     backgroundImage:
@@ -144,7 +137,7 @@ export function ProblemRow({
                   }}
                 >
                   reveal approach — recorded
-                </motion.button>
+                </button>
               )}
             </div>
           </div>

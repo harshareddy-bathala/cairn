@@ -16,6 +16,13 @@ export const strings: Module = {
       objective:
         "Manipulate std::string confidently and avoid the copy and indexing traps.",
       estMinutes: 45,
+      primer: `A string is text stored as a sequence of characters: \`string s = "hello";\` — \`s[0]\` is \`'h'\`, \`s.size()\` is 5. In C++ it behaves much like a \`vector<char>\` with useful extras.
+
+The handful you will use constantly: \`s += 'x'\` to append, \`s.substr(start, length)\` to cut out a piece, \`s.find("lo")\` to search, \`to_string(42)\` and \`stoi("42")\` to convert between numbers and text, and \`isalpha\`, \`isdigit\`, \`tolower\` to test and change single characters.
+
+Each character is also a small number (its ASCII code), which is why \`c - 'a'\` turns \`'a'..'z'\` into \`0..25\` — the trick behind counting letters in an array of 26.
+
+**You need already:** vectors, and the learncpp string lesson from the C++ module.`,
       conceptMd: `\`std::string\` is a \`vector<char>\` with extra methods. \`substr(pos, len)\` **copies** — calling it inside a loop is a quiet O(n²).
 
 Useful and often forgotten: \`find\` returns \`string::npos\` — the largest \`size_t\` — when absent, so test \`!= string::npos\` and never \`< 0\`. Beyond that, \`stoi\`/\`to_string\` convert, \`+=\` appends cheaply while \`s = s + c\` may reallocate, and \`isalnum\`/\`tolower\` from \`<cctype>\` save hand-rolled character checks.
@@ -77,12 +84,25 @@ Two more that come up: \`s.back()\` on an empty string is undefined behaviour, s
       ],
       resources: [
         {
-          title: "cppreference — std::string",
-          url: "https://en.cppreference.com/w/cpp/string/basic_string",
-          kind: "docs",
-          minutes: 20,
-          whyThisOne: "Skim the method list once so you stop reimplementing things that already exist.",
+          title: "Striver — String basics: traversal, search, frequency, reverse",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/string-introduction-vowels-consonants-search-frequency-reverse-and-case-conversion",
+          kind: "read",
+          minutes: 30,
+          whyThisOne:
+            "One page of the everyday string operations, each done by walking the characters one at a time.",
+          steps: [
+            "Read the examples, then **Approach : Basic Character-by-Character Traversal** and its **Dry Run**.",
+            "Type out the solution and change it: count vowels, then reverse the string, then flip the case.",
+            "Read the **FAQs** at the end.",
+          ],
           isPrimary: true,
+        },
+        {
+          title: "cppreference — std::basic_string (member functions)",
+          url: "https://en.cppreference.com/cpp/string/basic_string",
+          kind: "docs",
+          whyThisOne:
+            "The full method list. Skim the *Operations* and *Search* groups once so you stop rewriting what already exists.",
         },
       ],
     },
@@ -92,6 +112,13 @@ Two more that come up: \`s.back()\` on an empty string is undefined behaviour, s
       objective:
         "Reverse words, check palindromes with filtering, and compare strings in place.",
       estMinutes: 60,
+      primer: `A string is an array of characters, so the two-pointer idea from the arrays module works unchanged.
+
+A **palindrome** reads the same both ways: "racecar". To check one, put a pointer at each end, compare, and move both inward. The interview version adds noise — "A man, a plan, a canal: Panama" — so you skip anything that is not a letter or digit and compare in lowercase.
+
+**Reversing the words** of a sentence ("the sky is blue" → "blue is sky the") has a neat trick: reverse the whole string, then reverse each word back.
+
+**You need already:** two pointers from the arrays module, and basic string operations.`,
       conceptMd: `Strings are arrays, so every array two-pointer technique transfers directly.
 
 **Valid palindrome with filtering** is the canonical version: converge from both ends, skipping non-alphanumeric characters, comparing lowercased. The bug to avoid is advancing a pointer past the other — guard with \`while (l < r && !isalnum(s[l])) l++\`.
@@ -156,13 +183,28 @@ Every inner \`while\` repeats the \`l < r\` test — without it a string of only
       ],
       resources: [
         {
-          title: "Striver — reverse every word in a string",
+          title: "Striver — Check whether a string is a palindrome",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/check-whether-a-string-is-a-palindrome",
+          kind: "do",
+          minutes: 20,
+          whyThisOne:
+            "Reverse-and-compare first, then the two-pointer version that uses no extra space.",
+          steps: [
+            "Read **Brute: Reverse the String**, then **Optimal: Two Pointer Approach** and its **Dry Run**.",
+            "Extend your version to skip non-letters and ignore case — that is LeetCode's *Valid Palindrome*.",
+          ],
+          isPrimary: true,
+        },
+        {
+          title: "Striver — Reverse every word in a string",
           url: "https://takeuforward.org/blogs/data-structure-and-algorithm/reverse-every-word-in-a-string",
           kind: "do",
-          minutes: 45,
+          minutes: 25,
           whyThisOne:
-            "Reverse-the-whole-then-each-word, with the runs of spaces handled — the one two-pointer string question that keeps getting asked.",
-          isPrimary: true,
+            "Reverse the whole, then each word, with runs of spaces handled — the two-pointer string question that keeps being asked.",
+          steps: [
+            "Try it, then read **Optimal Approach** and the follow-up about spaces.",
+          ],
         },
       ],
     },
@@ -172,6 +214,13 @@ Every inner \`while\` repeats the \`l < r\` test — without it a string of only
       objective:
         "Use a 26-slot count array over a hash map when the alphabet is fixed, and justify why.",
       estMinutes: 60,
+      primer: `Many string questions reduce to **counting characters**. Two words are *anagrams* ("listen", "silent") exactly when they use the same letters the same number of times.
+
+For lowercase English letters you do not need a map: an array \`int cnt[26]\` works, with \`cnt[c - 'a']++\` for each character. It is simpler and faster than \`unordered_map\`.
+
+To **group** anagrams, give each word a *key* that all its anagrams share — the word with its letters sorted ("listen" → "eilnst"), or its 26 counts written out — and put words with the same key into the same bucket of a map.
+
+**You need already:** maps, and the \`c - 'a'\` trick from the first strings unit.`,
       conceptMd: `When the alphabet is known and small, \`int cnt[26]\` beats \`unordered_map\` on both constant factor and cache behaviour. Saying that out loud in an interview reads as someone who thinks about machines, not just asymptotics.
 
 **Grouping anagrams** needs a canonical key per word. Two options: the sorted word — O(k log k) per word — or the 26-length count vector serialised to a string, which is O(k). The second is the better answer when words are long.
@@ -232,19 +281,37 @@ The 26-slot assumption is worth stating out loud rather than assuming: it holds 
       ],
       resources: [
         {
-          title: "Striver — sort characters by frequency",
-          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/sort-characters-by-frequency",
-          kind: "read",
+          title: "Striver — Check if two strings are anagrams",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/check-if-two-strings-are-anagrams",
+          kind: "do",
           minutes: 20,
-          whyThisOne: "Covers the counting-plus-ordering shape that the whole family reuses.",
+          whyThisOne:
+            "The counting idea at its simplest: sorting first, then a count array that does the same job in O(n).",
+          steps: [
+            "Read **Brute: Sorting**, then **Optimal: Frequency Counting** and its **Dry Run**.",
+            "Read the **FAQs** — the different-lengths case is the usual slip.",
+            "Then open *Group Anagrams* below.",
+          ],
           isPrimary: true,
         },
         {
-          title: "NeetCode — Group Anagrams",
-          url: "https://neetcode.io/problems/anagram-groups",
-          kind: "watch",
-          minutes: 15,
-          whyThisOne: "Explains the canonical-key idea better than most, which is the transferable part.",
+          title: "Striver — Group anagrams",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/group-anagrams",
+          kind: "do",
+          minutes: 30,
+          whyThisOne:
+            "Choosing a key that every anagram shares — the idea that carries over to other grouping problems.",
+          steps: [
+            "Compare the sorted-word key with the count key in **Better** vs **Optimal**.",
+          ],
+        },
+        {
+          title: "Striver — Sort characters by frequency",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/sort-characters-by-frequency",
+          kind: "do",
+          minutes: 25,
+          whyThisOne:
+            "Counting followed by ordering — the shape the rest of the family reuses.",
         },
       ],
     },
@@ -254,6 +321,13 @@ The 26-slot assumption is worth stating out loud rather than assuming: it holds 
       objective:
         "Implement atoi with full edge-case handling, and solve the longest-unique-substring window.",
       estMinutes: 75,
+      primer: `Two skills in this unit.
+
+**Parsing**: turning text into a value by hand, one character at a time. "  -42abc" should become -42: skip the spaces, read the sign, read digits until something that is not a digit, and stop before the number grows too big for an \`int\`. The code is short; the point is the edge cases.
+
+**Sliding window**: a window is a stretch \`s[left..right]\` that you slide across the string. Grow it by moving \`right\`; when it breaks a rule (say, a repeated character), shrink it by moving \`left\` until the rule holds again. Each character enters and leaves the window at most once, so it is O(n) — where checking every substring would be O(n²).
+
+**You need already:** two pointers, and counting characters.`,
       conceptMd: `**atoi** is an edge-case exercise disguised as a parsing exercise: leading whitespace, an optional sign, digits until a non-digit, and **clamping on overflow** rather than wrapping. Check overflow *before* multiplying — \`if (res > (INT_MAX - d) / 10) return sign > 0 ? INT_MAX : INT_MIN;\`. Interviewers ask it to see whether you volunteer the edge cases unprompted.
 
 **Sliding window** on strings: expand \`right\` always; when the window becomes invalid, advance \`left\` until it is valid again. Each index enters and leaves once, so it is O(n) despite the nested loop appearance.
@@ -296,12 +370,37 @@ For longest-substring-without-repeats, keep \`lastSeen[c]\`; when you meet a rep
       ],
       resources: [
         {
-          title: "NeetCode — Sliding window",
-          url: "https://neetcode.io/courses/advanced-algorithms/5",
-          kind: "watch",
-          minutes: 30,
-          whyThisOne: "The clearest statement of the expand/contract invariant, which is the whole technique.",
+          title: "Striver — Maximum sum subarray of size k",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/maximum-sum-subarray-of-size-k",
+          kind: "do",
+          minutes: 25,
+          whyThisOne:
+            "The simplest window — fixed width — so the slide-and-update idea is clear before the window starts changing size.",
+          steps: [
+            "Read **Brute Force**, then **Optimal Approach**, and follow its **Dry Run**.",
+            "Note exactly what changes when the window moves one step: one value in, one value out.",
+            "Then solve *Longest Substring Without Repeating Characters* (next link), where the window grows and shrinks.",
+          ],
           isPrimary: true,
+        },
+        {
+          title: "Striver — Longest substring without repeating characters",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/longest-substring-without-repeating-characters",
+          kind: "do",
+          minutes: 35,
+          whyThisOne:
+            "The variable-size window: expand right, shrink left while the rule is broken.",
+          steps: [
+            "Read **Brute Force**, then the optimal approaches; dry-run on `\"abcabcbb\"`.",
+          ],
+        },
+        {
+          title: "GeeksforGeeks — Write your own atoi()",
+          url: "https://www.geeksforgeeks.org/dsa/write-your-own-atoi/",
+          kind: "read",
+          minutes: 20,
+          whyThisOne:
+            "Parsing with every edge case listed — spaces, sign, stray characters and overflow.",
         },
       ],
     },

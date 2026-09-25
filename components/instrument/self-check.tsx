@@ -20,14 +20,14 @@ import type { RecallCard } from "@/db/schema";
  * assessment attached to marking a unit done is a reason not to mark units
  * done. The card comes back through the deck regardless.
  */
-export function SelfCheck({ cards }: { cards: RecallCard[] }) {
+export function SelfCheck({ cards, legend = "self-check" }: { cards: RecallCard[]; legend?: string }) {
   const [shown, setShown] = useState<Set<number>>(new Set());
 
   const allShown = shown.size === cards.length;
 
   return (
     <Panel
-      legend="self-check"
+      legend={legend}
       aux={allShown ? "all shown" : `${cards.length} question${cards.length === 1 ? "" : "s"}`}
     >
       <p className="mb-3.5 note text-lo">

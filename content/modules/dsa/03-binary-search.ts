@@ -16,6 +16,13 @@ export const binarySearch: Module = {
       objective:
         "Write binary search without off-by-one errors by stating the loop invariant before the loop.",
       estMinutes: 60,
+      primer: `**Binary search** finds a value in a *sorted* array by halving. Look at the middle element. If it is the value, done. If the value you want is bigger, it can only be in the right half, so throw away the left half; if smaller, throw away the right. Repeat.
+
+Each step halves what is left, so 1,000,000 elements take about 20 steps — O(log n) instead of O(n).
+
+The idea is easy; the code is where people slip: \`<\` or \`<=\` in the loop, \`mid - 1\` or \`mid\`. This unit picks one way of writing it — the search range is \`[lo, hi]\`, both ends included — and uses it everywhere, so you stop guessing.
+
+**You need already:** arrays and loops. Nothing else.`,
       conceptMd: `Most binary search bugs are not logic errors, they are **boundary conventions applied inconsistently**. Pick one convention and never mix them.
 
 Use the closed interval \`[lo, hi]\`:
@@ -76,18 +83,30 @@ When the loop exits, \`lo\` is the insertion point — which is precisely \`lowe
       ],
       resources: [
         {
-          title: "Striver — binary search, introduction",
+          title: "Striver — Binary search: introduction",
           url: "https://takeuforward.org/blogs/data-structure-and-algorithm/binary-search-introduction",
-          kind: "do",
-          minutes: 45,
-          whyThisOne: "Sets the boundary convention early and holds it for the whole step. Follow its convention, not a mixture.",
+          kind: "read",
+          minutes: 30,
+          whyThisOne:
+            "Explains the halving idea first, then writes plain search, lower bound and upper bound in one consistent style.",
+          steps: [
+            "Read **What is Binary Search?** and **How Binary Search Works**.",
+            "Work **Search X in a Sorted Array** — follow the **Dry Run** on paper.",
+            "Read **Lower Bound** and **Upper Bound** and note how they differ from plain search.",
+            "Close the page and write plain binary search from memory.",
+          ],
           isPrimary: true,
         },
         {
-          title: "cppreference — std::lower_bound",
-          url: "https://en.cppreference.com/w/cpp/algorithm/lower_bound",
-          kind: "docs",
-          whyThisOne: "Confirms your hand-written version against the standard definition.",
+          title: "Striver — Binary search: search a sorted array",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/binary-search-algorithm",
+          kind: "do",
+          minutes: 15,
+          whyThisOne:
+            "The first problem to solve alone, with two follow-ups interviewers really ask.",
+          steps: [
+            "Solve it, then answer *Why write low + (high - low) / 2 instead of (low + high) / 2?*",
+          ],
         },
       ],
     },
@@ -97,6 +116,11 @@ When the loop exits, \`lo\` is the insertion point — which is precisely \`lowe
       objective:
         "Find the first and last index of a repeated value, and count occurrences in O(log n).",
       estMinutes: 60,
+      primer: `Plain binary search stops at the first match it finds. But in \`[1, 2, 2, 2, 3]\`, "where is 2?" has three right answers — and questions usually want the **first** one, the **last** one, or **how many**.
+
+The change is small: when you find a match, do not stop. Write it down as the best answer so far, and keep searching the side where a better one could be — left for the first occurrence, right for the last. The count is then \`last − first + 1\`.
+
+**You need already:** the plain binary search from the last unit, written from memory.`,
       conceptMd: `The move that unlocks this family: **on a match, do not return — keep searching the side that could hold a better answer.**
 
 For the first occurrence, record \`mid\` as a candidate and then set \`hi = mid - 1\` to keep looking left. For the last occurrence, record and set \`lo = mid + 1\`.
@@ -157,11 +181,17 @@ For the last occurrence, change exactly one line: \`lo = mid + 1\` in the match 
       ],
       resources: [
         {
-          title: "Striver — first and last occurrence in a sorted array",
+          title: "Striver — First, last occurrences and count",
           url: "https://takeuforward.org/blogs/data-structure-and-algorithm/first-last-occurrences-and-count-in-an-array",
           kind: "read",
-          minutes: 25,
-          whyThisOne: "Shows the record-and-continue variant explicitly instead of hiding it behind lower_bound.",
+          minutes: 30,
+          whyThisOne:
+            "Shows the record-and-keep-going change explicitly, for first, last and count, on one page.",
+          steps: [
+            "Read **How Occurrence-Based Binary Search Works**.",
+            "Work **First Occurrence** and **Last Occurrence**, following each **Dry Run**.",
+            "Read **Count Occurrences** — it is the two combined.",
+          ],
           isPrimary: true,
         },
       ],
@@ -172,6 +202,13 @@ For the last occurrence, change exactly one line: \`lo = mid + 1\` in the match 
       objective:
         "Search a rotated sorted array, with and without duplicates, and explain why duplicates break the O(log n) guarantee.",
       estMinutes: 75,
+      primer: `Take a sorted array and move a chunk from the front to the back: \`[1,2,3,4,5,6,7]\` becomes \`[4,5,6,7,1,2,3]\`. That is a **rotated sorted array**. It is no longer sorted, so plain binary search fails — but it is *almost* sorted.
+
+The key fact: cut it anywhere in the middle and **at least one half is still properly sorted**. At each step, check which half that is, ask whether the target falls inside that sorted half's range, and throw away the other half. Still O(log n).
+
+Duplicates spoil the "which half is sorted" check in some cases, which is the harder variant.
+
+**You need already:** binary search with the \`[lo, hi]\` style from the first unit.`,
       conceptMd: `A rotated sorted array has one pivot, which means **at least one half of any split is properly sorted**. Identify which half that is, decide whether the target lies inside it, and discard the other half.
 
 \`\`\`
@@ -226,19 +263,34 @@ Finding the minimum is the same skill: the unsorted half always contains the piv
       ],
       resources: [
         {
-          title: "Striver — search in rotated sorted array I",
+          title: "Striver — Search in rotated sorted array I",
           url: "https://takeuforward.org/blogs/data-structure-and-algorithm/search-in-rotated-sorted-array",
-          kind: "read",
-          minutes: 20,
-          whyThisOne: "Which half is sorted, decided at every step — the one idea the whole family turns on.",
+          kind: "do",
+          minutes: 35,
+          whyThisOne:
+            "Which half is sorted, decided at every step — the one idea the whole family turns on.",
+          steps: [
+            "Read the examples and try it for 10 minutes.",
+            "Read **Optimal Approach** and follow the **Dry Run** on paper.",
+            "Answer *Why can't we simply compare the target with nums[mid] like normal binary search?* out loud.",
+          ],
           isPrimary: true,
         },
         {
-          title: "Striver — search in rotated sorted array II",
+          title: "Striver — Search in rotated sorted array II (duplicates)",
           url: "https://takeuforward.org/blogs/data-structure-and-algorithm/search-in-rotated-sorted-array-ii",
-          kind: "read",
-          minutes: 15,
-          whyThisOne: "Handles the duplicates case honestly, including why the O(log n) guarantee is lost.",
+          kind: "do",
+          minutes: 25,
+          whyThisOne:
+            "What duplicates break, and why the guarantee drops to O(n) in the worst case.",
+        },
+        {
+          title: "Striver — Find the minimum in a rotated sorted array",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/find-minimum-in-rotated-sorted-array",
+          kind: "do",
+          minutes: 20,
+          whyThisOne:
+            "The same sorted-half test, used to find the rotation point instead of a target.",
         },
       ],
     },
@@ -248,6 +300,13 @@ Finding the minimum is the same skill: the unsorted half always contains the piv
       objective:
         "Recognise the monotonic-predicate shape and solve Koko / bouquets / ship-packages / allocate-books with one template.",
       estMinutes: 90,
+      primer: `Sometimes you binary search not an array but **the answer itself**.
+
+Example: Koko eats bananas from piles at a speed of k bananas per hour and must finish within h hours. What is the smallest k that works? You could try k = 1, 2, 3, … and check each. But notice: if speed 10 is fast enough, speed 11 certainly is. "Works / does not work" flips exactly once as k grows. Anything with that shape can be binary searched: guess a middle k, check it, and throw away half of the possible answers.
+
+So the recipe is: (1) find the range the answer lies in, (2) write a \`check(x)\` that says whether x works, (3) binary search for the first x where \`check\` is true.
+
+**You need already:** first-occurrence binary search from the earlier unit.`,
       conceptMd: `**The array is not what you search — you search the space of possible answers.**
 
 The trigger, and it is remarkably consistent: *"find the minimum X such that some condition holds"* (or the maximum). The unlock is that the condition is **monotonic** — if a capacity of 10 works, so does 11. That monotonicity is exactly what binary search needs.
@@ -315,19 +374,30 @@ Allocate books, split array, minimum days for bouquets, smallest divisor and pai
       ],
       resources: [
         {
-          title: "Striver — binary search on answers: Koko eating bananas",
+          title: "Striver — Koko eating bananas",
           url: "https://takeuforward.org/blogs/data-structure-and-algorithm/koko-eating-bananas",
           kind: "do",
-          minutes: 75,
-          whyThisOne: "The entire family in one sequence, which is how you see that it is one pattern and not six problems.",
+          minutes: 40,
+          whyThisOne:
+            "The first answer-space problem, from trying every speed to binary searching the speeds.",
+          steps: [
+            "Read **Brute Force** — trying every speed — and make sure it makes sense.",
+            "Read **Optimal Approach** and its **Dry Run**; write down the range, the check and the loop separately.",
+            "Answer the follow-ups on why the search runs from 1 to the largest pile.",
+            "Then solve *Capacity to Ship Packages* from this unit's practice list with the same three parts.",
+          ],
           isPrimary: true,
         },
         {
-          title: "NeetCode — Binary search on answer",
-          url: "https://neetcode.io/courses/advanced-algorithms/2",
-          kind: "watch",
-          minutes: 20,
-          whyThisOne: "The second framing that usually makes the feasibility predicate click.",
+          title: "Striver — Capacity to ship packages within D days",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/capacity-to-ship-packages-within-d-days",
+          kind: "do",
+          minutes: 35,
+          whyThisOne:
+            "The same template on a problem that does not look like it — seeing that is the skill.",
+          steps: [
+            "Solve it before reading; then compare your `check` with the page's.",
+          ],
         },
       ],
     },
@@ -337,6 +407,12 @@ Allocate books, split array, minimum days for bouquets, smallest divisor and pai
       objective:
         "Search a row-sorted matrix by flattening indices, and handle the staircase variant.",
       estMinutes: 60,
+      primer: `A matrix is a grid: rows and columns, \`a[row][col]\`. Two kinds of "sorted matrix" appear in interviews, and they need different methods.
+
+1. **Fully sorted**: each row is sorted, and each row starts after the previous row ends. Read row by row it is just one long sorted array — so binary search it as one, converting a position \`i\` into \`row = i / cols\`, \`col = i % cols\`.
+2. **Rows and columns sorted separately**: you cannot flatten it. Start at the top-right corner instead: if the value there is too big, move left; if too small, move down. Each step removes a row or a column.
+
+**You need already:** binary search, and 2D vectors from the C++ module.`,
       conceptMd: `Two different matrix problems that look alike and are not.
 
 **Fully sorted** (each row sorted, and every row starts after the previous ends): treat it as one flat array of length \`m*n\` and binary search it, mapping \`idx → (idx / n, idx % n)\`. O(log mn).
@@ -392,12 +468,26 @@ Deciding which of the two problems you are looking at takes one question: *does 
       ],
       resources: [
         {
-          title: "Striver — search in a 2D matrix",
+          title: "Striver — Search in a sorted 2D matrix",
           url: "https://takeuforward.org/blogs/data-structure-and-algorithm/search-in-sorted-2d-matrix",
-          kind: "read",
+          kind: "do",
           minutes: 25,
-          whyThisOne: "Separates the two variants clearly — the distinction is the whole trap.",
+          whyThisOne:
+            "The flatten-and-search version, including why the row/column conversion is correct.",
+          steps: [
+            "Read **Optimal Approach** and do the **Dry Run**.",
+            "Answer *Why is row = mid / cols and col = mid % cols used?* before reading the answer.",
+            "Then open the next link for the second kind of matrix.",
+          ],
           isPrimary: true,
+        },
+        {
+          title: "Striver — Search in a row- and column-wise sorted matrix",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/search-in-a-row-and-column-wise-sorted-matrix",
+          kind: "do",
+          minutes: 25,
+          whyThisOne:
+            "The staircase version, where flattening is wrong — the distinction is the whole trap.",
         },
       ],
     },

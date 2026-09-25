@@ -1,7 +1,5 @@
 import type { Module } from "@/content/types";
 
-const TUF = "https://takeuforward.org/blogs/data-structure-and-algorithm";
-
 export const bst: Module = {
   slug: "dsa-bst",
   trackSlug: "dsa",
@@ -18,6 +16,13 @@ export const bst: Module = {
       objective:
         "Search, insert and delete in a BST in O(h), including deleting a node with two children.",
       estMinutes: 75,
+      primer: `A **binary search tree** (BST) is a binary tree with one rule at every node: **everything in the left subtree is smaller, everything in the right subtree is larger**.
+
+That rule turns searching into binary search. Looking for 7 at a node holding 10? It can only be on the left, so ignore the whole right side. Each step goes down one level, so a search costs the tree's **height** — about log n steps if the tree is bushy, but n steps if it has grown into a long chain (insert 1, 2, 3, 4… in order and it does exactly that).
+
+**Insert** walks the same path and adds the new node where the walk falls off the tree. **Delete** is the interesting one: removing a node that has two children means replacing it with the next larger value, so the rule still holds everywhere.
+
+**You need already:** binary trees and binary search.`,
       conceptMd: `The **invariant**: for every node, all keys in its left subtree are smaller and all keys in its right subtree are larger. Not just the children — the whole subtrees.
 
 That invariant means every operation walks **one root-to-leaf path**, so it costs O(h): O(log n) when the tree is balanced, O(n) when it degenerates into a list (insert sorted keys into a plain BST and you get exactly that). \`std::set\` and \`std::map\` are self-balancing (red-black trees in every major standard library) precisely so that h stays O(log n).
@@ -70,26 +75,39 @@ The inorder predecessor (largest in the left subtree) works equally well; say wh
       ],
       resources: [
         {
-          title: "Striver — delete a node in a BST",
-          url: `${TUF}/delete-node-in-a-bst`,
+          title: "Striver — Binary search tree: introduction and operations",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/binary-search-tree",
           kind: "read",
-          minutes: 25,
-          whyThisOne: "All three cases, with the successor-replacement drawn out.",
+          minutes: 35,
+          whyThisOne:
+            "The BST rule, then search, insert and delete, each with a dry run — from zero.",
+          steps: [
+            "Read **What is a Binary Search Tree** and **The Core Properties of a BST**.",
+            "Work **Search Operation** and **Insertion Operation**, following each **Dry Run**.",
+            "Read **Deletion Operation** — all three cases — and **Why the Worst Case Occurs: Skewed Trees**.",
+            "Then solve *Delete Node in a BST* (next link) yourself.",
+          ],
           isPrimary: true,
         },
         {
-          title: "Striver — floor and ceil in a BST",
-          url: `${TUF}/floor-and-ceil-in-a-bst`,
-          kind: "read",
-          minutes: 15,
-          whyThisOne: "The remembered-candidate walk, which reappears in successor and predecessor.",
+          title: "Striver — Delete a node in a BST",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/delete-node-in-a-bst",
+          kind: "do",
+          minutes: 35,
+          whyThisOne:
+            "All three delete cases as a problem, with the successor replacement drawn out.",
+          steps: [
+            "Read the problem and examples, and try it yourself for 10–15 minutes.",
+            "Read the approaches in order — brute force first — following each **Dry Run** on paper.",
+          ],
         },
         {
-          title: "VisuAlgo — binary search tree",
-          url: "https://visualgo.net/en/bst",
+          title: "Striver — Floor and ceil in a BST",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/floor-and-ceil-in-a-bst",
           kind: "do",
-          minutes: 15,
-          whyThisOne: "Insert sorted keys and watch the tree become a list — the worst case, made visible.",
+          minutes: 25,
+          whyThisOne:
+            "Walking one path while remembering the best candidate — reused for successor and predecessor.",
         },
       ],
     },
@@ -99,6 +117,13 @@ The inorder predecessor (largest in the left subtree) works equally well; say wh
       objective:
         "Validate a BST with bounds, and use sorted inorder order to find the kth smallest and build a balanced BST.",
       estMinutes: 75,
+      primer: `Walk a BST in **inorder** (left, node, right) and the values come out **in sorted order**. That single fact solves most of this unit.
+
+- **Is this tree a valid BST?** Its inorder walk must be strictly increasing. Or, recursively: every node must lie within a range that tightens as you go down — checking only a node against its own children is the classic wrong answer.
+- **The kth smallest value** is the kth node the inorder walk visits; stop there.
+- **Building a balanced BST from a sorted array**: the middle element becomes the root, the left half builds the left subtree, the right half the right.
+
+**You need already:** inorder traversal, and the BST rule from the last unit.`,
       conceptMd: `**The inorder traversal of a BST is sorted.** That one fact solves a whole family:
 
 - **Kth smallest**: inorder, count k, stop — O(h + k) with an early exit.
@@ -157,26 +182,34 @@ Use \`long long\` bounds (or null pointers) — with \`int\` bounds a node holdi
       ],
       resources: [
         {
-          title: "Striver — validate a binary search tree",
-          url: `${TUF}/validate-binary-search-tree`,
-          kind: "read",
-          minutes: 20,
-          whyThisOne: "The range-passing version and the inorder version, with the local-check trap shown.",
+          title: "Striver — Validate a binary search tree",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/validate-binary-search-tree",
+          kind: "do",
+          minutes: 30,
+          whyThisOne:
+            "The range-passing version and the inorder version, with the check-only-the-children trap shown.",
+          steps: [
+            "Read the problem and examples, and try it yourself for 10–15 minutes.",
+            "Read the approaches in order — brute force first — following each **Dry Run** on paper.",
+            "Draw a tree that passes the children-only check but is not a BST.",
+          ],
           isPrimary: true,
         },
         {
-          title: "Striver — kth smallest and largest in a BST",
-          url: `${TUF}/kth-smallest-and-largest-elements-in-a-bst`,
-          kind: "read",
-          minutes: 15,
-          whyThisOne: "Inorder with a counter and an early exit.",
+          title: "Striver — Kth smallest and largest in a BST",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/kth-smallest-and-largest-elements-in-a-bst",
+          kind: "do",
+          minutes: 25,
+          whyThisOne:
+            "Inorder with a counter and an early exit.",
         },
         {
-          title: "Striver — convert a sorted array into a BST",
-          url: `${TUF}/convert-sorted-array-into-bst`,
-          kind: "read",
-          minutes: 10,
-          whyThisOne: "The middle-as-root recursion, which is also why balanced trees are O(log n) tall.",
+          title: "Striver — Convert a sorted array into a BST",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/convert-sorted-array-into-bst",
+          kind: "do",
+          minutes: 20,
+          whyThisOne:
+            "Middle as root, recursively — also why a balanced tree is only log n tall.",
         },
       ],
     },
@@ -186,6 +219,15 @@ Use \`long long\` bounds (or null pointers) — with \`int\` bounds a node holdi
       objective:
         "Build a BST iterator in O(h) space, find the LCA with the invariant, and repair a BST in which two nodes were swapped.",
       estMinutes: 90,
+      primer: `Three problems that use the BST rule in less obvious ways.
+
+**Iterator**: return the values one at a time in sorted order, using only O(height) memory — not a full sorted list. Keep a stack of the nodes on the path to the next smallest value and do the inorder walk *one step per call*.
+
+**LCA in a BST** is simpler than in a plain tree: if both values are smaller than the current node, go left; if both are larger, go right; otherwise the paths split here and this node is the answer.
+
+**Recover a BST**: two nodes' values were swapped by mistake. The inorder sequence then has one or two places where it goes down instead of up; those spots identify the two nodes to swap back.
+
+**You need already:** inorder traversal with an explicit stack, and the previous BST units.`,
       conceptMd: `**BST iterator.** \`next()\` and \`hasNext()\` in O(1) amortised time and O(h) space — which rules out copying the inorder into an array. Instead, pause the iterative inorder traversal between calls:
 
 \`\`\`cpp
@@ -243,26 +285,33 @@ Track \`prev\` during an inorder walk, record \`first\` and \`second\`, and swap
       ],
       resources: [
         {
-          title: "Striver — binary search tree iterator",
-          url: `${TUF}/binary-search-tree-iterator`,
-          kind: "read",
-          minutes: 20,
-          whyThisOne: "The paused-inorder design and its amortised analysis.",
+          title: "Striver — Binary search tree iterator",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/binary-search-tree-iterator",
+          kind: "do",
+          minutes: 35,
+          whyThisOne:
+            "A paused inorder walk, and why each call is O(1) on average.",
+          steps: [
+            "Read the problem and examples, and try it yourself for 10–15 minutes.",
+            "Read the approaches in order — brute force first — following each **Dry Run** on paper.",
+          ],
           isPrimary: true,
         },
         {
-          title: "Striver — recover a binary search tree",
-          url: `${TUF}/recover-binary-search-tree`,
-          kind: "read",
+          title: "Striver — LCA of a binary search tree",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/lowest-common-ancestor-of-a-binary-search-tree",
+          kind: "do",
           minutes: 20,
-          whyThisOne: "Both the adjacent and non-adjacent swap cases, which is where people slip.",
+          whyThisOne:
+            "The split-point rule, recursive and iterative.",
         },
         {
-          title: "Striver — LCA of a binary search tree",
-          url: `${TUF}/lowest-common-ancestor-of-a-binary-search-tree`,
-          kind: "read",
-          minutes: 10,
-          whyThisOne: "The split-point rule, recursive and iterative.",
+          title: "Striver — Recover a binary search tree",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/recover-binary-search-tree",
+          kind: "do",
+          minutes: 35,
+          whyThisOne:
+            "Both the adjacent and non-adjacent swap cases — where people slip.",
         },
       ],
     },

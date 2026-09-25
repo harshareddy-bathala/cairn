@@ -16,6 +16,17 @@ export const restFastapi: Module = {
       objective:
         "Design a small API with correct nouns, verbs and status codes, and defend each choice.",
       estMinutes: 75,
+      primer: `An **API** is how one program asks another to do something. A **REST API** does it over HTTP, and follows a simple convention: URLs name *things*, and HTTP methods say *what to do* with them.
+
+- \`GET /users\` — list users; \`GET /users/42\` — fetch user 42.
+- \`POST /users\` — create a user.
+- \`PUT\` or \`PATCH /users/42\` — change user 42; \`DELETE /users/42\` — remove it.
+
+The URL is a noun (\`/users\`), never a verb (\`/createUser\`) — the verb is already the method. The server answers with a **status code**: \`201 Created\` after a successful POST, \`404\` if user 42 does not exist, \`400\` or \`422\` if the request was malformed.
+
+Good API design is mostly doing these small things consistently, so anyone can guess how an endpoint behaves before reading its docs.
+
+**You need already:** HTTP methods and status codes from the networking module.`,
       conceptMd: `**Resources are nouns, plural.** \`/users\`, \`/users/42\`, \`/users/42/orders\`. Verbs belong in the HTTP method, not the path — \`POST /users\`, never \`POST /createUser\`.
 
 Method semantics carry real guarantees. **GET** is safe (no side effects) and cacheable. **PUT** replaces and is **idempotent** — doing it twice equals doing it once. **PATCH** partially updates. **DELETE** is idempotent. **POST** is neither safe nor idempotent, which is why double-submitting a form can create two records.
@@ -68,12 +79,26 @@ Status codes that carry meaning: **201** with a \`Location\` header on creation,
       ],
       resources: [
         {
-          title: "Microsoft — REST API design guidelines",
+          title: "Stack Overflow Blog — Best practices for REST API design",
+          url: "https://stackoverflow.blog/2020/03/02/best-practices-for-rest-api-design/",
+          kind: "read",
+          minutes: 20,
+          whyThisOne:
+            "Short and concrete: each rule of REST design with a small example of right and wrong.",
+          steps: [
+            "Read the whole article, noting each rule in one line.",
+            "Design the endpoints for a small to-do app — list, create, fetch, update, delete — using those rules.",
+            "Check your design against Microsoft's sections on URIs and methods (next link).",
+          ],
+          isPrimary: true,
+        },
+        {
+          title: "Microsoft — Web API design best practices",
           url: "https://learn.microsoft.com/en-us/azure/architecture/best-practices/api-design",
           kind: "read",
-          minutes: 40,
-          whyThisOne: "Opinionated and complete, with the idempotency and versioning reasoning spelled out.",
-          isPrimary: true,
+          minutes: 30,
+          whyThisOne:
+            "The thorough version. Read **Define RESTful web API resource URIs** and **Define RESTful web API methods**; the rest is for later.",
         },
       ],
     },
@@ -83,6 +108,19 @@ Status codes that carry meaning: **201** with a \`Location\` header on creation,
       objective:
         "Stand up a FastAPI service with Pydantic validation, dependency injection and generated docs.",
       estMinutes: 90,
+      primer: `**FastAPI** is a Python framework for building APIs. You write ordinary Python functions and mark each with the URL and method it answers:
+
+\`\`\`python
+@app.get("/items/{item_id}")
+def read_item(item_id: int):
+    return {"id": item_id}
+\`\`\`
+
+The type hints do real work. \`item_id: int\` means FastAPI converts the URL text to an integer and rejects \`/items/abc\` with a clear error. For request bodies you describe the expected shape with a **Pydantic model** — a class listing the fields and their types — and FastAPI validates every request against it.
+
+It also generates interactive documentation at \`/docs\`, where you can call your own API from the browser.
+
+**You need already:** Python functions and classes, and REST design from the last unit.`,
       conceptMd: `FastAPI's core idea: **your type hints are the contract.** A Pydantic model on a request body gives you parsing, validation, a 422 with a precise error, and OpenAPI documentation — from one declaration.
 
 \`\`\`python
@@ -135,18 +173,26 @@ Separate your input and output models. Reusing one model for both is how passwor
       ],
       resources: [
         {
-          title: "FastAPI — tutorial (first steps through dependencies)",
-          url: "https://fastapi.tiangolo.com/tutorial/",
+          title: "FastAPI tutorial — First steps",
+          url: "https://fastapi.tiangolo.com/tutorial/first-steps/",
           kind: "do",
-          minutes: 90,
-          whyThisOne: "Genuinely excellent documentation — among the best in any framework. Work it, do not read it.",
+          minutes: 20,
+          whyThisOne:
+            "Some of the best framework docs anywhere: each page adds one idea, with code you run immediately.",
+          steps: [
+            "Do **First Steps**: create the app, run it, and open `/docs`.",
+            "Continue through [Path Parameters](https://fastapi.tiangolo.com/tutorial/path-params/), [Query Parameters](https://fastapi.tiangolo.com/tutorial/query-params/) and [Request Body](https://fastapi.tiangolo.com/tutorial/body/), typing every example.",
+            "Then [Dependencies](https://fastapi.tiangolo.com/tutorial/dependencies/) — the page the notes build on.",
+            "Stop there; security comes in the next unit.",
+          ],
           isPrimary: true,
         },
         {
-          title: "Pydantic — models",
-          url: "https://docs.pydantic.dev/latest/concepts/models/",
+          title: "Pydantic — Models",
+          url: "https://pydantic.dev/docs/validation/latest/concepts/models/",
           kind: "docs",
-          whyThisOne: "Validation is where FastAPI's leverage comes from; knowing the field constraints pays off fast.",
+          whyThisOne:
+            "What a model validates and how to add field constraints — where FastAPI's checking comes from.",
         },
       ],
     },
@@ -156,6 +202,16 @@ Separate your input and output models. Reusing one model for both is how passwor
       objective:
         "Choose between sessions and JWT with a stated trade-off, and store passwords correctly.",
       estMinutes: 75,
+      primer: `**Authentication** answers "who are you?"; **authorisation** answers "what may you do?".
+
+After you log in with a password, the server needs a way to recognise you on every later request without asking for the password again. Two common approaches:
+
+- **Sessions** — the server remembers you in its own storage and gives your browser a random ID in a cookie. Logging out simply deletes the server's record.
+- **Tokens (JWT)** — the server gives you a signed token that itself says who you are. The server stores nothing and just checks the signature, but a token cannot easily be cancelled before it expires.
+
+And the rule for passwords: **never store them as they were typed**. Store a slow, salted **hash** (bcrypt or argon2), so a stolen database does not reveal anyone's password.
+
+**You need already:** the FastAPI unit.`,
       conceptMd: `**Sessions**: the server stores session state and hands the client an opaque ID. Revocation is trivial — delete the row. Requires shared session storage across instances.
 
 **JWT**: a signed token carrying claims; the server stores nothing and verifies the signature. Scales without shared state, but **revocation is the hard part** — a valid token stays valid until it expires. The standard mitigation is short-lived access tokens plus a refresh token you *can* revoke.
@@ -211,19 +267,27 @@ Also: **never put secrets in a JWT payload.** It is base64, not encryption — a
       ],
       resources: [
         {
-          title: "OWASP — Password Storage Cheat Sheet",
-          url: "https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html",
-          kind: "read",
-          minutes: 25,
-          whyThisOne: "The authoritative short answer, and it ties directly into your Cyber Security subject.",
+          title: "FastAPI — OAuth2 with password hashing and JWT tokens",
+          url: "https://fastapi.tiangolo.com/tutorial/security/oauth2-jwt/",
+          kind: "do",
+          minutes: 40,
+          whyThisOne:
+            "A complete, working login with hashed passwords and JWTs, explained line by line.",
+          steps: [
+            "Read the [Security intro](https://fastapi.tiangolo.com/tutorial/security/) page first for the vocabulary.",
+            "Build this page's example yourself: hash a password, issue a token at login, protect one route.",
+            "Call the protected route from `/docs` with and without the token.",
+            "Then read OWASP's password storage rules (next link).",
+          ],
           isPrimary: true,
         },
         {
-          title: "FastAPI — OAuth2 with JWT",
-          url: "https://fastapi.tiangolo.com/tutorial/security/oauth2-jwt/",
-          kind: "do",
-          minutes: 45,
-          whyThisOne: "A working end-to-end implementation you will lift almost directly into atlas.",
+          title: "OWASP — Password Storage Cheat Sheet",
+          url: "https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html",
+          kind: "read",
+          minutes: 20,
+          whyThisOne:
+            "The authoritative short answer on hashing, salting and which algorithms to use.",
         },
       ],
     },
@@ -233,6 +297,14 @@ Also: **never put secrets in a JWT payload.** It is base64, not encryption — a
       objective:
         "Add structured logging, error handling, pagination and config that an operator would thank you for.",
       estMinutes: 75,
+      primer: `An API that works on your laptop is not yet ready to run for real users. "Production-shaped" means someone else can operate it at 3 a.m. without reading your code:
+
+- **Configuration from the environment** — database URLs and secrets come from environment variables, never hard-coded, so the same code runs everywhere.
+- **Structured logs** — one JSON object per line, with a request ID, so a single failing request can be found among millions.
+- **Consistent errors** — every failure returns the same JSON shape with a sensible status code, never a raw stack trace.
+- **Pagination** — list endpoints return results a page at a time, never all 100,000 rows.
+
+**You need already:** the FastAPI units.`,
       conceptMd: `This unit is what turns a toy API into something you can defend as production work.
 
 **Structured logging** — emit JSON, not prose. \`{"level":"error","request_id":"...","route":"/units","latency_ms":412}\` is queryable; "Error processing request" is not. Attach a **request ID** to every log line and return it in the response header, so a user report maps to exact log lines.
@@ -285,11 +357,18 @@ Also: **never put secrets in a JWT payload.** It is base64, not encryption — a
       ],
       resources: [
         {
-          title: "The Twelve-Factor App",
-          url: "https://12factor.net/",
+          title: "The Twelve-Factor App — III. Config",
+          url: "https://12factor.net/config",
           kind: "read",
-          minutes: 40,
-          whyThisOne: "Short, and it is the shared vocabulary for what 'production-ready' means. Read all twelve.",
+          minutes: 10,
+          whyThisOne:
+            "The shared vocabulary for 'production-ready', one short page per factor.",
+          steps: [
+            "Read **III. Config**, then [XI. Logs](https://12factor.net/logs).",
+            "Move your FastAPI app's settings into environment variables.",
+            "Add a request-ID middleware and JSON logging, following the notes.",
+            "Then read the Slack pagination article (next link).",
+          ],
           isPrimary: true,
         },
         {
@@ -298,7 +377,15 @@ Also: **never put secrets in a JWT payload.** It is base64, not encryption — a
           kind: "read",
           minutes: 20,
           whyThisOne:
-            "Offset versus cursor pagination, argued from a real API that had to migrate — the drift problem made concrete.",
+            "Offset versus cursor pagination, argued from a real API that had to switch.",
+        },
+        {
+          title: "FastAPI — Handling errors",
+          url: "https://fastapi.tiangolo.com/tutorial/handling-errors/",
+          kind: "do",
+          minutes: 20,
+          whyThisOne:
+            "Raising HTTP errors and installing one handler so every error has the same shape.",
         },
       ],
     },

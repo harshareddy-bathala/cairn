@@ -16,6 +16,13 @@ export const linkedLists: Module = {
       objective:
         "Reverse a linked list iteratively and recursively, and use a dummy head to kill edge cases.",
       estMinutes: 75,
+      primer: `A **linked list** stores values in separate boxes called **nodes**. Each node holds a value and a pointer to the next node; the last one points to \`nullptr\`. You keep a pointer to the first node, the **head**.
+
+Unlike a vector, the nodes are not side by side in memory, so there is no \`list[5]\` — to reach the 6th node you walk from the head. In exchange, inserting or removing a node, once you are at the right place, is just changing a couple of pointers.
+
+Almost every linked-list bug is one of three: losing the rest of the list by overwriting a \`next\` pointer too early, following a \`nullptr\`, or special-casing the head. This unit teaches the habits that avoid all three — including a fake **dummy** node placed before the head.
+
+**You need already:** C++ pointers at the level of \`node->next\`, and \`struct\`.`,
       conceptMd: `Iterative reversal is three pointers and a fixed order of operations. Write it enough times that you never have to think:
 
 \`\`\`cpp
@@ -63,13 +70,30 @@ Saving \`next\` before overwriting \`cur->next\` is the entire trick; skip it an
       ],
       resources: [
         {
-          title: "Striver — reverse a singly linked list",
+          title: "Striver — Singly linked list: structure and basic operations",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/singly-linked-list",
+          kind: "read",
+          minutes: 35,
+          whyThisOne:
+            "Builds the node struct and each basic operation from zero, with a picture of the pointers at every step.",
+          steps: [
+            "Read **Introduction and Basics of Singly Linked List**.",
+            "Work through **Traversal**, **Insert at Head** and **Insert at Tail**, drawing boxes and arrows as you go.",
+            "Type the node struct and those three functions yourself and run them.",
+            "Then do *Reverse a singly linked list* (next link).",
+          ],
+          isPrimary: true,
+        },
+        {
+          title: "Striver — Reverse a singly linked list",
           url: "https://takeuforward.org/blogs/data-structure-and-algorithm/reverse-a-singly-linked-list",
           kind: "do",
-          minutes: 60,
+          minutes: 30,
           whyThisOne:
-            "From the value-copying brute force to the three-pointer rewiring, and why the iterative version beats the recursive one on space.",
-          isPrimary: true,
+            "From copying values to the three-pointer rewiring, and why the iterative version beats the recursive one on space.",
+          steps: [
+            "Read **Optimal Approach** and redo its **Dry Run** on paper with arrows.",
+          ],
         },
       ],
     },
@@ -79,6 +103,14 @@ Saving \`next\` before overwriting \`cur->next\` is the entire trick; skip it an
       objective:
         "Find the middle, detect a cycle, and locate the cycle's start — explaining why Floyd's works.",
       estMinutes: 75,
+      primer: `Walk a linked list with **two pointers at different speeds**: \`slow\` moves one node per step, \`fast\` moves two.
+
+- **Middle of the list**: when \`fast\` reaches the end, \`slow\` has gone half as far — it is at the middle. One pass, no counting.
+- **Cycle detection**: if the last node points back into the list, a normal walk never ends. With two speeds, if there is a loop, \`fast\` eventually laps \`slow\` and they meet — like two runners on a circular track. If there is no loop, \`fast\` reaches \`nullptr\`. This is **Floyd's algorithm**.
+
+A follow-up asks *where* the loop starts; there is a short argument for why resetting one pointer to the head finds it.
+
+**You need already:** traversing a linked list safely (checking for \`nullptr\`).`,
       conceptMd: `One pointer moves one step, another moves two. That single idea solves a surprising number of problems.
 
 **Middle**: when fast reaches the end, slow is at the middle. Whether you get the first or second middle for even lengths depends on your loop condition — \`while (fast && fast->next)\` gives the second, and interviewers do ask which you want.
@@ -129,12 +161,34 @@ Removing the nth node from the end is the same family: advance one pointer n ste
       ],
       resources: [
         {
-          title: "Striver — find the starting node of a cycle",
+          title: "Striver — Find the middle of a linked list",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/find-middle-of-linked-list",
+          kind: "do",
+          minutes: 20,
+          whyThisOne:
+            "The simplest use of two speeds: counting first, then the fast/slow version.",
+          steps: [
+            "Read **Approach 1** (count, then walk) and **Approach 2** (fast and slow).",
+            "Dry-run Approach 2 on lists of length 5 and 6 — which middle do you get for 6?",
+            "Then do *Detect a cycle* (next link) — the same two pointers.",
+          ],
+          isPrimary: true,
+        },
+        {
+          title: "Striver — Detect a cycle in a linked list",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/detect-cycle-linked-list",
+          kind: "do",
+          minutes: 25,
+          whyThisOne:
+            "Floyd's algorithm, after the hash-set version it replaces.",
+        },
+        {
+          title: "Striver — Find the starting node of a cycle",
           url: "https://takeuforward.org/blogs/data-structure-and-algorithm/find-start-of-cycle-linked-list",
           kind: "read",
-          minutes: 35,
-          whyThisOne: "Actually proves why resetting to the head finds the entrance instead of asserting it.",
-          isPrimary: true,
+          minutes: 25,
+          whyThisOne:
+            "Proves why resetting a pointer to the head finds the entrance, instead of just asserting it.",
         },
       ],
     },
@@ -144,6 +198,13 @@ Removing the nth node from the end is the same family: advance one pointer n ste
       objective:
         "Merge two sorted lists in place and sort a list in O(n log n) with O(1) extra space.",
       estMinutes: 75,
+      primer: `Two sorted linked lists can be **merged** into one sorted list without copying any values: look at the two front nodes, attach the smaller one to your result, move forward in that list, and repeat. When one list runs out, attach the rest of the other.
+
+That merge is the heart of **sorting a linked list** with merge sort: split the list in half (the fast/slow middle from the last unit), sort each half, merge them. Merge sort suits linked lists especially well — it never needs to jump to position i, which lists cannot do cheaply.
+
+A **dummy node** — a fake first node you create at the start — saves you from writing special cases for "the result is still empty".
+
+**You need already:** fast/slow pointers, and merge sort on arrays from the arrays module.`,
       conceptMd: `**Merging two sorted lists** is the array merge with pointer rewiring instead of copying — dummy head, append the smaller front node, advance, then attach whatever remains. No allocation.
 
 **Sorting a linked list** is where merge sort beats quicksort decisively: no random access is needed, and the merge step requires no auxiliary array because you are just relinking. Split with the fast/slow middle, recurse on both halves, merge. O(n log n) time, O(log n) stack.
@@ -182,12 +243,26 @@ Removing the nth node from the end is the same family: advance one pointer n ste
       ],
       resources: [
         {
-          title: "Striver — sort a linked list using merge sort",
-          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/sort-a-linked-list-using-merge-sort",
-          kind: "read",
-          minutes: 30,
-          whyThisOne: "Makes the case for why merge sort is the right choice here, not just how to write it.",
+          title: "Striver — Merge two sorted linked lists",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/merge-two-sorted-linked-lists",
+          kind: "do",
+          minutes: 25,
+          whyThisOne:
+            "The merge by rewiring pointers, built up from the copy-into-an-array version.",
+          steps: [
+            "Read **Brute Force** quickly, then **Optimal Approach**.",
+            "Dry-run it with a dummy node on `1→3→5` and `2→4`.",
+            "Then do *Sort a linked list using merge sort* (next link), which uses this merge.",
+          ],
           isPrimary: true,
+        },
+        {
+          title: "Striver — Sort a linked list using merge sort",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/sort-a-linked-list-using-merge-sort",
+          kind: "do",
+          minutes: 35,
+          whyThisOne:
+            "Makes the case for why merge sort is the right choice here, not just how to write it.",
         },
       ],
     },
@@ -197,6 +272,16 @@ Removing the nth node from the end is the same family: advance one pointer n ste
       objective:
         "Build an LRU cache with O(1) get and put, and explain why both structures are required.",
       estMinutes: 90,
+      primer: `A **cache** keeps recently used data close at hand so you do not recompute or refetch it. It has limited room, so when it is full something must be thrown out. **LRU — least recently used —** throws out whatever has gone unused the longest.
+
+The interview task: build one where both \`get(key)\` and \`put(key, value)\` take O(1) time. No single structure does both jobs:
+
+- a **hash map** finds a key instantly, but has no idea of order;
+- a **doubly linked list** keeps items in order of use and can move or remove a node instantly — *if* you already have a pointer to it.
+
+So you use both: the map stores key → pointer to the list node. Every access moves that node to the front; eviction removes from the back.
+
+**You need already:** maps, and linked-list pointer changes (this unit adds a \`prev\` pointer).`,
       conceptMd: `A top-tier interview favourite, and a genuinely useful thing to have built — you will meet the same idea again as a caching strategy in the SRE track.
 
 The requirement is O(1) for both \`get\` and \`put\`, which forces the combination:
@@ -240,11 +325,18 @@ Two dummy nodes — head and tail sentinels — remove every null check from the
       ],
       resources: [
         {
-          title: "NeetCode — LRU Cache",
-          url: "https://neetcode.io/problems/lru-cache",
-          kind: "watch",
+          title: "GeeksforGeeks — Introduction to LRU cache",
+          url: "https://www.geeksforgeeks.org/system-design/lru-cache-implementation/",
+          kind: "read",
           minutes: 30,
-          whyThisOne: "Walks the two structures together, which is the part that has to be explained out loud.",
+          whyThisOne:
+            "Explains what the cache must do before the code, then builds the list-plus-map design step by step.",
+          steps: [
+            "Read **Operations on LRU Cache** and **Working of LRU Cache**, following its worked example.",
+            "Read **Designing a LRU Cache** — why neither structure is enough alone.",
+            "Read **Efficient Solution – Using Doubly Linked List and Hashing** and draw the list after each operation.",
+            "Implement it yourself for LeetCode *LRU Cache* in this unit's practice list.",
+          ],
           isPrimary: true,
         },
       ],

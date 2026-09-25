@@ -51,7 +51,10 @@ export function DayClose({
     String(initialMinutes || suggestedMinutes || ""),
   );
 
-  const shown: Stone[] = closed
+  // Today's stone is in `stones` only once the server has seen the close. Right
+  // after an optimistic close it is not yet, so it is added here — otherwise the
+  // count reads one short and the stone that "lands" is yesterday's.
+  const shown: Stone[] = stones.some((s) => s.dayIndex === dayIndex)
     ? stones
     : [...stones, { dayIndex, mode: "normal" as const }];
 

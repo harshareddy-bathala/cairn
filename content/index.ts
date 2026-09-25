@@ -94,6 +94,27 @@ const PLATFORM_HOSTS: Record<string, RegExp> = {
   hackerrank: /^(www\.)?hackerrank\.com$/,
 };
 
+/**
+ * Pages that list a whole course instead of teaching one topic.
+ *
+ * "Follow Striver's A2Z, step 1" sent a beginner to a hub of four hundred
+ * items with nothing saying which one this unit meant. A resource points at
+ * the page that covers this unit's topic, and nothing wider.
+ */
+const HUB_PAGES: RegExp[] = [
+  /takeuforward\.org\/(strivers-a2z|prep-hub|dsa\/?$)/,
+  /\/~remzi\/OSTEP\/?$/, // the book's table of contents; chapters are separate PDFs
+  /linuxcommand\.org\/tlcl\.php/, // a whole book's download page
+  /cppreference\.com\/w\/cpp\/(header|container|algorithm)\/?$/,
+  /leetcode\.com\/(studyplan|explore)\//,
+  /refactoring\.guru\/design-patterns\/catalog/,
+  /fastapi\.tiangolo\.com\/tutorial\/?$/,
+  /docs\.docker\.com\/reference\/cli\/docker\/?$/,
+];
+
+/** the primer is an on-ramp: long enough to explain the idea, short enough to read first */
+const PRIMER_CHARS = { min: 250, max: 1800 };
+
 /** options that only mean something in a fixed order, which the shuffle breaks */
 const POSITIONAL = /\b(all|none|both|neither) of the (above|below)\b|\b(options?|answers?) \(?[a-d]\)?\b|\bboth [a-d] and [a-d]\b/i;
 
@@ -134,6 +155,28 @@ export function validateContent() {
       // exactly one: the unit page leads with it, and "which do I open first" is the question
       const primaries = u.resources.filter((r) => r.isPrimary).length;
       if (primaries !== 1) errors.push(`${u.slug}: ${primaries} primary resources — mark exactly one`);
+      for (const r of u.resources) {
+        if (HUB_PAGES.some((re) => re.test(r.url)))
+          errors.push(`${u.slug}: "${r.title}" links a whole course or index — link the page for this topic`);
+        // a site's front door is a hub unless the site is the tool itself
+        let path = "";
+        try {
+          path = new URL(r.url).pathname;
+        } catch {
+          errors.push(`${u.slug}: "${r.title}" url is not a url`);
+        }
+        if (path.replace(/\/+$/, "") === "" && r.kind !== "do" && r.kind !== "lab")
+          errors.push(`${u.slug}: "${r.title}" links a site's front page — link the page for this topic`);
+        for (const st of r.steps ?? [])
+          if (!st.trim()) errors.push(`${u.slug}: "${r.title}" has an empty step`);
+      }
+      const primary = u.resources.find((r) => r.isPrimary);
+      const steps = primary?.steps?.length ?? 0;
+      if (primary && (steps < 1 || steps > 6))
+        errors.push(`${u.slug}: the primary resource has ${steps} steps — say what to do on the page in 1 to 6`);
+      const primer = (u.primer ?? "").trim().length;
+      if (primer < PRIMER_CHARS.min || primer > PRIMER_CHARS.max)
+        errors.push(`${u.slug}: primer is ${primer} characters — ${PRIMER_CHARS.min} to ${PRIMER_CHARS.max}`);
       const urls = u.resources.map((r) => r.url);
       if (new Set(urls).size !== urls.length) errors.push(`${u.slug}: the same link listed twice`);
 

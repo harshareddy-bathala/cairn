@@ -16,6 +16,15 @@ export const git: Module = {
       objective:
         "Explain commits, trees, blobs and refs, and why a branch is just a moving pointer.",
       estMinutes: 60,
+      primer: `**Git** records snapshots of your project over time, so you can see what changed, go back, and work on several things at once without mixing them up.
+
+Each time you **commit**, git saves a snapshot of every tracked file plus a note of which commit came before it. The commits form a chain — the project's history.
+
+A **branch** is just a label pointing at one commit. When you commit on a branch, the label moves forward to the new commit. **HEAD** marks the branch you are on. That is all a branch is — a movable name — which is why creating one is instant and costs nothing.
+
+Most of git's confusing behaviour makes sense once you picture the chain of commits and the labels pointing into it.
+
+**You need already:** \`git add\`, \`git commit\` and \`git log\` on a practice repository. If those are new, make a folder, \`git init\`, and commit two small changes first.`,
       conceptMd: `Almost every confusing git behaviour becomes obvious once the model is clear.
 
 A **blob** is file contents. A **tree** maps names to blobs and other trees — a directory. A **commit** points to one tree plus its parent commits, with an author and a message. Everything is content-addressed by SHA, so identical content is stored once.
@@ -69,19 +78,34 @@ And it explains \`reflog\`: git records where HEAD and each branch have been, so
       ],
       resources: [
         {
-          title: "Pro Git — ch. 10.2, Git Objects",
-          url: "https://git-scm.com/book/en/v2/Git-Internals-Git-Objects",
+          title: "Pro Git 3.1 — Branches in a Nutshell",
+          url: "https://git-scm.com/book/en/v2/Git-Branching-Branches-in-a-Nutshell",
           kind: "read",
-          minutes: 35,
-          whyThisOne: "Read this once and git stops being a set of memorised incantations. Free, official.",
+          minutes: 25,
+          whyThisOne:
+            "Explains commits and branches with pictures of the pointers — the model everything else in git depends on.",
+          steps: [
+            "Read from the start through *Creating a New Branch*, following each diagram.",
+            "Read *Switching Branches*, then do the same steps in a practice repo, running `git log --oneline --graph --all` after each.",
+            "Draw the final picture from the chapter yourself without looking.",
+          ],
           isPrimary: true,
         },
         {
           title: "Learn Git Branching",
           url: "https://learngitbranching.js.org/",
           kind: "lab",
-          minutes: 60,
-          whyThisOne: "Interactive and visual — the fastest way to make rebase stop feeling dangerous.",
+          minutes: 30,
+          whyThisOne:
+            "An in-browser game that draws the commit graph as you type commands. Do the first *Introduction Sequence* levels.",
+        },
+        {
+          title: "Pro Git 10.2 — Git Objects",
+          url: "https://git-scm.com/book/en/v2/Git-Internals-Git-Objects",
+          kind: "read",
+          minutes: 25,
+          whyThisOne:
+            "Optional, for the interview follow-up: what a commit is made of on disk — blobs, trees and commits.",
         },
       ],
     },
@@ -91,6 +115,15 @@ And it explains \`reflog\`: git records where HEAD and each branch have been, so
       objective:
         "Choose between merge and rebase with a stated reason, and clean up a messy branch before review.",
       estMinutes: 75,
+      primer: `Two branches that have moved on separately have to be combined sooner or later. Git offers two ways.
+
+**Merge** ties them together with a new commit that has two parents. Nothing existing changes; history shows exactly what happened, forks and all.
+
+**Rebase** takes your branch's commits and replays them, one by one, on top of the other branch — as if you had started your work from its latest commit. History comes out as one straight line, but your commits are *recreated* with new IDs.
+
+That last point gives the one rule to remember: **never rebase commits other people already have**, because their copies and yours will no longer match. Rebase your own unpushed work freely; merge shared branches.
+
+**You need already:** branches as movable labels, from the last unit.`,
       conceptMd: `**Merge** creates a commit with two parents. History is truthful but noisy. **Rebase** replays your commits on top of another branch, producing linear history — but it **rewrites commit SHAs**, creating new commits.
 
 Hence the golden rule: **never rebase commits that other people have pulled.** Rebase your own unpushed work freely; rebase shared history and you force everyone else into a painful reconciliation.
@@ -133,12 +166,27 @@ Hence the golden rule: **never rebase commits that other people have pulled.** R
       ],
       resources: [
         {
-          title: "Atlassian — merging vs rebasing",
+          title: "Pro Git 3.6 — Rebasing",
+          url: "https://git-scm.com/book/en/v2/Git-Branching-Rebasing",
+          kind: "read",
+          minutes: 30,
+          whyThisOne:
+            "Shows merge and rebase on the same history, with diagrams of the commits before and after.",
+          steps: [
+            "Read **The Basic Rebase** and compare its two diagrams — merge result vs rebase result.",
+            "Read **The Perils of Rebasing** — the one rule, and what goes wrong when you break it.",
+            "Read **Rebase vs. Merge**.",
+            "Skip *More Interesting Rebases* for now.",
+          ],
+          isPrimary: true,
+        },
+        {
+          title: "Atlassian — Merging vs. rebasing",
           url: "https://www.atlassian.com/git/tutorials/merging-vs-rebasing",
           kind: "read",
-          minutes: 25,
-          whyThisOne: "The clearest statement of the golden rule and why it exists.",
-          isPrimary: true,
+          minutes: 20,
+          whyThisOne:
+            "A second explanation of the same choice, plus interactive rebase for tidying your commits before a review.",
         },
       ],
     },
@@ -148,6 +196,14 @@ Hence the golden rule: **never rebase commits that other people have pulled.** R
       objective:
         "Answer 'how do you undo a bad commit that is already pushed?' correctly and without hesitation.",
       estMinutes: 60,
+      primer: `Everyone commits something wrong eventually. Which fix to use depends on one question: **has anyone else got this commit yet?**
+
+- **Not pushed yet** — only you have it. You can rewrite history: \`git commit --amend\` fixes the last commit, and \`git reset\` moves your branch back to an earlier commit, either keeping your changes (\`--soft\`) or discarding them (\`--hard\`).
+- **Already pushed** — others may have it. Do not rewrite. \`git revert <commit>\` makes a *new* commit that undoes the bad one, and history stays consistent for everyone.
+
+And if you lose something, \`git reflog\` lists every place your branch has pointed recently, so a "lost" commit is usually recoverable.
+
+**You need already:** branches and commits as a chain, from the first git unit.`,
       conceptMd: `This gets asked constantly, and the right answer is a distinction, not a command.
 
 **Not yet pushed** → \`git reset\`. Rewriting local history is free. Use \`--soft\` to keep the changes staged, \`--hard\` to throw them away.
@@ -192,18 +248,33 @@ Volunteering that last case is what separates a good answer from a complete one.
       ],
       resources: [
         {
-          title: "Pro Git — Undoing Things",
-          url: "https://git-scm.com/book/en/v2/Git-Basics-Undoing-Things",
+          title: "Atlassian — Undoing changes in Git",
+          url: "https://www.atlassian.com/git/tutorials/undoing-changes",
           kind: "read",
-          minutes: 25,
-          whyThisOne: "Covers reset, revert, amend and checkout in one place with the trade-offs stated.",
+          minutes: 30,
+          whyThisOne:
+            "Walks through each way of undoing — checkout, revert, reset — and when each one is safe.",
+          steps: [
+            "Read the whole page in a practice repo, running each command as it appears.",
+            "Make a bad commit, push it to a throwaway GitHub repo, and undo it with `git revert`.",
+            "Make a local bad commit and undo it with `git reset --soft HEAD~1`; check your changes are still there.",
+          ],
           isPrimary: true,
         },
         {
-          title: "GitHub — removing sensitive data",
+          title: "Pro Git 2.4 — Undoing things",
+          url: "https://git-scm.com/book/en/v2/Git-Basics-Undoing-Things",
+          kind: "read",
+          minutes: 15,
+          whyThisOne:
+            "The small everyday undos: amending the last commit, unstaging a file, discarding changes to one file.",
+        },
+        {
+          title: "GitHub — Removing sensitive data from a repository",
           url: "https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/removing-sensitive-data-from-a-repository",
           kind: "docs",
-          whyThisOne: "The leaked-secret case, which is the follow-up that impresses when you raise it first.",
+          whyThisOne:
+            "The leaked-password case: why revert is not enough, and why the secret must be rotated regardless.",
         },
       ],
     },
@@ -213,6 +284,13 @@ Volunteering that last case is what separates a good answer from a complete one.
       objective:
         "Find a regression with git bisect, and write commits and pull requests a reviewer will thank you for.",
       estMinutes: 60,
+      primer: `Two habits in this unit.
+
+**Finding the commit that broke something.** Suppose the code worked last week and is broken now, with 200 commits in between. \`git bisect\` does a binary search over them: you mark one commit good and one bad, git checks out the middle one, you test it and say good or bad, and it halves the range again. About 8 steps find the culprit among 200. If a script can test for the bug, \`git bisect run\` does it all automatically.
+
+**Writing history other people can read.** A commit message has a short summary line (about 50 characters, like "Fix login redirect loop"), a blank line, then *why* the change was made. Small commits that each do one thing make review, revert and bisect all easier.
+
+**You need already:** commits and branches; binary search from the DSA track helps.`,
       conceptMd: `\`git bisect\` binary searches your history for the commit that introduced a bug. \`git bisect start\`, \`git bisect bad\`, \`git bisect good <old-sha>\`, then test and mark each step. Over a thousand commits that is about ten tests. With \`git bisect run ./test.sh\` it is fully automatic — genuinely one of the highest-leverage commands in the tool, and almost nobody at your level knows it.
 
 **Commit messages**: a short imperative subject ("Add retry with backoff to the collector"), a blank line, then *why* rather than *what* — the diff already shows what. This directly improves your GitHub profile, which recruiters do read.
@@ -251,11 +329,18 @@ Volunteering that last case is what separates a good answer from a complete one.
       ],
       resources: [
         {
-          title: "git-bisect documentation",
-          url: "https://git-scm.com/docs/git-bisect",
-          kind: "docs",
+          title: "Pro Git 7.10 — Debugging with Git",
+          url: "https://git-scm.com/book/en/v2/Git-Tools-Debugging-with-Git",
+          kind: "read",
           minutes: 20,
-          whyThisOne: "Short, and the `bisect run` section is the part worth actually rehearsing.",
+          whyThisOne:
+            "Explains bisect as a walkthrough of a real session, then how to automate it.",
+          steps: [
+            "Read **Binary Search** and follow the example session.",
+            "In a practice repo, make 10 commits, put a bug in commit 6, and find it with `git bisect`.",
+            "Repeat with `git bisect run` and a one-line test script.",
+            "Skim *File Annotation* (`git blame`).",
+          ],
           isPrimary: true,
         },
         {
@@ -263,7 +348,8 @@ Volunteering that last case is what separates a good answer from a complete one.
           url: "https://cbea.ms/git-commit/",
           kind: "read",
           minutes: 15,
-          whyThisOne: "Seven rules, fifteen minutes, and it permanently improves how your repos read.",
+          whyThisOne:
+            "Seven short rules for commit messages, each with a good and a bad example.",
         },
       ],
     },

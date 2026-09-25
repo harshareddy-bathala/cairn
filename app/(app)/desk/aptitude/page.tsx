@@ -6,7 +6,7 @@ import { Boot, BootItem } from "@/components/instrument/boot";
 import { AptitudeLog } from "@/components/instrument/aptitude-log";
 import { getJourneyStateCached } from "@/lib/journey";
 import { aptitudeByTopic, aptitudeTrend, getAptitude } from "@/lib/sidetracks";
-import { APTITUDE_SOURCES } from "@/content/aptitude";
+import { APTITUDE_SOURCES, aptitudeTopicFor, practiceUrlFor, practiceUrlForTopic } from "@/content/aptitude";
 import { fmtDay } from "@/lib/format";
 import { cn } from "@/lib/cn";
 import { scoreBand, scoreText } from "@/lib/marks";
@@ -30,6 +30,8 @@ export default async function AptitudePage() {
   const trend = aptitudeTrend(scores);
   const avg = trend.length ? Math.round(trend.reduce((a, b) => a + b, 0) / trend.length) : null;
   const topics = aptitudeByTopic(scores);
+  const today = aptitudeTopicFor(day);
+  const todayUrl = practiceUrlFor(today.pool, today.topic);
 
   return (
     <Boot className="mx-auto max-w-3xl space-y-6 px-4 pt-6 pb-8 sm:px-6 sm:pt-8 sm:pb-10">
@@ -50,8 +52,21 @@ export default async function AptitudePage() {
           legend="log"
           aux={avg != null ? `${avg}% · ${trend.length} ${trend.length === 1 ? "score" : "scores"}` : "no scores yet"}
         >
+          <p className="mb-1 note text-mid">
+            Today: <span className="text-hi">{today.topic}</span>{" "}
+            {todayUrl && (
+              <a
+                href={todayUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="tap text-info underline underline-offset-[3px]"
+              >
+                open the questions ↗
+              </a>
+            )}
+          </p>
           <p className="mb-3 flex flex-wrap items-center gap-x-3 note text-lo">
-            Drill on
+            Other sections
             {APTITUDE_SOURCES.map((s) => (
               <a
                 key={s.url}
@@ -87,7 +102,18 @@ export default async function AptitudePage() {
             <ul className="divide-y divide-line-soft">
               {topics.map((t) => (
                 <li key={t.topic} className="flex items-baseline gap-3 py-1.5">
-                  <span className="min-w-0 flex-1 truncate text-sm text-mid">{t.topic}</span>
+                  {practiceUrlForTopic(t.topic) ? (
+                    <a
+                      href={practiceUrlForTopic(t.topic)!}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="tap min-w-0 flex-1 truncate text-sm text-mid underline-offset-4 hover:text-hi hover:underline"
+                    >
+                      {t.topic}
+                    </a>
+                  ) : (
+                    <span className="min-w-0 flex-1 truncate text-sm text-mid">{t.topic}</span>
+                  )}
                   <span className="legend shrink-0 tabular-nums">
                     {t.n} {t.n === 1 ? "drill" : "drills"}
                   </span>

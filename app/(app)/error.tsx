@@ -46,7 +46,7 @@ export default function AppError({
           </button>
           <Link
             href="/today"
-            className="ctl inline-flex items-center rounded-[3px] border border-line-soft px-4 py-1.5 text-sm text-mid transition-colors duration-[120ms] hover:border-line hover:text-hi"
+            className={buttonClass("quiet", "md", "py-1.5")}
           >
             back to today
           </Link>

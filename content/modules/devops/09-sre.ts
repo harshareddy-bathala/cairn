@@ -1,7 +1,5 @@
 import type { Module } from "@/content/types";
 
-const SRE = "https://sre.google";
-
 export const sre: Module = {
   slug: "devops-sre",
   trackSlug: "devops",
@@ -18,6 +16,15 @@ export const sre: Module = {
       objective:
         "Define an SLI as good events over valid events, choose where to measure it, and write atlas's latency and availability SLIs.",
       estMinutes: 60,
+      primer: `**SRE** (Site Reliability Engineering) treats reliability as something you measure and manage, not a feeling.
+
+It starts with an **SLI** — a Service Level *Indicator* — a number that captures what users experience, written as a ratio: **good events ÷ valid events**. For example: *the share of requests that succeeded*, or *the share of requests answered in under 300 ms*.
+
+Where you measure matters. Measuring at the load balancer counts failures the app never saw; measuring inside the app misses requests that never reached it. The closer to the user, the more honest the number.
+
+The next unit turns SLIs into targets.
+
+**You need already:** the observability module — SLIs are PromQL queries in practice.`,
       conceptMd: `The **four golden signals** are what to watch on any user-facing service:
 
 - **Latency** — how long requests take. Track successful and failed requests separately: a fast error is not good latency.
@@ -66,19 +73,25 @@ Decide which events are *valid* too — health checks and bots usually are not, 
       ],
       resources: [
         {
-          title: "Google SRE book — service level objectives",
-          url: `${SRE}/sre-book/service-level-objectives/`,
+          title: "Google SRE book — Service level objectives",
+          url: "https://sre.google/sre-book/service-level-objectives/",
           kind: "read",
-          minutes: 35,
-          whyThisOne: "SLI, SLO and SLA defined properly — the highest-leverage reading this month.",
+          minutes: 30,
+          whyThisOne:
+            "SLI, SLO and SLA defined properly — the highest-leverage reading this month.",
+          steps: [
+            "Read the chapter; write each of SLI, SLO and SLA in one sentence of your own.",
+            "Write atlas's availability SLI and latency SLI as good ÷ valid.",
+            "Read the workbook chapter (next link) for where to measure them.",
+          ],
           isPrimary: true,
         },
         {
-          title: "Google SRE workbook — implementing SLOs",
-          url: `${SRE}/workbook/implementing-slos/`,
+          title: "Google SRE workbook — Implementing SLOs",
+          url: "https://sre.google/workbook/implementing-slos/",
           kind: "read",
-          minutes: 40,
-          whyThisOne: "Worked examples of choosing SLIs and where to measure them.",
+          whyThisOne:
+            "Worked examples of choosing SLIs and deciding where to measure them.",
         },
       ],
     },
@@ -88,6 +101,13 @@ Decide which events are *valid* too — health checks and bots usually are not, 
       objective:
         "Turn an SLI into an SLO and an error budget, write an error budget policy, and alert on burn rate instead of raw errors.",
       estMinutes: 80,
+      primer: `An **SLO** (Service Level Objective) is a target for an SLI over a time window: "99.9% of requests succeed, measured over 30 days".
+
+Nothing is 100% reliable, and trying for it makes you stop shipping. The gap between the SLO and 100% is the **error budget** — here 0.1%, or about 43 minutes of full outage a month. While budget remains, you ship features freely; when it is spent, reliability work comes first. An **error budget policy** writes that rule down in advance.
+
+Alerting on every error is noisy. Instead, alert on the **burn rate** — how fast you are spending the budget. Burning it 14 times faster than planned means it will be gone in about two days: page someone. A slow burn becomes a ticket instead.
+
+**You need already:** the SLI unit.`,
       conceptMd: `An **SLO** is a target for an SLI over a window: *99.5% of requests succeed, measured over 30 days.* An **SLA** is a contract with consequences (refunds) and is set looser than the SLO, so you notice trouble before it costs money.
 
 **100% is the wrong target.** Users cannot tell 99.99% from 100% through their own flaky Wi-Fi, and each extra nine costs far more than the last while slowing every change.
@@ -146,26 +166,32 @@ Each alert also checks a **short window** (for example 5 minutes for the 1-hour 
       ],
       resources: [
         {
-          title: "Google SRE workbook — alerting on SLOs",
-          url: `${SRE}/workbook/alerting-on-slos/`,
+          title: "Google SRE book — Embracing risk",
+          url: "https://sre.google/sre-book/embracing-risk/",
           kind: "read",
-          minutes: 40,
-          whyThisOne: "Builds burn-rate alerting step by step, including the multiwindow table.",
+          minutes: 25,
+          whyThisOne:
+            "Why 100% is the wrong target, and where the error budget idea comes from.",
+          steps: [
+            "Read the chapter and work out atlas's monthly error budget for a 99.5% SLO, in minutes.",
+            "Read the workbook's *Alerting on SLOs* (next link) up to the multiwindow, multi-burn-rate table.",
+            "Adapt the example error budget policy (last link) for atlas.",
+          ],
           isPrimary: true,
         },
         {
-          title: "Google SRE workbook — error budget policy",
-          url: `${SRE}/workbook/error-budget-policy/`,
+          title: "Google SRE workbook — Alerting on SLOs",
+          url: "https://sre.google/workbook/alerting-on-slos/",
           kind: "read",
-          minutes: 15,
-          whyThisOne: "A real policy document to adapt for atlas.",
+          whyThisOne:
+            "Builds burn-rate alerting step by step, including the multiwindow table.",
         },
         {
-          title: "Google SRE book — embracing risk",
-          url: `${SRE}/sre-book/embracing-risk/`,
+          title: "Google SRE workbook — Error budget policy",
+          url: "https://sre.google/workbook/error-budget-policy/",
           kind: "read",
-          minutes: 30,
-          whyThisOne: "Why 100% is the wrong target, and where the error budget idea comes from.",
+          whyThisOne:
+            "A real policy document to adapt.",
         },
       ],
     },
@@ -175,6 +201,17 @@ Each alert also checks a **short window** (for example 5 minutes for the 1-hour 
       objective:
         "Run an incident with clear roles, mitigate before diagnosing, communicate on a schedule, and describe what makes an on-call rotation sustainable.",
       estMinutes: 60,
+      primer: `An **incident** is anything that hurts users enough to need a coordinated response. The single most important rule: **mitigate first, diagnose later**. Roll back, fail over, turn the feature off — stop the harm, *then* work out why.
+
+Incidents go better with clear roles:
+
+- an **incident commander** coordinates and makes decisions, and does not debug;
+- **responders** do the hands-on work;
+- a **communications lead** posts regular updates, so nobody has to interrupt the responders to ask.
+
+A **severity level** decides how loud the response is. **On-call** is the rota of who responds; it stays sustainable only when pages are rare and every one is actionable.
+
+**You need already:** alerting from the observability module.`,
       conceptMd: `An incident is a coordination problem as much as a technical one. The practices that work:
 
 **Declare it early.** Opening an incident that turns out small costs little; a quiet one that grows with no one in charge costs a lot.
@@ -223,26 +260,32 @@ Each alert also checks a **short window** (for example 5 minutes for the 1-hour 
       ],
       resources: [
         {
-          title: "Google SRE book — managing incidents",
-          url: `${SRE}/sre-book/managing-incidents/`,
+          title: "Google SRE book — Managing incidents",
+          url: "https://sre.google/sre-book/managing-incidents/",
           kind: "read",
           minutes: 25,
-          whyThisOne: "A badly handled incident and the same incident handled well, side by side.",
+          whyThisOne:
+            "A badly handled incident and the same one handled well, side by side.",
+          steps: [
+            "Read both versions of the incident and list what changed between them.",
+            "Read PagerDuty's severity levels (next link) and define three for atlas.",
+            "Read the chapter on being on-call (last link).",
+          ],
           isPrimary: true,
         },
         {
-          title: "PagerDuty — incident response documentation",
-          url: "https://response.pagerduty.com/",
+          title: "PagerDuty — Severity levels",
+          url: "https://response.pagerduty.com/before/severity_levels/",
           kind: "read",
-          minutes: 30,
-          whyThisOne: "Severity levels, roles and communication templates from a company that runs this daily.",
+          whyThisOne:
+            "Concrete severity definitions from a company that runs incident response daily.",
         },
         {
-          title: "Google SRE book — being on-call",
-          url: `${SRE}/sre-book/being-on-call/`,
+          title: "Google SRE book — Being on-call",
+          url: "https://sre.google/sre-book/being-on-call/",
           kind: "read",
-          minutes: 20,
-          whyThisOne: "What a healthy rotation looks like, in numbers.",
+          whyThisOne:
+            "What a healthy rotation looks like, in numbers.",
         },
       ],
     },
@@ -252,6 +295,13 @@ Each alert also checks a **short window** (for example 5 minutes for the 1-hour 
       objective:
         "Write a blameless postmortem for a real atlas failure, and identify and eliminate a piece of toil.",
       estMinutes: 90,
+      primer: `After an incident comes the **postmortem**: a written account of what happened, why, and what will change so it does not happen again. It is **blameless** — it asks "how did our system let a reasonable person make this mistake?", not "who messed up?". People who fear blame hide the details that fixes depend on.
+
+A postmortem has a timeline, the impact, the root causes, what went well, and **action items** with owners and dates.
+
+**Toil** is manual, repetitive operational work that could be automated and grows with the service — restarting a stuck process by hand every week, for example. SRE teams cap toil (Google says under 50% of their time) and treat eliminating it as real engineering work.
+
+**You need already:** the incidents unit.`,
       conceptMd: `**A blameless postmortem** assumes everyone acted reasonably given what they knew at the time, and asks *what about the system* allowed the failure. Blame makes people hide mistakes, and hidden mistakes repeat.
 
 The structure, and what to write in \`POSTMORTEM.md\` for atlas:
@@ -298,26 +348,33 @@ Have one concrete example ready: a manual step you automated (a script, a cron j
       ],
       resources: [
         {
-          title: "Google SRE book — postmortem culture",
-          url: `${SRE}/sre-book/postmortem-culture/`,
+          title: "Google SRE book — Postmortem culture",
+          url: "https://sre.google/sre-book/postmortem-culture/",
           kind: "read",
-          minutes: 25,
-          whyThisOne: "What blameless means in practice, and when a postmortem is required.",
+          minutes: 20,
+          whyThisOne:
+            "What blameless means in practice, and when a postmortem is required.",
+          steps: [
+            "Read the chapter.",
+            "Read the example postmortem (next link) and copy its headings into `POSTMORTEM.md` for atlas.",
+            "Write a postmortem for one real failure you had.",
+            "Read *Eliminating toil* (last link) and list one piece of toil you will automate.",
+          ],
           isPrimary: true,
         },
         {
-          title: "Google SRE book — example postmortem",
-          url: `${SRE}/sre-book/example-postmortem/`,
+          title: "Google SRE book — Example postmortem",
+          url: "https://sre.google/sre-book/example-postmortem/",
           kind: "read",
-          minutes: 15,
-          whyThisOne: "A complete postmortem to model POSTMORTEM.md on.",
+          whyThisOne:
+            "A complete postmortem to model yours on.",
         },
         {
-          title: "Google SRE book — eliminating toil",
-          url: `${SRE}/sre-book/eliminating-toil/`,
+          title: "Google SRE book — Eliminating toil",
+          url: "https://sre.google/sre-book/eliminating-toil/",
           kind: "read",
-          minutes: 20,
-          whyThisOne: "The definition, the 50% cap and why toil is corrosive.",
+          whyThisOne:
+            "The definition, the 50% cap, and why toil wears teams down.",
         },
       ],
     },
@@ -327,6 +384,16 @@ Have one concrete example ready: a manual step you automated (a script, a cron j
       objective:
         "Apply timeouts, retries with backoff and jitter, idempotency, circuit breakers, load shedding and health versus readiness checks — and explain the failure each prevents.",
       estMinutes: 75,
+      primer: `Services fail — networks drop, dependencies slow down. Reliable systems are built to expect it. The standard patterns, each preventing a specific failure:
+
+- **Timeouts** — never wait forever for another service.
+- **Retries with exponential backoff and jitter** — try again, waiting longer each time plus a random amount, so thousands of clients do not retry in lockstep.
+- **Idempotency** — make repeated requests safe (an idempotency key stops a retried payment from charging twice).
+- **Circuit breaker** — after repeated failures, stop calling a dependency for a while and fail fast.
+- **Load shedding** — when overloaded, reject some requests quickly instead of serving all of them slowly.
+- **Health vs readiness checks** — "the process is alive" is different from "ready to receive traffic".
+
+**You need already:** HTTP, and the incidents unit.`,
       conceptMd: `Each pattern exists because of a specific way distributed systems fail.
 
 **Timeouts.** Without one, a slow dependency holds your threads or connections until you run out and fail too. Every network call needs a timeout, set from the dependency's real latency (a little above its p99), not a default of 30 seconds or infinity.
@@ -377,26 +444,33 @@ These combine into the **cascading failure** story: one slow dependency, no time
       ],
       resources: [
         {
-          title: "AWS Architecture Blog — exponential backoff and jitter",
+          title: "AWS Architecture Blog — Exponential backoff and jitter",
           url: "https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/",
           kind: "read",
-          minutes: 15,
-          whyThisOne: "The simulation that shows why jitter matters, with the three jitter variants.",
+          minutes: 20,
+          whyThisOne:
+            "A simulation that shows why jitter matters, with the three jitter variants.",
+          steps: [
+            "Read the article and its graphs.",
+            "Implement retry with full jitter for one outgoing call in atlas, with a timeout.",
+            "Read Fowler's circuit breaker (last link) and draw its three states.",
+            "Read the cascading failures chapter (next link) to see how the patterns combine.",
+          ],
           isPrimary: true,
         },
         {
-          title: "Google SRE book — addressing cascading failures",
-          url: `${SRE}/sre-book/addressing-cascading-failures/`,
+          title: "Google SRE book — Addressing cascading failures",
+          url: "https://sre.google/sre-book/addressing-cascading-failures/",
           kind: "read",
-          minutes: 35,
-          whyThisOne: "How the patterns combine, and how systems fall over without them.",
+          whyThisOne:
+            "How the patterns work together, and how systems fall over without them.",
         },
         {
-          title: "Martin Fowler — circuit breaker",
+          title: "Martin Fowler — Circuit breaker",
           url: "https://martinfowler.com/bliki/CircuitBreaker.html",
           kind: "read",
-          minutes: 10,
-          whyThisOne: "The state machine, clearly drawn.",
+          whyThisOne:
+            "The state machine, clearly drawn.",
         },
       ],
     },

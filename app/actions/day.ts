@@ -128,7 +128,7 @@ export async function closeDay(
 
   const res = await db.execute<{ day_index: number | null; closed: boolean; stones: number }>(sql`
     with d as (
-      select day_index from journey_days
+      select day_index, closed_at is not null as was_closed from journey_days
       where user_id = ${userId} order by day_index desc limit 1
     ),
     upd as (
@@ -140,7 +140,9 @@ export async function closeDay(
       from d
       where j.user_id = ${userId} and j.day_index = d.day_index
         and coalesce(${learned}, nullif(trim(j.learned_md), '')) is not null
-      returning j.day_index, (j.closed_at is not null) as was_closed
+      -- RETURNING sees the row after the update, where closed_at is always set;
+      -- whether the day was already closed has to come from the snapshot in d
+      returning j.day_index, d.was_closed
     )
     select (select day_index from d) as day_index,
       exists (select 1 from upd) as closed,

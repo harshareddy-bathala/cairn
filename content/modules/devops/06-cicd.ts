@@ -1,7 +1,5 @@
 import type { Module } from "@/content/types";
 
-const GHA = "https://docs.github.com/en/actions";
-
 export const cicd: Module = {
   slug: "devops-cicd",
   trackSlug: "devops",
@@ -18,6 +16,17 @@ export const cicd: Module = {
       objective:
         "Read and write a workflow: triggers, jobs, steps, runners, needs and conditionals — and know what is shared between steps and what is not.",
       estMinutes: 60,
+      primer: `**CI/CD** means every push is automatically tested (**continuous integration**) and, once it passes, automatically shipped (**continuous delivery/deployment**). No "it worked on my laptop", no manual deploy steps.
+
+In **GitHub Actions** you describe this in a YAML file under \`.github/workflows/\`:
+
+- a **workflow** runs when an **event** happens — a push, a pull request, a schedule;
+- it contains **jobs**, which run in parallel by default on fresh machines called **runners**;
+- each job is a list of **steps**, each running a shell command or a reusable **action** (like \`actions/checkout\`).
+
+Jobs do not share files: each starts on a clean machine. To pass something along you use \`needs:\` (for ordering) and artifacts (for files).
+
+**You need already:** git and a GitHub repository.`,
       conceptMd: `A workflow is a YAML file in \`.github/workflows/\`. Its shape:
 
 \`\`\`yaml
@@ -75,26 +84,33 @@ Pin third-party actions to a **full commit SHA**, not just a tag: a tag can be m
       ],
       resources: [
         {
-          title: "GitHub — understanding GitHub Actions",
-          url: `${GHA}/about-github-actions/understanding-github-actions`,
-          kind: "docs",
-          minutes: 20,
-          whyThisOne: "Workflows, events, jobs, steps and runners, with the diagram of how they nest.",
+          title: "GitHub — Understanding GitHub Actions",
+          url: "https://docs.github.com/en/actions/get-started/understand-github-actions",
+          kind: "read",
+          minutes: 15,
+          whyThisOne:
+            "Workflows, events, jobs, actions and runners, and how they nest.",
+          steps: [
+            "Read **Overview** and **The components of GitHub Actions**.",
+            "Then do the [Quickstart](https://docs.github.com/en/actions/get-started/quickstart) in a practice repo and watch your first run.",
+            "Change the workflow to run `echo` in two jobs, with the second `needs:` the first.",
+            "Keep the workflow syntax reference (next link) open while you edit.",
+          ],
           isPrimary: true,
         },
         {
-          title: "GitHub — workflow syntax",
-          url: `${GHA}/writing-workflows/workflow-syntax-for-github-actions`,
+          title: "GitHub — Workflow syntax",
+          url: "https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax",
           kind: "docs",
-          minutes: 20,
-          whyThisOne: "The reference to keep open while writing YAML: needs, if, env, permissions.",
+          whyThisOne:
+            "The reference to keep open while writing YAML: needs, if, env, permissions.",
         },
         {
-          title: "GitHub — events that trigger workflows",
-          url: `${GHA}/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows`,
+          title: "GitHub — Events that trigger workflows",
+          url: "https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows",
           kind: "docs",
-          minutes: 15,
-          whyThisOne: "Read the pull_request and pull_request_target sections for the fork-and-secrets rules.",
+          whyThisOne:
+            "Read `pull_request` and `pull_request_target` for the rules about forks and secrets.",
         },
       ],
     },
@@ -104,6 +120,15 @@ Pin third-party actions to a **full commit SHA**, not just a tag: a tag can be m
       objective:
         "Fan a job out with a matrix, cache dependencies with a correct key, and pass build outputs between jobs with artifacts.",
       estMinutes: 60,
+      primer: `Three features that make pipelines faster and more thorough.
+
+- A **matrix** runs the same job over several combinations — Python 3.11 and 3.12, Ubuntu and macOS — from one definition.
+- A **cache** saves downloaded dependencies between runs, keyed by a hash of your lock file. Same lock file, same cache, and the install takes seconds. Change the lock file and the key changes, so the cache is rebuilt.
+- An **artifact** is a file one job uploads so a later job (or a person) can download it — typically the built image or package, so you **build once** and deploy that exact thing.
+
+Cache is for speed and can be thrown away; an artifact is a result you need.
+
+**You need already:** the workflow anatomy unit.`,
       conceptMd: `**Matrix.** One job definition, many runs:
 
 \`\`\`yaml
@@ -164,26 +189,33 @@ Build once, then pass the result with \`upload-artifact\` / \`download-artifact\
       ],
       resources: [
         {
-          title: "GitHub — dependency caching",
-          url: `${GHA}/writing-workflows/choosing-what-your-workflow-does/caching-dependencies-to-speed-up-workflows`,
+          title: "GitHub — Dependency caching reference",
+          url: "https://docs.github.com/en/actions/reference/workflows-and-actions/dependency-caching",
           kind: "docs",
           minutes: 20,
-          whyThisOne: "Keys, restore-keys and the cache-versus-artifact comparison.",
+          whyThisOne:
+            "Cache keys, restore keys and how a hit is decided.",
+          steps: [
+            "Read **cache action usage** through **Using contexts to create cache keys**.",
+            "Read **Cache key matching**.",
+            "Add a pip or npm cache to your practice workflow and compare run times before and after.",
+            "Then add a two-version matrix using the next link.",
+          ],
           isPrimary: true,
         },
         {
-          title: "GitHub — running variations of jobs (matrix)",
-          url: `${GHA}/writing-workflows/choosing-what-your-workflow-does/running-variations-of-jobs-in-a-workflow`,
+          title: "GitHub — Running variations of jobs (matrix)",
+          url: "https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/run-job-variations",
           kind: "docs",
-          minutes: 15,
-          whyThisOne: "include, exclude and fail-fast, with examples.",
+          whyThisOne:
+            "include, exclude and fail-fast, with examples.",
         },
         {
-          title: "GitHub — workflow artifacts",
-          url: `${GHA}/writing-workflows/choosing-what-your-workflow-does/storing-and-sharing-data-from-a-workflow`,
+          title: "GitHub — Store and share data with artifacts",
+          url: "https://docs.github.com/en/actions/tutorials/store-and-share-data",
           kind: "docs",
-          minutes: 15,
-          whyThisOne: "Upload in one job, download in the next — the build-once pattern.",
+          whyThisOne:
+            "Upload in one job, download in the next — the build-once pattern.",
         },
       ],
     },
@@ -193,6 +225,13 @@ Build once, then pass the result with \`upload-artifact\` / \`download-artifact\
       objective:
         "Keep secrets out of logs and forks, scope GITHUB_TOKEN, and deploy to AWS by assuming a role through OIDC with no stored access keys.",
       estMinutes: 75,
+      primer: `A deploy job needs permission to change your cloud account. The old way stored an AWS access key as a GitHub secret — a long-lived password that works from anywhere, forever, until someone notices it has leaked.
+
+**OIDC** removes the stored key. On each run GitHub issues a short-lived signed token saying "this is repo X, branch main". You tell AWS, once, to trust GitHub's tokens and to let a token from *that repo and branch* assume a specific **IAM role**. The job exchanges its token for temporary AWS credentials that expire within the hour.
+
+Secrets you still need (API tokens, say) belong in GitHub secrets: masked in logs, and not passed to pull requests from forks.
+
+**You need already:** IAM roles from the AWS module, and a working workflow.`,
       conceptMd: `**Secrets** are encrypted, masked in logs, and **not given to workflows triggered from forks**. They are still visible to anyone who can edit a workflow in the repo, so they are only as safe as your branch protection.
 
 **GITHUB_TOKEN** is created per run. Give it the least it needs:
@@ -260,26 +299,33 @@ GitHub signs a short-lived token describing the run (repo, branch, environment);
       ],
       resources: [
         {
-          title: "GitHub — configuring OpenID Connect in AWS",
-          url: `${GHA}/security-for-github-actions/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services`,
+          title: "GitHub — Configuring OpenID Connect in AWS",
+          url: "https://docs.github.com/en/actions/how-tos/secure-your-work/security-harden-deployments/oidc-in-aws",
           kind: "lab",
-          minutes: 40,
-          whyThisOne: "The provider, the trust policy and the workflow, end to end — do it for atlas.",
+          minutes: 45,
+          whyThisOne:
+            "The identity provider, the trust policy and the workflow, end to end.",
+          steps: [
+            "Read **Overview**, then do **Adding the identity provider to AWS**.",
+            "Do **Configuring the role and trust policy**, limiting it to your repo and `main`.",
+            "Do **Updating your GitHub Actions workflow**, including the `permissions: id-token: write` setting.",
+            "Run `aws sts get-caller-identity` in the job to prove it worked.",
+          ],
           isPrimary: true,
         },
         {
           title: "aws-actions/configure-aws-credentials",
           url: "https://github.com/aws-actions/configure-aws-credentials",
           kind: "docs",
-          minutes: 15,
-          whyThisOne: "The action's README, including the recommended trust-policy conditions.",
+          whyThisOne:
+            "The action's README, including the recommended trust-policy conditions.",
         },
         {
-          title: "GitHub — using secrets in GitHub Actions",
-          url: `${GHA}/security-for-github-actions/security-guides/using-secrets-in-github-actions`,
+          title: "GitHub — Using secrets in GitHub Actions",
+          url: "https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/use-secrets",
           kind: "docs",
-          minutes: 15,
-          whyThisOne: "Masking, forks and environments — what secrets do and do not protect.",
+          whyThisOne:
+            "Masking, forks and environments — what secrets do and do not protect.",
         },
       ],
     },
@@ -289,6 +335,20 @@ GitHub signs a short-lived token describing the run (repo, branch, environment);
       objective:
         "Build atlas's pipeline end to end — lint, test, scan, build, push, deploy, smoke test — behind branch protection, and describe the same pipeline in Jenkins terms.",
       estMinutes: 150,
+      primer: `This unit assembles everything into one real pipeline for atlas. On every push to \`main\`:
+
+1. **lint** and **test** the code;
+2. **scan** dependencies and the image for known vulnerabilities;
+3. **build** the Docker image once, tagged with the commit SHA;
+4. **push** it to a registry;
+5. **deploy** that exact image;
+6. run a **smoke test** against the live service, and roll back if it fails.
+
+**Branch protection** makes the pipeline a gate: nothing merges to \`main\` unless the checks pass.
+
+Many companies still use **Jenkins** instead of GitHub Actions. The ideas are the same — stages, steps, agents — so the goal is to be able to describe your pipeline in Jenkins terms too.
+
+**You need already:** the earlier CI/CD units and the Docker module.`,
       conceptMd: `The pipeline to build for atlas, in order, each stage gating the next:
 
 1. **Lint and type-check** — seconds, catches the cheap mistakes first.
@@ -359,23 +419,30 @@ The trade-off to state: Jenkins gives full control and runs anywhere, including 
           title: "Docker — GitHub Actions for building images",
           url: "https://docs.docker.com/build/ci/github-actions/",
           kind: "lab",
-          minutes: 40,
-          whyThisOne: "Build and push with caching and SHA tags — the core of stages 5 and 6.",
+          minutes: 45,
+          whyThisOne:
+            "Building and pushing an image with caching and SHA tags — the core of the build and push stages.",
+          steps: [
+            "Read the introduction and follow the basic build-and-push example.",
+            "Tag images with the commit SHA, not only `latest`.",
+            "Add the lint, test and scan jobs in front, with `needs:` so build waits for them.",
+            "Turn on branch protection with required checks (next link).",
+          ],
           isPrimary: true,
         },
         {
-          title: "GitHub — about protected branches",
+          title: "GitHub — About protected branches",
           url: "https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches",
           kind: "docs",
-          minutes: 15,
-          whyThisOne: "Required checks and reviews — what turns a pipeline into a gate.",
+          whyThisOne:
+            "Required checks and reviews — what turns a pipeline into a gate.",
         },
         {
-          title: "Jenkins — pipeline syntax",
+          title: "Jenkins — Pipeline syntax",
           url: "https://www.jenkins.io/doc/book/pipeline/syntax/",
           kind: "docs",
-          minutes: 25,
-          whyThisOne: "Declarative pipeline: agent, stages, steps, when and post — enough to talk about it.",
+          whyThisOne:
+            "Declarative pipeline — agent, stages, steps, when and post — enough to talk about it.",
         },
       ],
     },
@@ -385,6 +452,17 @@ The trade-off to state: Jenkins gives full control and runs anywhere, including 
       objective:
         "Compare recreate, rolling, blue-green, canary and feature flags, and give the rollback for each — including when a database migration is involved.",
       estMinutes: 60,
+      primer: `How you replace the running version with a new one decides how bad a broken release can get.
+
+- **Recreate** — stop the old, start the new. Simple, with downtime.
+- **Rolling** — replace instances a few at a time. No downtime, but both versions run together for a while.
+- **Blue-green** — run the new version alongside the old, then switch all traffic at once. Rollback is switching back.
+- **Canary** — send a small share of traffic (say 5%) to the new version, watch its error rate and latency, and increase gradually.
+- **Feature flags** — ship the code switched off and turn it on separately from the deploy.
+
+Every strategy needs a **rollback plan**. The hard case is a **database migration**: the old code must still work with the new schema, which is why migrations are made backward-compatible first.
+
+**You need already:** the pipeline unit.`,
       conceptMd: `Every strategy answers two questions: **how much of production sees the new version at once**, and **how do you go back**.
 
 | Strategy | How | Rollback | Cost |
@@ -436,26 +514,32 @@ Every step is backward compatible, so any single deploy can be rolled back.
       ],
       resources: [
         {
-          title: "AWS — deployment strategies",
+          title: "AWS — Deployment strategies",
           url: "https://docs.aws.amazon.com/whitepapers/latest/overview-deployment-options/deployment-strategies.html",
           kind: "read",
-          minutes: 20,
-          whyThisOne: "All the strategies side by side, with their rollback and capacity cost.",
+          minutes: 25,
+          whyThisOne:
+            "All the strategies side by side, with their rollback and capacity cost.",
+          steps: [
+            "Read the page and make a table: strategy, downtime, rollback, extra capacity needed.",
+            "Read Fowler's blue-green article (next link), especially the database part.",
+            "Read the canary article (last link) and note which metrics decide whether to continue.",
+          ],
           isPrimary: true,
         },
         {
-          title: "Martin Fowler — blue-green deployment",
+          title: "Martin Fowler — Blue-green deployment",
           url: "https://martinfowler.com/bliki/BlueGreenDeployment.html",
           kind: "read",
-          minutes: 10,
-          whyThisOne: "The original description, including the database problem.",
+          whyThisOne:
+            "The original description, including the database problem.",
         },
         {
-          title: "Martin Fowler — canary release",
+          title: "Martin Fowler — Canary release",
           url: "https://martinfowler.com/bliki/CanaryRelease.html",
           kind: "read",
-          minutes: 10,
-          whyThisOne: "Canary versus feature flags, and why metrics are the point.",
+          whyThisOne:
+            "Canary versus feature flags, and why metrics are the point.",
         },
       ],
     },

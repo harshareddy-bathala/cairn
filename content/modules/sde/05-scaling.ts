@@ -16,6 +16,13 @@ export const scaling: Module = {
       objective:
         "Explain vertical versus horizontal scaling, make a service stateless so it can scale out, and choose a load-balancing layer and algorithm.",
       estMinutes: 60,
+      primer: `When one server is not enough you can **scale up** — a bigger machine — or **scale out** — more machines behind a load balancer. Scaling up is simple but has a ceiling and a single point of failure; scaling out has no ceiling, but only works if any server can handle any request.
+
+That requires the servers to be **stateless**: nothing about a user's session is kept in one server's memory or on its disk. Sessions go into a shared store (a database or Redis), files into object storage. Then servers can be added, removed or replaced at any time.
+
+The **load balancer** spreads requests across them — round robin, least connections, or by hashing something like the user ID — and uses health checks to skip dead servers.
+
+**You need already:** the load balancing unit from Phase 1 networking.`,
       conceptMd: `**Vertical scaling** — a bigger machine — is simple and has a ceiling (and a single point of failure). **Horizontal scaling** — more machines — has no hard ceiling, but only works if any instance can serve any request.
 
 That requires **stateless** services: nothing a later request needs is kept in one instance's memory or disk.
@@ -69,19 +76,25 @@ Algorithms: **round robin** (fine when requests cost about the same), **least co
       ],
       resources: [
         {
-          title: "System Design Primer — load balancer and horizontal scaling",
-          url: "https://github.com/donnemartin/system-design-primer",
+          title: "System Design Primer — Load balancer",
+          url: "https://github.com/donnemartin/system-design-primer#load-balancer",
           kind: "read",
-          minutes: 25,
-          whyThisOne: "Read the load balancer and application layer sections for the trade-offs in one place.",
+          minutes: 20,
+          whyThisOne:
+            "Load balancer types, algorithms and trade-offs in one section.",
+          steps: [
+            "Read **Load balancer**, including *Layer 4* and *Layer 7* load balancing.",
+            "Read **Horizontal scaling** just below it, with its list of disadvantages.",
+            "Read the twelve-factor *Processes* page (next link) and list what in atlas would stop it running on two servers.",
+          ],
           isPrimary: true,
         },
         {
-          title: "The Twelve-Factor App — processes",
+          title: "The Twelve-Factor App — VI. Processes",
           url: "https://12factor.net/processes",
           kind: "read",
-          minutes: 10,
-          whyThisOne: "The stateless, share-nothing rule in one short page.",
+          whyThisOne:
+            "The stateless, share-nothing rule on one short page.",
         },
       ],
     },
@@ -91,6 +104,15 @@ Algorithms: **round robin** (fine when requests cost about the same), **least co
       objective:
         "Choose cache-aside or write-through, set TTLs, handle invalidation and stampedes, and explain what a CDN caches and how you control it.",
       estMinutes: 70,
+      primer: `A **cache** keeps a copy of data somewhere faster than where it really lives — usually in memory, in Redis — so repeated reads skip the slow database.
+
+The common pattern is **cache-aside**: on a read, check the cache; if it is not there (a *miss*), read the database and store the result in the cache for next time. Each entry gets a **TTL** (time to live) so stale data eventually expires.
+
+The hard part is **invalidation**: when the data changes, the cached copy is wrong until it is removed or expires. And when a popular entry expires, thousands of requests can hit the database at the same moment — a **stampede**.
+
+A **CDN** is a cache spread across the world, close to users, for files like images and scripts.
+
+**You need already:** databases, and HTTP headers.`,
       conceptMd: `A cache trades **freshness for speed**. Every caching decision is a decision about how stale data may be.
 
 **Patterns:**
@@ -138,19 +160,25 @@ Algorithms: **round robin** (fine when requests cost about the same), **least co
       ],
       resources: [
         {
-          title: "AWS — caching best practices",
+          title: "AWS — Caching best practices",
           url: "https://aws.amazon.com/caching/best-practices/",
           kind: "read",
           minutes: 20,
-          whyThisOne: "Cache-aside, write-through, TTLs and the thundering herd, concisely.",
+          whyThisOne:
+            "Cache-aside, write-through, TTLs and the thundering herd, concisely.",
+          steps: [
+            "Read the page and note, for cache-aside and write-through, what happens on a read and on a write.",
+            "Read the ElastiCache strategies page (next link) for the code of each.",
+            "Decide which pattern atlas's most-read endpoint should use, and with what TTL.",
+          ],
           isPrimary: true,
         },
         {
-          title: "AWS ElastiCache — caching strategies",
+          title: "AWS ElastiCache — Caching strategies",
           url: "https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/Strategies.html",
           kind: "docs",
-          minutes: 15,
-          whyThisOne: "Lazy loading and write-through side by side, with the code for each.",
+          whyThisOne:
+            "Lazy loading and write-through side by side, with code for each.",
         },
       ],
     },
@@ -160,6 +188,14 @@ Algorithms: **round robin** (fine when requests cost about the same), **least co
       objective:
         "Scale a relational database in the right order — indexes and caching, then connection pooling, read replicas, and only then sharding — and name the new problem each step brings.",
       estMinutes: 75,
+      primer: `The database is usually the first thing to strain. Scale it in order, cheapest first, because each step adds complexity:
+
+1. **Indexes and caching** — most "slow database" problems are a missing index or a query that could be cached.
+2. **Connection pooling** — opening a connection is expensive, and databases allow only so many; a pooler like PgBouncer shares a few connections among many app servers.
+3. **Read replicas** — copies of the database that serve reads. The catch: they lag slightly, so a user may not see their own write straight away.
+4. **Sharding** — splitting the data across several databases, by user ID for example. It lifts the ceiling, but queries across shards and changing the split become hard. Last resort.
+
+**You need already:** the DBMS units, especially indexes and transactions.`,
       conceptMd: `Scale a database in this order, stopping as soon as the numbers are satisfied:
 
 **1. Indexes and queries** (Core CS depth module) and **a cache** — usually the biggest win.
@@ -211,26 +247,33 @@ Choose a shard key that spreads load **and** keeps most queries on one shard (of
       ],
       resources: [
         {
-          title: "DigitalOcean — understanding database sharding",
+          title: "DigitalOcean — Understanding database sharding",
           url: "https://www.digitalocean.com/community/tutorials/understanding-database-sharding",
           kind: "read",
-          minutes: 20,
-          whyThisOne: "Hash, range and directory sharding with their trade-offs, clearly drawn.",
+          minutes: 25,
+          whyThisOne:
+            "What sharding is, and hash, range and directory sharding with their trade-offs.",
+          steps: [
+            "Read the whole tutorial and note one drawback of each sharding method.",
+            "Read PgBouncer's pooling modes (next link) and what transaction mode breaks.",
+            "Read the replication overview (last link) on synchronous versus asynchronous replicas.",
+            "Write the four scaling steps in order, with the new problem each one brings.",
+          ],
           isPrimary: true,
         },
         {
-          title: "PgBouncer — features",
+          title: "PgBouncer — Features",
           url: "https://www.pgbouncer.org/features.html",
           kind: "docs",
-          minutes: 10,
-          whyThisOne: "The pooling modes and exactly which features transaction mode breaks.",
+          whyThisOne:
+            "The pooling modes, and exactly which features transaction mode breaks.",
         },
         {
-          title: "PostgreSQL — high availability, load balancing and replication",
+          title: "PostgreSQL — High availability, load balancing and replication",
           url: "https://www.postgresql.org/docs/current/high-availability.html",
           kind: "docs",
-          minutes: 20,
-          whyThisOne: "Streaming replication, synchronous versus asynchronous, from the source.",
+          whyThisOne:
+            "Streaming replication, synchronous versus asynchronous, from the source.",
         },
       ],
     },
@@ -240,6 +283,13 @@ Choose a shard key that spreads load **and** keeps most queries on one shard (of
       objective:
         "Use a message queue to decouple and absorb load, and write consumers that are correct under at-least-once delivery.",
       estMinutes: 70,
+      primer: `A **message queue** sits between a program that produces work and programs that do it. The web request says "send this email" by putting a message on the queue and returns immediately; separate **workers** take messages off and do the slow part.
+
+That buys three things: users are not kept waiting, a burst of work waits in the queue instead of overwhelming the workers, and a worker crash loses nothing — the message is redelivered.
+
+That last point has a catch. Most queues promise **at-least-once** delivery: a message can arrive twice. So workers must be **idempotent** — processing the same message twice must have the same effect as once. The usual method: record each processed message ID, in the same database transaction as the work.
+
+**You need already:** transactions from the DBMS module.`,
       conceptMd: `A **message queue** sits between a producer and a consumer. It buys three things:
 
 - **Decoupling** — the API accepts an order and returns; sending the email, generating the invoice and updating analytics happen later, in separate workers that can fail independently.
@@ -293,26 +343,32 @@ Choose a shard key that spreads load **and** keeps most queries on one shard (of
       ],
       resources: [
         {
-          title: "microservices.io — idempotent consumer",
-          url: "https://microservices.io/patterns/communication-style/idempotent-consumer.html",
+          title: "AWS — What is a message queue?",
+          url: "https://aws.amazon.com/message-queue/",
           kind: "read",
-          minutes: 10,
-          whyThisOne: "The pattern, the processed-messages table and why it must share the transaction.",
+          minutes: 15,
+          whyThisOne:
+            "The idea from zero: producers, consumers and why decoupling them helps.",
+          steps: [
+            "Read **What is a Message Queue?** and **Message Queue Basics**.",
+            "Read the idempotent consumer pattern (next link) and sketch its processed-messages table.",
+            "Do the RabbitMQ work-queues tutorial (last link) and kill a worker mid-task to watch redelivery.",
+          ],
           isPrimary: true,
         },
         {
-          title: "AWS SQS — at-least-once delivery",
-          url: "https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/standard-queues-at-least-once-delivery.html",
-          kind: "docs",
-          minutes: 10,
-          whyThisOne: "The vendor stating plainly that duplicates happen and consumers must cope.",
+          title: "microservices.io — Idempotent consumer",
+          url: "https://microservices.io/patterns/communication-style/idempotent-consumer.html",
+          kind: "read",
+          whyThisOne:
+            "The pattern, the processed-messages table, and why it must share the transaction.",
         },
         {
-          title: "RabbitMQ — work queues tutorial",
+          title: "RabbitMQ — Work queues tutorial (Python)",
           url: "https://www.rabbitmq.com/tutorials/tutorial-two-python",
           kind: "lab",
-          minutes: 30,
-          whyThisOne: "Run a producer and two workers in Python; see acks and redelivery happen.",
+          whyThisOne:
+            "A producer and two workers; see acknowledgements and redelivery happen.",
         },
       ],
     },

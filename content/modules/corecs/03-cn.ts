@@ -15,6 +15,15 @@ export const cn: Module = {
       objective:
         "Place any protocol at its layer and describe what each layer adds to a packet.",
       estMinutes: 60,
+      primer: `Networking is split into **layers**, each solving one problem and relying on the layer below it. Separating them lets, say, Wi-Fi be swapped for Ethernet without changing your browser.
+
+The **OSI model** names seven layers: Physical, Data Link, Network, Transport, Session, Presentation, Application. The internet actually runs on the simpler **TCP/IP model** of four: Link, Internet (IP), Transport (TCP/UDP), Application (HTTP, DNS…).
+
+As data goes down the layers to be sent, each one wraps it in its own **header** — the application's data goes inside a TCP segment, inside an IP packet, inside an Ethernet frame. That wrapping is **encapsulation**, and the receiver unwraps it layer by layer.
+
+Exams ask you to name the layer of a protocol or device, and what each layer adds.
+
+**You need already:** nothing. You know much of this from CCNA; this unit is recall practice.`,
       conceptMd: `The OSI seven — Physical, Data Link, Network, Transport, Session, Presentation, Application — versus the practical TCP/IP four: Link, Internet, Transport, Application.
 
 **Encapsulation** is the mental model that makes the layers stick: application data gets a TCP header (segment), then an IP header (packet), then an Ethernet header and trailer (frame). Each layer treats everything above it as opaque payload, and each strips its own header on the way back up.
@@ -60,12 +69,26 @@ Devices: a **hub** is L1 (repeats to every port), a **switch** is L2 (forwards b
       ],
       resources: [
         {
-          title: "GeeksforGeeks — CN last-minute notes",
-          url: "https://www.geeksforgeeks.org/last-minute-notes-computer-network/",
+          title: "GeeksforGeeks — Layers of the OSI model",
+          url: "https://www.geeksforgeeks.org/computer-networks/open-systems-interconnection-model-osi/",
           kind: "read",
-          minutes: 35,
-          whyThisOne: "Exactly the recall format campus written tests use. Pure revision, not learning.",
+          minutes: 25,
+          whyThisOne:
+            "Each layer's job, its data unit, and example protocols and devices — the table exams are built from.",
+          steps: [
+            "Read each layer and fill in a table: layer, job, data unit, example protocols, example device.",
+            "Then read the TCP/IP model (next link) and map its four layers onto the seven.",
+            "Close both and redraw the table from memory.",
+          ],
           isPrimary: true,
+        },
+        {
+          title: "GeeksforGeeks — TCP/IP model",
+          url: "https://www.geeksforgeeks.org/computer-networks/tcp-ip-model/",
+          kind: "read",
+          minutes: 15,
+          whyThisOne:
+            "The four-layer model the internet actually uses, and how it lines up with OSI.",
         },
       ],
     },
@@ -75,6 +98,13 @@ Devices: a **hub** is L1 (repeats to every port), a **switch** is L2 (forwards b
       objective:
         "Solve subnetting problems quickly: network address, broadcast, usable hosts, CIDR.",
       estMinutes: 75,
+      primer: `An IPv4 address is 32 bits, written as four numbers: \`192.168.1.10\`. Part of it identifies the **network**, the rest identifies the **host** (the device) on that network.
+
+The **prefix** says where the split is: \`/24\` means the first 24 bits are the network, leaving 8 bits for hosts — 2⁸ = 256 addresses. Two of those are reserved: the first is the network's own address and the last is the **broadcast** address, so 254 are usable by devices.
+
+**Subnetting** splits one network into smaller ones by moving that line to the right. Exam questions give an address and a prefix and ask for the network address, the broadcast address, the usable range and the number of hosts. It becomes pure arithmetic with practice — guaranteed marks.
+
+**You need already:** converting small numbers to binary (see the bits unit in DSA).`,
       conceptMd: `Practise until this is arithmetic rather than thinking — subnetting questions are guaranteed marks.
 
 **CIDR**: \`/24\` means 24 network bits, leaving 8 host bits → 2⁸ = 256 addresses, of which **254 are usable** (the all-zeros network address and the all-ones broadcast address are reserved).
@@ -124,12 +154,25 @@ The fast method for "which subnet does 192.168.1.100/26 belong to": the block si
       ],
       resources: [
         {
+          title: "GeeksforGeeks — Introduction to subnetting",
+          url: "https://www.geeksforgeeks.org/computer-networks/introduction-to-subnetting/",
+          kind: "read",
+          minutes: 25,
+          whyThisOne:
+            "Network and host bits, the subnet mask, and a worked example of splitting a network.",
+          steps: [
+            "Read the page and redo each worked example on paper, in binary.",
+            "Then do 20 timed questions on subnettingpractice.com (next link).",
+            "Repeat the 20 questions daily for a week.",
+          ],
+          isPrimary: true,
+        },
+        {
           title: "subnettingpractice.com",
           url: "https://subnettingpractice.com/",
           kind: "do",
-          minutes: 45,
-          whyThisOne: "Generates unlimited timed problems. Twenty a day for a week makes this automatic.",
-          isPrimary: true,
+          whyThisOne:
+            "Unlimited generated problems with answers. Twenty a day for a week makes this automatic.",
         },
       ],
     },
@@ -139,6 +182,16 @@ The fast method for "which subnet does 192.168.1.100/26 belong to": the block si
       objective:
         "Justify TCP or UDP for a given application, and recall the standard port numbers.",
       estMinutes: 60,
+      primer: `Both **TCP** and **UDP** carry data between programs, identified by **port numbers** (a web server listens on 443, SSH on 22). They make opposite trade-offs:
+
+- **TCP** sets up a connection first and guarantees that everything arrives, in order, with nothing duplicated. That costs time: a handshake, acknowledgements, resends.
+- **UDP** just sends each packet and hopes. No connection, no guarantees — but nothing to wait for.
+
+So TCP suits anything that must be complete: web pages, file transfer, email. UDP suits anything where late data is useless anyway: live video, voice calls, games, and small quick lookups like DNS.
+
+On top of them sit the **application protocols** you use daily — HTTP, DNS, SMTP, FTP, SSH — each with a standard port worth knowing.
+
+**You need already:** the layers unit.`,
       conceptMd: `**TCP** — connection-oriented, reliable, ordered, flow- and congestion-controlled, 20-byte header. **UDP** — connectionless, unreliable, unordered, 8-byte header, no congestion control.
 
 Choose UDP when **latency matters more than completeness**: live video and voice (a retransmitted frame arrives too late to be useful), DNS queries (one small request, just retry), and gaming. Choose TCP when every byte must arrive: web, email, file transfer.
@@ -184,11 +237,24 @@ Ranges: 0–1023 well-known (require privilege to bind on Linux — which is exa
       resources: [
         {
           title: "GeeksforGeeks — TCP vs UDP",
-          url: "https://www.geeksforgeeks.org/differences-between-tcp-and-udp/",
+          url: "https://www.geeksforgeeks.org/computer-networks/differences-between-tcp-and-udp/",
           kind: "read",
           minutes: 20,
-          whyThisOne: "The comparison table in the exact form MCQs test it.",
+          whyThisOne:
+            "The comparison table in the exact form MCQs test it.",
+          steps: [
+            "Read the comparison and write four applications for each protocol, with the reason.",
+            "Then read *Protocols in Application Layer* (next link) and list each protocol with its port.",
+          ],
           isPrimary: true,
+        },
+        {
+          title: "GeeksforGeeks — Protocols in the application layer",
+          url: "https://www.geeksforgeeks.org/computer-networks/protocols-application-layer/",
+          kind: "read",
+          minutes: 20,
+          whyThisOne:
+            "HTTP, DNS, SMTP, FTP, SSH and the rest in one place, with their ports.",
         },
       ],
     },

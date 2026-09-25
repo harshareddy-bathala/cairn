@@ -134,6 +134,8 @@ export const units = pgTable(
     title: text("title").notNull(),
     objective: text("objective").notNull(),
     estMinutes: integer("est_minutes").notNull(),
+    /** the plain-words on-ramp read before the resource and the notes */
+    primerMd: text("primer_md").notNull().default(""),
     conceptMd: text("concept_md").notNull().default(""),
     /** retrieval prompts — the source the spaced-repetition deck is seeded from */
     recall: jsonb("recall").$type<RecallCard[]>().notNull().default([]),
@@ -158,6 +160,8 @@ export const resources = pgTable(
     kind: text("kind").$type<ResourceKind>().notNull(),
     minutes: integer("minutes"),
     whyThisOne: text("why_this_one").notNull(),
+    /** what to do on the page, in order */
+    steps: jsonb("steps").$type<string[]>().notNull().default([]),
     isPrimary: boolean("is_primary").notNull().default(false),
   },
   (t) => [uniqueIndex("resources_unit_order_idx").on(t.unitSlug, t.order)],

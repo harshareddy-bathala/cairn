@@ -94,6 +94,14 @@ const STEPS: Step[] = [
         on star_stories (user_id, prompt);
     `,
   },
+  {
+    // a unit's plain-words on-ramp, and what to do on each resource's page
+    name: "units.primer_md, resources.steps",
+    sql: sql`
+      alter table units add column if not exists primer_md text not null default '';
+      alter table resources add column if not exists steps jsonb not null default '[]'::jsonb;
+    `,
+  },
 ];
 
 async function main() {

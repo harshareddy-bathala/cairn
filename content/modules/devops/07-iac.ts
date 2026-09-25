@@ -1,7 +1,5 @@
 import type { Module } from "@/content/types";
 
-const TF = "https://developer.hashicorp.com/terraform";
-
 export const iac: Module = {
   slug: "devops-iac",
   trackSlug: "devops",
@@ -18,6 +16,17 @@ export const iac: Module = {
       objective:
         "Write providers, resources, data sources, variables, outputs and locals, and explain the init → plan → apply cycle and the dependency graph.",
       estMinutes: 70,
+      primer: `Clicking resources together in the AWS console works once, but nobody can review it, repeat it or undo it cleanly. **Infrastructure as code** writes the infrastructure down as files: you commit them, review them in a pull request, and rebuild everything from them in minutes.
+
+**Terraform** is the common tool. You describe the *end state* you want — "a VPC with this range, an instance of this type" — in \`.tf\` files, and Terraform works out what to create, change or delete to get there. The loop:
+
+- \`terraform init\` — download the providers (the plugins that talk to AWS);
+- \`terraform plan\` — show exactly what would change;
+- \`terraform apply\` — make those changes.
+
+**Variables** make a configuration reusable; **outputs** print useful values, like an instance's IP address.
+
+**You need already:** an AWS account and the AWS core module.`,
       conceptMd: `Terraform is **declarative**: you describe the end state, and it works out the create, update and delete calls to reach it.
 
 \`\`\`hcl
@@ -86,19 +95,26 @@ output "api_ip" { value = aws_instance.api.public_ip }
       ],
       resources: [
         {
-          title: "HashiCorp — get started with Terraform on AWS",
-          url: `${TF}/tutorials/aws-get-started`,
-          kind: "lab",
-          minutes: 60,
-          whyThisOne: "The official path from install to a running instance, with variables and outputs.",
+          title: "HashiCorp — What is Infrastructure as Code with Terraform?",
+          url: "https://developer.hashicorp.com/terraform/tutorials/aws-get-started/infrastructure-as-code",
+          kind: "read",
+          minutes: 10,
+          whyThisOne:
+            "The official first tutorial: what Terraform does and the workflow, before any code.",
+          steps: [
+            "Read this page for the ideas and the init/plan/apply workflow.",
+            "Continue to the next tutorials in the series: [Create infrastructure](https://developer.hashicorp.com/terraform/tutorials/aws-get-started/aws-create) and [Manage infrastructure](https://developer.hashicorp.com/terraform/tutorials/aws-get-started/aws-manage), typing every file yourself.",
+            "Run `terraform plan` before every `apply` and read what it says.",
+            "Finish with `terraform destroy`.",
+          ],
           isPrimary: true,
         },
         {
-          title: "HashiCorp — data sources",
-          url: `${TF}/language/data-sources`,
+          title: "HashiCorp — Data sources",
+          url: "https://developer.hashicorp.com/terraform/language/data-sources",
           kind: "docs",
-          minutes: 10,
-          whyThisOne: "When to read rather than create, with the AMI lookup as the example.",
+          whyThisOne:
+            "When to read an existing thing rather than create one, with the AMI lookup as the example.",
         },
       ],
     },
@@ -108,6 +124,13 @@ output "api_ip" { value = aws_instance.api.public_ip }
       objective:
         "Explain what Terraform state holds, set up an S3 remote backend with locking, and detect and resolve drift.",
       estMinutes: 75,
+      primer: `Terraform keeps a record of what it created and how that maps onto real cloud resources — the **state** file. Every \`plan\` compares three things: your code, the state, and what actually exists.
+
+By default the state is a file on your laptop, which breaks as soon as two people (or a CI pipeline) use the same configuration. So teams keep it in a **remote backend** — usually an S3 bucket — with **locking**, so two applies cannot run at once and corrupt it. State can contain secrets, so the bucket must be private and encrypted.
+
+**Drift** is when someone changes a resource by hand in the console. The next \`plan\` notices the difference; you either bring the code in line or let Terraform put things back.
+
+**You need already:** the Terraform basics unit.`,
       conceptMd: `**State** (\`terraform.tfstate\`) maps each resource in your code to the real object's ID, and records its last known attributes. Without it, Terraform could not tell "create this" from "this already exists".
 
 Three facts about state that interviewers probe:
@@ -169,26 +192,32 @@ Resources created outside Terraform can be brought under management with an **\`
       ],
       resources: [
         {
-          title: "HashiCorp — S3 backend",
-          url: `${TF}/language/backend/s3`,
-          kind: "docs",
-          minutes: 20,
-          whyThisOne: "Encryption, use_lockfile and the DynamoDB deprecation note, from the source.",
+          title: "HashiCorp — State",
+          url: "https://developer.hashicorp.com/terraform/language/state",
+          kind: "read",
+          minutes: 15,
+          whyThisOne:
+            "Why state exists and what it contains, including the warning about sensitive data.",
+          steps: [
+            "Read the page, then open your own `terraform.tfstate` and find a resource in it.",
+            "Move your state to an S3 backend with locking, following the S3 backend page (next link).",
+            "Do the drift tutorial (last link): change something in the console, then run `plan`.",
+          ],
           isPrimary: true,
         },
         {
-          title: "HashiCorp — state",
-          url: `${TF}/language/state`,
+          title: "HashiCorp — S3 backend",
+          url: "https://developer.hashicorp.com/terraform/language/backend/s3",
           kind: "docs",
-          minutes: 15,
-          whyThisOne: "Why state exists and what is in it, including the sensitive-data warning.",
+          whyThisOne:
+            "Encryption, `use_lockfile`, and the note on the old DynamoDB lock table.",
         },
         {
-          title: "HashiCorp — manage resource drift",
-          url: `${TF}/tutorials/state/resource-drift`,
+          title: "HashiCorp — Manage resource drift",
+          url: "https://developer.hashicorp.com/terraform/tutorials/state/resource-drift",
           kind: "lab",
-          minutes: 25,
-          whyThisOne: "Cause drift on purpose, then detect and resolve it with -refresh-only.",
+          whyThisOne:
+            "Cause drift on purpose, then detect and resolve it with `-refresh-only`.",
         },
       ],
     },
@@ -198,6 +227,15 @@ Resources created outside Terraform can be brought under management with an **\`
       objective:
         "Factor configuration into modules with inputs and outputs, separate environments, protect stateful resources, and run Terraform from CI.",
       estMinutes: 60,
+      primer: `A **module** is a folder of Terraform files that you use like a function: it takes **input variables**, creates some resources, and returns **outputs**. Write a VPC module once and use it for dev and prod with different inputs.
+
+Good habits that come with it:
+
+- keep each **environment** (dev, prod) in its own configuration with its own state, so a mistake in dev cannot touch prod;
+- protect resources that hold data — databases, buckets — with \`lifecycle { prevent_destroy = true }\`;
+- run \`terraform plan\` in CI on every pull request, so infrastructure changes are reviewed like code.
+
+**You need already:** the Terraform basics and state units.`,
       conceptMd: `A **module** is a directory of \`.tf\` files. The root configuration is a module; calling another is like calling a function — variables are its parameters, outputs its return values:
 
 \`\`\`hcl
@@ -247,19 +285,33 @@ Write a module when the same group of resources appears more than once, or when 
       ],
       resources: [
         {
-          title: "HashiCorp — creating modules",
-          url: `${TF}/language/modules/develop`,
-          kind: "docs",
+          title: "HashiCorp — Modules overview (tutorial)",
+          url: "https://developer.hashicorp.com/terraform/tutorials/modules/module",
+          kind: "read",
           minutes: 20,
-          whyThisOne: "When to write a module and how to shape its inputs and outputs.",
+          whyThisOne:
+            "What a module is and when to write one, then using a public module.",
+          steps: [
+            "Read the tutorial and use the public VPC module it shows.",
+            "Turn part of your own configuration into a local module with two inputs and one output.",
+            "Read *Creating modules* (next link) for how to shape the inputs and outputs.",
+            "Add `prevent_destroy` to one resource and watch `destroy` refuse (last link).",
+          ],
           isPrimary: true,
         },
         {
-          title: "HashiCorp — the lifecycle meta-argument",
-          url: `${TF}/language/meta-arguments/lifecycle`,
+          title: "HashiCorp — Creating modules",
+          url: "https://developer.hashicorp.com/terraform/language/modules/develop",
           kind: "docs",
-          minutes: 10,
-          whyThisOne: "prevent_destroy, create_before_destroy and ignore_changes.",
+          whyThisOne:
+            "When to write a module and how to design its inputs and outputs.",
+        },
+        {
+          title: "HashiCorp — The lifecycle meta-argument",
+          url: "https://developer.hashicorp.com/terraform/language/meta-arguments/lifecycle",
+          kind: "docs",
+          whyThisOne:
+            "`prevent_destroy`, `create_before_destroy` and `ignore_changes`.",
         },
       ],
     },
@@ -269,6 +321,13 @@ Write a module when the same group of resources appears more than once, or when 
       objective:
         "Rebuild atlas's Month-1 infrastructure entirely in Terraform — network, security groups, EC2 with an instance role, S3 — then destroy and recreate it.",
       estMinutes: 180,
+      primer: `This is a build session, not a reading one. You rebuild atlas's Month 1 infrastructure — the network, the security groups, the EC2 instance with its IAM role, the S3 bucket — entirely in Terraform.
+
+The test of success is simple: run \`terraform destroy\`, then \`terraform apply\`, and everything comes back working, with no clicks in the console.
+
+Work one resource at a time: write it, \`plan\`, \`apply\`, check it in the console, commit. For each resource, the AWS provider documentation shows every argument and an example. If you would rather keep the resources you made by hand, \`import\` brings them under Terraform's control instead of recreating them.
+
+**You need already:** all the earlier Terraform units, and the AWS VPC unit.`,
       conceptMd: `Everything atlas runs on should be created by Terraform, from an empty account, with one \`apply\`.
 
 **Target layout:**
@@ -317,19 +376,26 @@ The destroy-and-recreate step is the point. "I can rebuild production from nothi
       ],
       resources: [
         {
-          title: "Terraform Registry — AWS provider",
+          title: "Terraform Registry — AWS provider documentation",
           url: "https://registry.terraform.io/providers/hashicorp/aws/latest/docs",
           kind: "docs",
-          minutes: 60,
-          whyThisOne: "The reference for every resource in the lab: aws_vpc, aws_instance, aws_iam_role, aws_s3_bucket.",
+          minutes: 180,
+          whyThisOne:
+            "The reference for every resource in the lab.",
+          steps: [
+            "Search the left sidebar for each resource as you need it: `aws_vpc`, `aws_subnet`, `aws_security_group`, `aws_iam_role`, `aws_instance`, `aws_s3_bucket`.",
+            "For each, start from the page's **Example Usage** and adjust it.",
+            "Commit after each working resource.",
+            "Finish with `destroy` then `apply`, and check the app still works.",
+          ],
           isPrimary: true,
         },
         {
-          title: "HashiCorp — import resources",
-          url: `${TF}/language/import`,
+          title: "HashiCorp — Import existing resources",
+          url: "https://developer.hashicorp.com/terraform/language/import",
           kind: "docs",
-          minutes: 15,
-          whyThisOne: "Bring Month 1's hand-made resources under Terraform instead of recreating them.",
+          whyThisOne:
+            "Bring Month 1's hand-made resources under Terraform instead of recreating them.",
         },
       ],
     },
@@ -339,6 +405,15 @@ The destroy-and-recreate step is the point. "I can rebuild production from nothi
       objective:
         "Write an inventory and an idempotent playbook that configures a server, and explain where Ansible fits next to Terraform.",
       estMinutes: 75,
+      primer: `Terraform creates servers; **Ansible** configures what runs *on* them — installing packages, writing config files, starting services.
+
+Ansible needs no agent on the server: it connects over SSH and runs small modules. You give it an **inventory** (the list of servers) and a **playbook** (a YAML list of tasks, like "ensure nginx is installed", "ensure this file has this content").
+
+Tasks are written as *desired states*, not commands, so they are **idempotent**: running a playbook twice changes nothing the second time. That is what makes it safe to re-run whenever you like.
+
+The rule of thumb: Terraform for the infrastructure, Ansible for the configuration of the machines — or, increasingly, a container image instead.
+
+**You need already:** SSH, and the Linux module.`,
       conceptMd: `Ansible **configures** machines that already exist: installs packages, writes config files, starts services. It is **agentless** — it connects over SSH and runs small modules with Python on the target.
 
 \`\`\`ini
@@ -401,19 +476,26 @@ Spend two or three days here, not more.`,
       ],
       resources: [
         {
-          title: "Ansible — getting started",
-          url: "https://docs.ansible.com/ansible/latest/getting_started/index.html",
-          kind: "docs",
+          title: "Ansible — Getting started",
+          url: "https://docs.ansible.com/projects/ansible/latest/getting_started/index.html",
+          kind: "read",
           minutes: 30,
-          whyThisOne: "Inventory, the first playbook and the agentless model, in one short path.",
+          whyThisOne:
+            "Inventory, a first playbook and the agentless model, in one short path.",
+          steps: [
+            "Read the introduction, then follow the pages on building an inventory and creating a playbook.",
+            "Write a playbook that installs nginx on a test machine or VM.",
+            "Run it twice and check that the second run reports no changes.",
+            "Read the playbooks page (next link) on handlers.",
+          ],
           isPrimary: true,
         },
         {
-          title: "Ansible — playbooks",
-          url: "https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_intro.html",
+          title: "Ansible — Playbooks",
+          url: "https://docs.ansible.com/projects/ansible/latest/playbook_guide/playbooks_intro.html",
           kind: "docs",
-          minutes: 20,
-          whyThisOne: "Tasks, handlers, idempotency and check mode.",
+          whyThisOne:
+            "Tasks, handlers, idempotency and check mode.",
         },
       ],
     },

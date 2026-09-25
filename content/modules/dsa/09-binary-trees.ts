@@ -1,7 +1,5 @@
 import type { Module } from "@/content/types";
 
-const TUF = "https://takeuforward.org/blogs/data-structure-and-algorithm";
-
 export const binaryTrees: Module = {
   slug: "dsa-binary-trees",
   trackSlug: "dsa",
@@ -18,6 +16,13 @@ export const binaryTrees: Module = {
       objective:
         "Write preorder, inorder and postorder recursively and with an explicit stack, and say which order a problem needs.",
       estMinutes: 75,
+      primer: `A **binary tree** is made of nodes where each node has a value and up to two children, *left* and *right*. The top node is the **root**; nodes with no children are **leaves**. Like a linked list, it is built from nodes and pointers — just with two \`next\` pointers instead of one.
+
+Nearly every tree problem is solved by **recursion**: to answer a question about a tree, answer it for the left subtree and the right subtree (which are smaller trees), then combine.
+
+To visit every node you choose an order. The three depth-first orders differ only in *when* you handle the node itself: **preorder** (node, then left, then right), **inorder** (left, node, right), **postorder** (left, right, node).
+
+**You need already:** recursion from Phase 1, and linked-list pointers.`,
       conceptMd: `The three depth-first orders differ only in **when you visit the node** relative to its children:
 
 | order | visit | used when |
@@ -74,19 +79,38 @@ Morris traversal gets inorder to O(1) extra space by temporarily threading right
       ],
       resources: [
         {
-          title: "Striver — introduction to DFS traversals",
-          url: `${TUF}/introduction-to-dfs-traversals`,
+          title: "Striver — Binary tree: types, structure and terminology",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/binary-tree-data-structure",
           kind: "read",
           minutes: 25,
-          whyThisOne: "All three orders side by side, recursive and iterative.",
+          whyThisOne:
+            "The vocabulary from zero — root, leaf, height, depth, and the kinds of binary tree.",
+          steps: [
+            "Read **Introduction and Basics of Binary Trees** and **Basic Terminology**.",
+            "Draw a 7-node tree and label its root, leaves, and each node's depth and height.",
+            "Skim **Types of Binary Trees**.",
+            "Then read *Introduction to DFS traversals* (next link) — the three orders.",
+          ],
           isPrimary: true,
         },
         {
-          title: "Striver — Morris inorder traversal",
-          url: `${TUF}/morris-inorder-traversal`,
+          title: "Striver — Introduction to DFS traversals",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/introduction-to-dfs-traversals",
           kind: "read",
-          minutes: 20,
-          whyThisOne: "For the O(1)-space follow-up: know that it exists and roughly how the threading works.",
+          minutes: 35,
+          whyThisOne:
+            "All three orders side by side, recursive and then iterative with a stack.",
+          steps: [
+            "Read **Recursive DFS Structure** and write each order's output for your drawn tree.",
+            "Read **Iterative DFS Using a Stack** — preorder first, it is the simplest.",
+          ],
+        },
+        {
+          title: "Striver — Morris inorder traversal",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/morris-inorder-traversal",
+          kind: "read",
+          whyThisOne:
+            "Optional, for the O(1)-space follow-up: know it exists and roughly how it works.",
         },
       ],
     },
@@ -96,6 +120,13 @@ Morris traversal gets inorder to O(1) extra space by temporarily threading right
       objective:
         "Do breadth-first traversal level by level, and derive zigzag, right view and vertical order from it.",
       estMinutes: 90,
+      primer: `**Level order** traversal visits the tree row by row: the root, then its children, then their children. It uses a **queue**: take a node off the front, handle it, put its children on the back.
+
+The trick that unlocks most problems in this unit: before handling a level, **read the queue's size**. That number is exactly how many nodes are on the current level, so you can process one whole level per loop.
+
+With that you get, almost for free: the **zigzag** order (reverse every other level), the **right-side view** (the last node of each level), and the **left view** (the first).
+
+**You need already:** queues, and the tree vocabulary from the last unit.`,
       conceptMd: `Breadth-first traversal uses a **queue**, and the trick that unlocks most level problems is to process **one whole level per iteration** by reading the queue's size first:
 
 \`\`\`cpp
@@ -152,26 +183,34 @@ Views can also be done with DFS, carrying the depth and recording the first node
       ],
       resources: [
         {
-          title: "Striver — binary tree level order traversal",
-          url: `${TUF}/binary-tree-level-order-traversal`,
+          title: "Striver — Binary tree level order traversal",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/binary-tree-level-order-traversal",
           kind: "read",
-          minutes: 20,
-          whyThisOne: "The frozen-size loop, which every other problem in this unit reuses.",
+          minutes: 30,
+          whyThisOne:
+            "The size-first loop that every other problem in this unit reuses.",
+          steps: [
+            "Read up to **Returning Nodes Level by Level** and **Why Must the Queue Size Be Recorded First?**",
+            "Write it yourself and print one line per level.",
+            "Read **Common Variations** — reverse level order, zigzag, left view.",
+          ],
           isPrimary: true,
         },
         {
-          title: "Striver — left and right views of a binary tree",
-          url: `${TUF}/left-and-right-views-of-a-binary-tree`,
-          kind: "read",
-          minutes: 15,
-          whyThisOne: "Both the BFS and the depth-tracking DFS versions.",
+          title: "Striver — Left and right views of a binary tree",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/left-and-right-views-of-a-binary-tree",
+          kind: "do",
+          minutes: 25,
+          whyThisOne:
+            "Both the level-order version and the depth-tracking recursive one.",
         },
         {
-          title: "Striver — vertical order traversal",
-          url: `${TUF}/vertical-order-traversal-of-a-binary-tree`,
-          kind: "read",
-          minutes: 25,
-          whyThisOne: "Coordinates, the map-of-multisets layout, and the tie-break rule.",
+          title: "Striver — Vertical order traversal",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/vertical-order-traversal-of-a-binary-tree",
+          kind: "do",
+          minutes: 35,
+          whyThisOne:
+            "Giving each node a column number, and the tie-break rule for equal positions.",
         },
       ],
     },
@@ -181,6 +220,13 @@ Views can also be done with DFS, carrying the depth and recording the first node
       objective:
         "Solve height-based problems with one postorder pass that returns one value and updates a global answer.",
       estMinutes: 90,
+      primer: `The **height** of a tree is the number of nodes on its longest path from the root down to a leaf. Recursively: height = 1 + the larger of the left and right subtree heights, and an empty tree has height 0. Four lines of code.
+
+Many harder problems are this same function with one extra line. The **diameter** — the longest path between *any* two nodes — passes through some node, going down its left side and its right side. So while computing heights, at each node also check \`leftHeight + rightHeight\` and keep the best in a variable outside the function.
+
+That shape — **return one thing to the parent, update a global answer on the side** — also solves "is the tree balanced?" and the maximum path sum.
+
+**You need already:** tree recursion from the traversal unit.`,
       conceptMd: `This family has one shape. A recursive function **returns something to its parent** and **updates a global answer on the side**:
 
 \`\`\`cpp
@@ -230,26 +276,34 @@ The naive version of each calls a helper from every node — O(n²). The postord
       ],
       resources: [
         {
-          title: "Striver — diameter of a binary tree",
-          url: `${TUF}/diameter-of-a-binary-tree`,
-          kind: "read",
-          minutes: 20,
-          whyThisOne: "From the O(n²) version to the one-pass version, which is exactly the move to learn.",
+          title: "Striver — Diameter of a binary tree",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/diameter-of-a-binary-tree",
+          kind: "do",
+          minutes: 35,
+          whyThisOne:
+            "From computing heights again at every node, O(n²), to one pass — exactly the move to learn.",
+          steps: [
+            "Read the problem and examples, and try it yourself for 10–15 minutes.",
+            "Read the approaches in order — brute force first — following each **Dry Run** on paper.",
+            "Write the one-pass version from memory, then use the same shape on *Balanced Binary Tree*.",
+          ],
           isPrimary: true,
         },
         {
-          title: "Striver — binary tree maximum path sum",
-          url: `${TUF}/binary-tree-maximum-path-sum`,
-          kind: "read",
-          minutes: 20,
-          whyThisOne: "The same shape with the negative-clamp twist.",
+          title: "Striver — Check if a binary tree is height-balanced",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/check-if-a-binary-tree-is-height-balanced",
+          kind: "do",
+          minutes: 25,
+          whyThisOne:
+            "Returning −1 to mean 'unbalanced' turns two passes into one.",
         },
         {
-          title: "Striver — check if a binary tree is height-balanced",
-          url: `${TUF}/check-if-a-binary-tree-is-height-balanced`,
-          kind: "read",
-          minutes: 15,
-          whyThisOne: "The −1 sentinel that turns two passes into one.",
+          title: "Striver — Binary tree maximum path sum",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/binary-tree-maximum-path-sum",
+          kind: "do",
+          minutes: 35,
+          whyThisOne:
+            "The same shape, plus ignoring negative branches.",
         },
       ],
     },
@@ -259,6 +313,15 @@ The naive version of each calls a helper from every node — O(n²). The postord
       objective:
         "Collect root-to-leaf paths with backtracking, find the LCA of two nodes in one pass, and find all nodes at distance k.",
       estMinutes: 90,
+      primer: `Two questions about positions in a tree.
+
+**Paths**: list every path from the root down to a leaf. This is backtracking on a tree: add the node to the current path, go into both children, then remove the node before returning — the same pattern as subsets in Phase 1.
+
+**Lowest common ancestor (LCA)**: given two nodes, find the deepest node that has both of them below it. Ask each subtree "did you find either node?". If the left finds one and the right finds the other, the current node is the answer. If only one side finds something, pass that up.
+
+A related question — "all nodes at distance k from a given node" — needs to move *upward* too, so you first record each node's parent, turning the tree into a graph you can search in every direction.
+
+**You need already:** tree recursion, and backtracking from Phase 1.`,
       conceptMd: `**Root-to-leaf paths** are backtracking on a tree: push the node, recurse, pop.
 
 \`\`\`cpp
@@ -320,26 +383,34 @@ Read the return value as "a node from {p, q, their LCA} found in this subtree, o
       ],
       resources: [
         {
-          title: "Striver — lowest common ancestor in a binary tree",
-          url: `${TUF}/lowest-common-ancestor-in-a-binary-tree`,
-          kind: "read",
-          minutes: 20,
-          whyThisOne: "The path-comparison version first, then the one-pass recursion — the order that makes it make sense.",
+          title: "Striver — Lowest common ancestor in a binary tree",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/lowest-common-ancestor-in-a-binary-tree",
+          kind: "do",
+          minutes: 35,
+          whyThisOne:
+            "Comparing root-to-node paths first, then the one-pass recursion — the order that makes it make sense.",
+          steps: [
+            "Read the problem and examples, and try it yourself for 10–15 minutes.",
+            "Read the approaches in order — brute force first — following each **Dry Run** on paper.",
+            "Answer *Why does the recursive approach return the current node when both subtree results are non-null?*",
+          ],
           isPrimary: true,
         },
         {
-          title: "Striver — nodes at distance k in a binary tree",
-          url: `${TUF}/nodes-distance-k-binary-tree`,
-          kind: "read",
-          minutes: 20,
-          whyThisOne: "The parent map and BFS that turn a tree into an undirected graph.",
+          title: "Striver — Path sum II",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/path-sum-ii",
+          kind: "do",
+          minutes: 25,
+          whyThisOne:
+            "Backtracking on a tree, with the leaf check done properly.",
         },
         {
-          title: "Striver — path sum II",
-          url: `${TUF}/path-sum-ii`,
-          kind: "read",
-          minutes: 15,
-          whyThisOne: "Backtracking on a tree, with the leaf check done properly.",
+          title: "Striver — Nodes at distance k",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/nodes-distance-k-binary-tree",
+          kind: "do",
+          minutes: 35,
+          whyThisOne:
+            "A parent map plus BFS turns the tree into an undirected graph.",
         },
       ],
     },
@@ -349,6 +420,13 @@ Read the return value as "a node from {p, q, their LCA} found in this subtree, o
       objective:
         "Rebuild a tree from preorder and inorder in O(n), and serialise and deserialise a tree so the round trip is exact.",
       estMinutes: 90,
+      primer: `Can you rebuild a tree from its traversals? With **preorder and inorder** together, yes.
+
+Preorder always lists the root first. Find that root in the inorder list: everything to its left belongs to the left subtree, everything to its right to the right subtree. Now you know each subtree's size, so you can split the preorder list the same way and rebuild each subtree recursively. A map from value to inorder position makes each lookup O(1).
+
+**Serialising** means turning a tree into a string you can save or send, and **deserialising** turns it back. The trick is to write an explicit marker (like \`#\`) for every missing child, so the shape comes back exactly.
+
+**You need already:** the traversal orders, and tree recursion.`,
       conceptMd: `**Which traversals determine a tree?** Inorder plus preorder does, and inorder plus postorder does. Preorder plus postorder does not, in general — without inorder you cannot tell a lone left child from a lone right child.
 
 **Building from preorder and inorder.** Preorder's first element is the root. Find it in inorder: everything to its left is the left subtree, everything to its right the right subtree. Recurse on the matching ranges.
@@ -409,26 +487,34 @@ The null markers are the whole point. Without them a single traversal is ambiguo
       ],
       resources: [
         {
-          title: "Striver — construct a binary tree from preorder and inorder",
-          url: `${TUF}/construct-a-binary-tree-from-preorder-and-inorder`,
-          kind: "read",
-          minutes: 25,
-          whyThisOne: "The range recursion with the index map, drawn out step by step.",
+          title: "Striver — Construct a binary tree from preorder and inorder",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/construct-a-binary-tree-from-preorder-and-inorder",
+          kind: "do",
+          minutes: 40,
+          whyThisOne:
+            "The recursion over index ranges, with the hash map, drawn out step by step.",
+          steps: [
+            "Read the problem and examples, and try it yourself for 10–15 minutes.",
+            "Read the approaches in order — brute force first — following each **Dry Run** on paper.",
+            "Answer *Why is inorder required along with preorder?* and *What happens when inStart > inEnd?*",
+          ],
           isPrimary: true,
         },
         {
-          title: "Striver — serialize and deserialize a binary tree",
-          url: `${TUF}/serialize-and-deserialize-a-binary-tree`,
-          kind: "read",
-          minutes: 20,
-          whyThisOne: "The null-marker encoding and its exact inverse.",
+          title: "Striver — Serialize and deserialize a binary tree",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/serialize-and-deserialize-a-binary-tree",
+          kind: "do",
+          minutes: 35,
+          whyThisOne:
+            "The null-marker encoding and its exact inverse.",
         },
         {
-          title: "Striver — what is needed to construct a unique binary tree",
-          url: `${TUF}/requirements-needed-to-construct-a-unique-binary-tree`,
+          title: "Striver — What is needed to construct a unique binary tree",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/requirements-needed-to-construct-a-unique-binary-tree",
           kind: "read",
           minutes: 10,
-          whyThisOne: "The short theory answer to \"which traversals are enough?\".",
+          whyThisOne:
+            "The short theory answer to 'which pairs of traversals are enough?'.",
         },
       ],
     },

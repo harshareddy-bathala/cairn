@@ -16,6 +16,17 @@ export const awsCore: Module = {
       objective:
         "Trace an IAM authorization decision through explicit deny, allows and boundaries, and explain why workloads use roles instead of access keys.",
       estMinutes: 70,
+      primer: `**IAM** (Identity and Access Management) decides **who can do what** in an AWS account.
+
+- A **user** is a person or program with long-term credentials.
+- A **role** is a set of permissions that someone or something *assumes* for a while, receiving short-lived credentials — the right way for servers, CI pipelines and other accounts to get access.
+- A **policy** is a JSON document that lists allowed or denied actions (\`s3:GetObject\`) on resources (a particular bucket).
+
+Every request to AWS is checked against the policies that apply. The rules: everything is **denied by default**; an **allow** grants access; and an **explicit deny anywhere always wins**.
+
+The interview favourites: explain that decision order, and why a server should use a role instead of access keys saved on disk.
+
+**You need already:** an AWS account (free tier), and what JSON looks like.`,
       conceptMd: `**Principals** make requests: IAM users (long-lived credentials), **roles** (assumed, temporary credentials from STS), and AWS services. **Policies** are JSON documents of \`Effect\`, \`Action\`, \`Resource\` and optional \`Condition\`.
 
 **How a request is decided** — within one account:
@@ -64,26 +75,32 @@ So "the policy says Allow but it is still denied" has a short list of suspects: 
       ],
       resources: [
         {
-          title: "AWS — policy evaluation logic",
-          url: "https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_evaluation-logic.html",
-          kind: "docs",
-          minutes: 25,
-          whyThisOne: "The flowchart of the decision, which is the diagram to reproduce in an interview.",
+          title: "AWS — What is IAM?",
+          url: "https://docs.aws.amazon.com/IAM/latest/UserGuide/introduction.html",
+          kind: "read",
+          minutes: 20,
+          whyThisOne:
+            "The official introduction: users, groups, roles and policies, and how they fit together.",
+          steps: [
+            "Read the page and the sections it links for *users* and *roles*.",
+            "In the console, create a role for EC2 with read-only S3 access and read its JSON.",
+            "Then read *Policy evaluation logic* (next link) and redraw its flowchart from memory.",
+          ],
           isPrimary: true,
         },
         {
-          title: "AWS — security best practices in IAM",
-          url: "https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html",
+          title: "AWS — Policy evaluation logic",
+          url: "https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_evaluation-logic.html",
           kind: "docs",
-          minutes: 20,
-          whyThisOne: "Temporary credentials, least privilege and root-user hygiene — the checklist behind the answers.",
+          whyThisOne:
+            "The flowchart of the allow/deny decision — the diagram to reproduce in an interview.",
         },
         {
           title: "AWS — IAM roles for Amazon EC2",
           url: "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/iam-roles-for-amazon-ec2.html",
           kind: "docs",
-          minutes: 15,
-          whyThisOne: "How an instance profile delivers rotating credentials, so no keys live on the box.",
+          whyThisOne:
+            "How an instance gets rotating credentials from a role, so no keys live on the machine.",
         },
       ],
     },
@@ -93,6 +110,15 @@ So "the policy says Allow but it is still denied" has a short list of suspects: 
       objective:
         "Draw a two-AZ VPC with public and private subnets, route tables, an internet gateway and a NAT gateway, and contrast security groups with network ACLs.",
       estMinutes: 80,
+      primer: `A **VPC** (Virtual Private Cloud) is your own private network inside AWS. You choose its address range, for example \`10.0.0.0/16\`.
+
+You divide it into **subnets**, each living in one **Availability Zone** (a separate data centre). A **public subnet** has a route to an **internet gateway**, so things in it can be reached from the internet — load balancers, for example. A **private subnet** has no such route; your app servers and databases live there. When they need to reach *out* (to download updates), they go through a **NAT gateway** sitting in a public subnet.
+
+Traffic is filtered at two levels: **security groups** on each instance (stateful — replies are allowed automatically) and **network ACLs** on each subnet (stateless — both directions need rules).
+
+The standard interview task: draw a VPC across two AZs with public and private subnets.
+
+**You need already:** IP addresses and subnetting from the CN module.`,
       conceptMd: `Draw this until you can do it without looking:
 
 \`\`\`text
@@ -152,26 +178,33 @@ Security groups can reference **other security groups**: "the database accepts 5
       ],
       resources: [
         {
-          title: "AWS — how Amazon VPC works",
+          title: "AWS — How Amazon VPC works",
           url: "https://docs.aws.amazon.com/vpc/latest/userguide/how-it-works.html",
-          kind: "docs",
-          minutes: 25,
-          whyThisOne: "Subnets, route tables, gateways and the diagram in one page.",
+          kind: "read",
+          minutes: 30,
+          whyThisOne:
+            "Subnets, route tables and gateways, with the diagram, on one page.",
+          steps: [
+            "Read the page, following the diagram piece by piece.",
+            "Draw a two-AZ VPC: two public and two private subnets, one internet gateway, a NAT gateway, and each route table.",
+            "Read the NAT gateway page (next link) and add its placement to your drawing.",
+            "Compare security groups with network ACLs using the last link.",
+          ],
           isPrimary: true,
         },
         {
           title: "AWS — NAT gateways",
           url: "https://docs.aws.amazon.com/vpc/latest/userguide/vpc-nat-gateway.html",
           kind: "docs",
-          minutes: 15,
-          whyThisOne: "Placement, HA per AZ and pricing — the three things asked about NAT.",
+          whyThisOne:
+            "Where a NAT gateway goes, one per AZ for availability, and what it costs.",
         },
         {
-          title: "AWS — network ACLs",
+          title: "AWS — Network ACLs",
           url: "https://docs.aws.amazon.com/vpc/latest/userguide/vpc-network-acls.html",
           kind: "docs",
-          minutes: 15,
-          whyThisOne: "Rule ordering and the ephemeral-port example that shows what stateless costs you.",
+          whyThisOne:
+            "Rule ordering, and the ephemeral-port example that shows what stateless costs you.",
         },
       ],
     },
@@ -181,6 +214,15 @@ Security groups can reference **other security groups**: "the database accepts 5
       objective:
         "Pick an instance and volume type with reasons, secure an S3 bucket, require IMDSv2, and set up a billing alarm before anything else.",
       estMinutes: 70,
+      primer: `Three services cover most of what you will run.
+
+- **EC2** rents you virtual servers ("instances"). You pick an instance type (CPU and memory), an operating system image, and a network.
+- **EBS** is the disk attached to an instance. It persists when the instance stops; \`gp3\` is the sensible default type.
+- **S3** stores files ("objects") in "buckets", accessed over HTTP — virtually unlimited, very durable, and the most common place to leak data by accident, so buckets should block public access.
+
+And before you create anything: set a **billing alarm**, so a forgotten instance emails you instead of surprising you at the end of the month.
+
+**You need already:** the IAM and VPC units, and an AWS account.`,
       conceptMd: `**EC2.** Instance families by letter: **t** (burstable, CPU credits — fine for a student API, surprising when credits run out), **m** (general), **c** (compute), **r** (memory). Pick by the bottleneck you measured, not by name.
 
 **EBS** is network-attached block storage, **scoped to one AZ** — a volume cannot attach to an instance in another AZ (copy a snapshot instead). **gp3** is the default choice: 3,000 IOPS and 125 MiB/s baseline regardless of size, with more purchasable separately. **Instance store** is physically attached and fast, and is **lost when the instance stops**.
@@ -226,26 +268,33 @@ The classic student bills come from a forgotten NAT gateway, an unattached Elast
       ],
       resources: [
         {
-          title: "AWS — create a billing alarm",
+          title: "AWS — Create a billing alarm",
           url: "https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/monitor_estimated_charges_with_cloudwatch.html",
           kind: "lab",
           minutes: 15,
-          whyThisOne: "Do this first, in us-east-1, before anything else in the module.",
+          whyThisOne:
+            "Do this first, before anything else in the module.",
+          steps: [
+            "Enable billing alerts, then create the alarm — in `us-east-1`, where billing metrics live.",
+            "Set the threshold to a small amount, like $5, and confirm the email subscription.",
+            "Then launch one small EC2 instance and read the IMDS page (next link) to require IMDSv2 on it.",
+            "Terminate the instance when you are done.",
+          ],
           isPrimary: true,
         },
         {
-          title: "AWS — use the Instance Metadata Service",
+          title: "AWS — Use the Instance Metadata Service",
           url: "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/configuring-instance-metadata-service.html",
           kind: "docs",
-          minutes: 15,
-          whyThisOne: "IMDSv1 versus IMDSv2 and how to require the token.",
+          whyThisOne:
+            "IMDSv1 versus IMDSv2, and how to require the token.",
         },
         {
           title: "AWS — Amazon EBS volume types",
           url: "https://docs.aws.amazon.com/ebs/latest/userguide/ebs-volume-types.html",
           kind: "docs",
-          minutes: 15,
-          whyThisOne: "gp3's baseline numbers and when io2 or st1 are worth it.",
+          whyThisOne:
+            "gp3's baseline numbers, and when io2 or st1 are worth paying for.",
         },
       ],
     },

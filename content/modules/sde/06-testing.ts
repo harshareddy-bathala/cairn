@@ -16,6 +16,17 @@ export const testing: Module = {
       objective:
         "Explain unit, integration and end-to-end tests by speed, confidence and cost, and decide what to test at each level.",
       estMinutes: 50,
+      primer: `Tests come in sizes:
+
+- **Unit tests** check one function or class on its own. They run in milliseconds, so you can have thousands.
+- **Integration tests** check that pieces work together — your code against a real database, say. Slower, but they catch what unit tests cannot.
+- **End-to-end tests** drive the whole system the way a user would. The most realistic, the slowest, and the most likely to break for unrelated reasons.
+
+The **test pyramid** says: many unit tests at the bottom, fewer integration tests, a handful of end-to-end tests at the top. Upside down, the suite is slow and flaky and people stop running it.
+
+A good test checks *behaviour* (what the code does), not *implementation* (how it does it), so refactoring does not break it.
+
+**You need already:** Python, and the FastAPI units.`,
       conceptMd: `| Level | Tests | Speed | Confidence it gives | Breaks when |
 |---|---|---|---|---|
 | **Unit** | one function or class, dependencies replaced | milliseconds | the logic is right | the logic changes |
@@ -63,11 +74,18 @@ Good tests are **fast, independent** (any order, in parallel), **repeatable** (n
       ],
       resources: [
         {
-          title: "Martin Fowler — the practical test pyramid",
+          title: "Martin Fowler — The practical test pyramid",
           url: "https://martinfowler.com/articles/practical-test-pyramid.html",
           kind: "read",
           minutes: 45,
-          whyThisOne: "The long, practical version: what goes at each level, with a real service as the example.",
+          whyThisOne:
+            "What goes at each level, with a real service as the example.",
+          steps: [
+            "Read up to and including the section on unit tests.",
+            "Read the integration tests section.",
+            "Skim the rest; stop before the contract-testing detail.",
+            "List three things in atlas you would test at each level.",
+          ],
           isPrimary: true,
         },
       ],
@@ -78,6 +96,17 @@ Good tests are **fast, independent** (any order, in parallel), **repeatable** (n
       objective:
         "Write pytest suites with fixtures and parametrised cases, replace dependencies with mocks and FastAPI dependency overrides, and know when not to mock.",
       estMinutes: 75,
+      primer: `**pytest** is Python's standard test tool. A test is a function whose name starts with \`test_\` and which uses plain \`assert\`: \`assert add(2, 3) == 5\`. Run \`pytest\` and it finds and runs them all.
+
+Three features do most of the work:
+
+- **Fixtures** — functions that set up what a test needs (a database session, a test client) and clean up afterwards; a test asks for one just by naming it as a parameter.
+- **Parametrize** — run the same test over a table of inputs and expected outputs.
+- **Mocks** — replace a slow or external dependency (an email sender, a payment API) with a fake that records how it was called.
+
+Mock the things you do not own; do not mock your own code so heavily that the test only proves the mock works.
+
+**You need already:** the test pyramid unit.`,
       conceptMd: `**Fixtures** provide what a test needs, and clean it up afterwards:
 
 \`\`\`python
@@ -149,26 +178,33 @@ def test_signup_sends_welcome(send_email, client):
       ],
       resources: [
         {
-          title: "pytest — how to use fixtures",
-          url: "https://docs.pytest.org/en/stable/how-to/fixtures.html",
-          kind: "docs",
-          minutes: 30,
-          whyThisOne: "Scopes, yield teardown, conftest.py and fixture dependencies.",
+          title: "pytest — Get started",
+          url: "https://docs.pytest.org/en/stable/getting-started.html",
+          kind: "do",
+          minutes: 20,
+          whyThisOne:
+            "Install, write and run a first test, then group tests and use a first fixture.",
+          steps: [
+            "Work through the page, running every example.",
+            "Then read [How to use fixtures](https://docs.pytest.org/en/stable/how-to/fixtures.html) up to *yield* fixtures.",
+            "Write fixture-based tests for one atlas endpoint, using FastAPI dependency overrides (next link).",
+            "Read Fowler's *Mocks aren't stubs* (last link) before adding any mock.",
+          ],
           isPrimary: true,
         },
         {
-          title: "FastAPI — testing dependencies with overrides",
+          title: "FastAPI — Testing dependencies with overrides",
           url: "https://fastapi.tiangolo.com/advanced/testing-dependencies/",
           kind: "docs",
-          minutes: 15,
-          whyThisOne: "dependency_overrides, the clean way to swap a dependency in FastAPI tests.",
+          whyThisOne:
+            "`dependency_overrides`, the clean way to swap a dependency in FastAPI tests.",
         },
         {
-          title: "Martin Fowler — mocks aren't stubs",
+          title: "Martin Fowler — Mocks aren't stubs",
           url: "https://martinfowler.com/articles/mocksArentStubs.html",
           kind: "read",
-          minutes: 30,
-          whyThisOne: "The vocabulary of test doubles, and the case against over-mocking.",
+          whyThisOne:
+            "The vocabulary of test doubles, and the case against over-mocking.",
         },
       ],
     },
@@ -178,6 +214,13 @@ def test_signup_sends_welcome(send_email, client):
       objective:
         "Run atlas's integration tests against a real Postgres — locally with a container and in CI with a service container — with each test isolated.",
       estMinutes: 90,
+      primer: `Unit tests with a fake database can pass while the real one fails — a typo in SQL, a missing index, a constraint you forgot. **Integration tests** run your code against a **real Postgres**.
+
+You do not need a permanent test database. Locally, **Testcontainers** starts a throwaway Postgres in Docker for the test run and deletes it after. In CI, GitHub Actions can start Postgres as a **service container** next to your job.
+
+Each test must be **isolated** — it must not depend on what an earlier test left behind. The usual way: run each test inside a transaction and roll it back at the end, or truncate the tables between tests.
+
+**You need already:** pytest fixtures, Docker, and the CI/CD module.`,
       conceptMd: `**Test against the database you run.** SQLite is tempting for tests, but it differs from Postgres in types, constraint behaviour, \`ON CONFLICT\`, JSON operators and locking — so tests pass and production fails. Use a real Postgres.
 
 **Locally**, start one in a container. \`testcontainers\` does it from inside the test run:
@@ -249,26 +292,33 @@ The health options make the job wait until Postgres accepts connections.
       ],
       resources: [
         {
-          title: "GitHub — creating PostgreSQL service containers",
-          url: "https://docs.github.com/en/actions/use-cases-and-examples/using-containerized-services/creating-postgresql-service-containers",
+          title: "GitHub — Creating PostgreSQL service containers",
+          url: "https://docs.github.com/en/actions/tutorials/use-containerized-services/create-postgresql-service-containers",
           kind: "lab",
           minutes: 30,
-          whyThisOne: "The exact CI setup, with the health check — copy it into atlas's workflow.",
+          whyThisOne:
+            "The exact CI setup, with the health check.",
+          steps: [
+            "Read the page and copy its service definition into atlas's workflow.",
+            "Keep the health-check options — without them tests can start before Postgres is ready.",
+            "Locally, start the same Postgres with Testcontainers (next link) from a pytest fixture.",
+            "Make each test roll back its own transaction.",
+          ],
           isPrimary: true,
         },
         {
-          title: "Testcontainers — getting started for Python",
+          title: "Testcontainers — Getting started for Python",
           url: "https://testcontainers.com/guides/getting-started-with-testcontainers-for-python/",
           kind: "lab",
-          minutes: 30,
-          whyThisOne: "A real Postgres per test run on your laptop, from a pytest fixture.",
+          whyThisOne:
+            "A real Postgres per test run on your laptop, from a pytest fixture.",
         },
         {
-          title: "FastAPI — testing",
+          title: "FastAPI — Testing",
           url: "https://fastapi.tiangolo.com/tutorial/testing/",
           kind: "docs",
-          minutes: 15,
-          whyThisOne: "TestClient basics, for driving the endpoints in these tests.",
+          whyThisOne:
+            "TestClient basics, for driving the endpoints in these tests.",
         },
       ],
     },

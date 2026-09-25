@@ -16,6 +16,13 @@ export const networking: Module = {
       objective:
         "Explain the three-way handshake, TIME_WAIT, and what a connection stuck in SYN_SENT tells you.",
       estMinutes: 75,
+      primer: `Data crosses a network in small chunks called **packets**, which can arrive late, out of order, or not at all. **TCP** is the layer that turns that unreliable delivery into a dependable two-way stream: it numbers every byte, resends what goes missing, and puts things back in order.
+
+Before any data flows, the two sides agree to talk with a **three-way handshake**: the client says SYN ("let's talk, my numbering starts here"), the server answers SYN-ACK ("fine, and mine starts here"), the client says ACK. Closing takes a similar exchange in each direction.
+
+Each connection is always in a named **state** — \`ESTABLISHED\`, \`TIME_WAIT\`, \`SYN_SENT\` and so on — and \`ss -tan\` shows them on your own machine. Those states are how you tell *where* a failing connection got stuck.
+
+**You need already:** what an IP address and a port are.`,
       conceptMd: `The handshake is SYN → SYN-ACK → ACK, and it exists to synchronise sequence numbers in both directions. Teardown is FIN → ACK → FIN → ACK, because each direction closes independently.
 
 **TIME_WAIT** is the state people ask about. The side that closes first waits 2×MSL (typically 60s) before releasing the port, so that delayed duplicate packets from the old connection cannot be delivered to a new one reusing the same tuple. A server with tens of thousands of sockets in TIME_WAIT usually means it is closing connections rather than the client — often a missing keep-alive.
@@ -68,16 +75,23 @@ Flow control (the receiver's advertised window) protects the *receiver*; congest
           title: "High Performance Browser Networking — ch. 2, Building Blocks of TCP",
           url: "https://hpbn.co/building-blocks-of-tcp/",
           kind: "read",
-          minutes: 45,
-          whyThisOne: "Free, authoritative, and framed around performance consequences rather than exam definitions.",
+          minutes: 30,
+          whyThisOne:
+            "Free and clear; explains the handshake in terms of what it costs a real request.",
+          steps: [
+            "Read **Introduction** and **Three-Way Handshake**; draw the three packets with their sequence numbers.",
+            "Read **Congestion Avoidance and Control** up to and including **Slow-Start**.",
+            "Skip the tuning sections at the end.",
+            "Run `ss -tan` and find one connection in each of `ESTAB` and `TIME-WAIT`.",
+          ],
           isPrimary: true,
         },
         {
-          title: "ss and netstat state drills",
+          title: "man 8 ss",
           url: "https://man7.org/linux/man-pages/man8/ss.8.html",
           kind: "lab",
-          minutes: 30,
-          whyThisOne: "Run `ss -tan state time-wait` on your own machine — seeing real states beats reading about them.",
+          whyThisOne:
+            "The flags for the drill: `ss -tan state time-wait` and friends on your own machine.",
         },
       ],
     },
@@ -87,6 +101,13 @@ Flow control (the receiver's advertised window) protects the *receiver*; congest
       objective:
         "Trace a name resolution from stub resolver to authoritative server, and debug it with dig.",
       estMinutes: 60,
+      primer: `Computers find each other by IP address (like \`142.250.182.14\`), but people use names (like \`google.com\`). **DNS** is the internet's phone book that turns one into the other.
+
+When you open a site, your computer asks a **resolver** (usually run by your ISP or a service like 1.1.1.1). If it does not already know the answer, the resolver asks the **root** servers which servers handle \`.com\`, asks those which servers handle \`google.com\`, and asks *those* for the address. Answers are cached for a set time, the **TTL**, so most lookups are instant.
+
+Different **record types** hold different answers: **A** gives an IPv4 address, **CNAME** says "this name is an alias for that one", **MX** names the mail server. \`dig\` lets you ask any of these questions yourself.
+
+**You need already:** what an IP address is.`,
       conceptMd: `The full path: your stub resolver checks \`/etc/hosts\`, then asks the recursive resolver in \`/etc/resolv.conf\`. If uncached, that resolver walks the hierarchy — root → TLD → authoritative — and caches the answer for its TTL.
 
 Record types worth knowing cold: **A** (IPv4), **AAAA** (IPv6), **CNAME** (alias to another name — and it cannot coexist with other records at the same name, which is why you cannot CNAME a zone apex), **MX** (mail), **TXT** (verification, SPF), **NS** (delegation).
@@ -137,19 +158,34 @@ Record types worth knowing cold: **A** (IPv4), **AAAA** (IPv6), **CNAME** (alias
       ],
       resources: [
         {
-          title: "Julia Evans — Mess With DNS",
-          url: "https://jvns.ca/blog/2021/12/15/mess-with-dns/",
+          title: "Cloudflare — What is DNS?",
+          url: "https://www.cloudflare.com/learning/dns/what-is-dns/",
           kind: "read",
-          minutes: 30,
-          whyThisOne: "Hands-on and unusually clear; the companion sandbox lets you break real DNS safely.",
+          minutes: 20,
+          whyThisOne:
+            "The whole lookup explained from zero, with a diagram of each server the question passes through.",
+          steps: [
+            "Read how a DNS lookup works, following the diagram step by step.",
+            "Read the part on the different DNS servers (recursive resolver, root, TLD, authoritative).",
+            "Read the part on DNS caching.",
+            "Then run `dig google.com` and `dig +trace google.com` and match each step to the diagram.",
+          ],
           isPrimary: true,
         },
         {
-          title: "dig +trace drills",
-          url: "https://manpages.debian.org/bookworm/bind9-dnsutils/dig.1.en.html",
+          title: "Julia Evans — Mess With DNS",
+          url: "https://jvns.ca/blog/2021/12/15/mess-with-dns/",
           kind: "lab",
-          minutes: 25,
-          whyThisOne: "The flag reference for the drill: trace three domains you use, and the delegation chain stops being abstract.",
+          minutes: 30,
+          whyThisOne:
+            "A free sandbox where you create real DNS records and watch lookups arrive — the safe way to break DNS.",
+        },
+        {
+          title: "dig(1) manual",
+          url: "https://manpages.debian.org/bookworm/bind9-dnsutils/dig.1.en.html",
+          kind: "docs",
+          whyThisOne:
+            "The flags for the drill: `+trace`, `+short`, and asking for a specific record type.",
         },
       ],
     },
@@ -159,6 +195,13 @@ Record types worth knowing cold: **A** (IPv4), **AAAA** (IPv6), **CNAME** (alias
       objective:
         "Know the status code families cold and explain what the TLS handshake establishes and why.",
       estMinutes: 75,
+      primer: `**HTTP** is the language browsers and servers speak. The browser sends a *request* (a method like \`GET\` or \`POST\`, a path, and headers); the server sends back a *response* with a **status code**, headers and a body.
+
+Status codes come in families you should know by heart: **2xx** it worked, **3xx** look elsewhere (redirect), **4xx** the client made a mistake (404 not found, 403 forbidden), **5xx** the server failed (500 error, 502 bad gateway).
+
+**HTTPS** is HTTP inside **TLS**, which does two jobs: it *encrypts* the traffic so nobody in between can read it, and it *proves the server's identity* with a certificate, so you know you reached the real site. Before any HTTP flows, a **TLS handshake** agrees on keys and checks that certificate.
+
+**You need already:** the TCP unit — TLS runs on top of a TCP connection.`,
       conceptMd: `Status families: **2xx** success, **3xx** redirect, **4xx** the client is wrong, **5xx** the server is wrong. The individual codes that matter operationally: **401** (unauthenticated) vs **403** (authenticated but not permitted) — the distinction is asked; **429** rate limited; **502** bad gateway (your upstream returned garbage); **503** unavailable (usually overload or a deliberate drain); **504** gateway timeout (your upstream did not answer in time). In an incident, 502 vs 504 tells you whether the backend answered badly or not at all.
 
 **HTTP/1.1** is one request at a time per connection, with keep-alive to avoid reconnecting. **HTTP/2** multiplexes many streams over one connection, ending head-of-line blocking at the HTTP layer — though not at the TCP layer, which is exactly why **HTTP/3** moved to QUIC over UDP.
@@ -208,18 +251,33 @@ The certificate error you will actually hit: an incomplete **chain**. Your serve
       ],
       resources: [
         {
-          title: "High Performance Browser Networking — ch. 4, Transport Layer Security",
-          url: "https://hpbn.co/transport-layer-security-tls/",
+          title: "Cloudflare — What happens in a TLS handshake?",
+          url: "https://www.cloudflare.com/learning/ssl/what-happens-in-a-tls-handshake/",
           kind: "read",
-          minutes: 40,
-          whyThisOne: "Explains the handshake in terms of what each round trip costs, which is how an SRE should hold it.",
+          minutes: 15,
+          whyThisOne:
+            "The handshake step by step in plain language — what each message carries and why.",
+          steps: [
+            "Read what a TLS handshake achieves, then its steps in order.",
+            "Write the steps from memory in five lines.",
+            "Then skim MDN's status codes (next link) and note one example code per family.",
+          ],
           isPrimary: true,
         },
         {
           title: "MDN — HTTP response status codes",
-          url: "https://developer.mozilla.org/en-US/docs/Web/HTTP/Status",
+          url: "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status",
           kind: "docs",
-          whyThisOne: "The reference to skim until the families are automatic.",
+          whyThisOne:
+            "The reference list. Learn the families, and 200, 301, 304, 400, 401, 403, 404, 429, 500, 502, 503, 504.",
+        },
+        {
+          title: "High Performance Browser Networking — ch. 4, TLS",
+          url: "https://hpbn.co/transport-layer-security-tls/",
+          kind: "read",
+          minutes: 30,
+          whyThisOne:
+            "Deeper: what each round trip costs, session resumption, and the certificate chain of trust.",
         },
       ],
     },
@@ -229,6 +287,15 @@ The certificate error you will actually hit: an incomplete **chain**. Your serve
       objective:
         "Explain L4 vs L7 balancing and configure Nginx as a reverse proxy yourself.",
       estMinutes: 90,
+      primer: `One server can only handle so many users. A **load balancer** sits in front of several identical servers and spreads incoming requests across them, so you can add capacity and survive one server dying.
+
+It needs to know which servers are alive, so it sends them regular **health checks** and stops sending traffic to any that fail.
+
+Load balancers work at two levels. **Layer 4** looks only at IP addresses and ports — fast, but blind to what is inside. **Layer 7** understands HTTP, so it can send \`/api\` to one group of servers and \`/images\` to another.
+
+**Nginx** is a common web server that also works as a **reverse proxy**: it receives requests and forwards them to your application running behind it. In this unit you set that up yourself.
+
+**You need already:** HTTP basics from the last unit.`,
       conceptMd: `**L4** balances on IP and port — fast, protocol-agnostic, but it cannot see paths or headers. **L7** parses HTTP, so it can route on path or host, terminate TLS, retry idempotent requests and rewrite headers. AWS ALB is L7; NLB is L4.
 
 **Health checks** are what make a load balancer useful: passive (mark a backend down after failures) and active (poll a health endpoint). Your health endpoint should check the things a request actually needs — a database connection, say — but not so much that a slow dependency takes the whole fleet out of rotation. That trade-off is a good interview answer.
@@ -280,12 +347,34 @@ Forgetting those headers means your application logs every request as coming fro
       ],
       resources: [
         {
-          title: "Nginx — reverse proxy guide",
+          title: "nginx — Beginner's Guide",
+          url: "https://nginx.org/en/docs/beginners_guide.html",
+          kind: "lab",
+          minutes: 40,
+          whyThisOne:
+            "The official first steps: start nginx, understand its config file, then make it a proxy.",
+          steps: [
+            "Install nginx and read **Starting, Stopping, and Reloading Configuration**.",
+            "Read **Configuration File's Structure**.",
+            "Do **Serving Static Content**, then **Setting Up a Simple Proxy Server** on your own machine.",
+            "Skip *FastCGI Proxying*.",
+          ],
+          isPrimary: true,
+        },
+        {
+          title: "Cloudflare — What is load balancing?",
+          url: "https://www.cloudflare.com/learning/performance/what-is-load-balancing/",
+          kind: "read",
+          minutes: 15,
+          whyThisOne:
+            "Why load balancers exist, the common ways they choose a server, and what health checks do.",
+        },
+        {
+          title: "Nginx — Reverse proxy guide",
           url: "https://docs.nginx.com/nginx/admin-guide/web-server/reverse-proxy/",
           kind: "docs",
-          minutes: 30,
-          whyThisOne: "Official and short. Do the config on your own machine, do not just read it.",
-          isPrimary: true,
+          whyThisOne:
+            "The next step after the beginner's guide: passing headers and buffering in a real proxy config.",
         },
       ],
     },
@@ -295,6 +384,13 @@ Forgetting those headers means your application logs every request as coming fro
       objective:
         "Narrate the full path of a slow request and name the diagnostic at every hop. Fluently.",
       estMinutes: 60,
+      primer: `This unit ties the others together into one interview answer: **"a user says the site is slow — what do you do?"**
+
+A web request passes through a chain of steps: the browser, the DNS lookup, the TCP connection, the TLS handshake, the load balancer, the application server, the database, and the whole way back. Any one of them can be the slow part. A good answer walks the chain in order and names, for each step, *what could go wrong* and *how you would check it*.
+
+\`curl\` can time each step of a real request for you — DNS, connect, TLS, first byte, total — which turns "it's slow" into "the TLS handshake takes 800 ms".
+
+**You need already:** the TCP, DNS, HTTP/TLS and load balancing units.`,
       conceptMd: `**The diagnostic question, not the factual one.** Not "do you know TCP" but "a user says the site is slow — walk me through it." Rehearse it out loud until it flows.
 
 The path, with what could break and how you would check:
@@ -351,19 +447,34 @@ Two things elevate the answer: use \`curl -w\` to split the timing into DNS / co
       ],
       resources: [
         {
-          title: "curl timing breakdown with -w",
-          url: "https://curl.se/docs/manpage.html#-w",
+          title: "everything curl — Write out (-w)",
+          url: "https://everything.curl.dev/usingcurl/verbose/writeout.html",
           kind: "lab",
-          minutes: 25,
-          whyThisOne: "Build the timing format string once, keep it forever. It turns a vague complaint into a number.",
+          minutes: 20,
+          whyThisOne:
+            "How to make curl print the time spent in each stage of a request.",
+          steps: [
+            "Read the page and the list of variables.",
+            "Build a format string with `time_namelookup`, `time_connect`, `time_appconnect`, `time_starttransfer` and `time_total`.",
+            "Run it against three sites and say out loud which stage dominates for each.",
+          ],
           isPrimary: true,
         },
         {
-          title: "Google SRE Book — ch. 6, Monitoring Distributed Systems",
+          title: "What happens when… (alex/what-happens-when)",
+          url: "https://github.com/alex/what-happens-when",
+          kind: "read",
+          minutes: 30,
+          whyThisOne:
+            "The full journey of typing a URL and pressing Enter, written as one long answer — a model for your own narration.",
+        },
+        {
+          title: "Google SRE Book — ch. 6, Monitoring distributed systems",
           url: "https://sre.google/sre-book/monitoring-distributed-systems/",
           kind: "read",
-          minutes: 40,
-          whyThisOne: "Where the four golden signals come from, and it gives you the vocabulary to narrate this well.",
+          minutes: 25,
+          whyThisOne:
+            "Where the four golden signals come from — the vocabulary for describing where a request is slow.",
         },
       ],
     },

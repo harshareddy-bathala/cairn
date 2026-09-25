@@ -1,7 +1,5 @@
 import type { Module } from "@/content/types";
 
-const TUF = "https://takeuforward.org/blogs/data-structure-and-algorithm";
-
 export const stacksQueues: Module = {
   slug: "dsa-stacks-queues",
   trackSlug: "dsa",
@@ -18,6 +16,15 @@ export const stacksQueues: Module = {
       objective:
         "Use std::stack, std::queue and std::deque fluently, and build a queue from two stacks with amortised O(1) operations.",
       estMinutes: 60,
+      primer: `A **stack** is a pile: you add to the top and take from the top, so the last thing in is the first thing out (LIFO). Think of a stack of plates, or the Undo button.
+
+A **queue** is a line: you join at the back and leave from the front, so the first in is the first out (FIFO). Think of a ticket counter, or a printer's job list.
+
+In C++ they are \`std::stack\` (\`push\`, \`pop\`, \`top\`) and \`std::queue\` (\`push\`, \`pop\`, \`front\`), and every operation is O(1). A **deque** ("deck") lets you add and remove at both ends.
+
+The unit's exercise builds one from the other — a queue out of two stacks — which is a common interview question about *amortised* cost.
+
+**You need already:** vectors, and amortised O(1) from the vector unit in Phase 1.`,
       conceptMd: `A **stack** is last-in, first-out: \`push\`, \`pop\`, \`top\`. A **queue** is first-in, first-out: \`push\`, \`pop\`, \`front\`. A **deque** allows both ends. In C++ all three are O(1) per operation, and \`stack\` and \`queue\` are adapters over a \`deque\` by default.
 
 \`\`\`cpp
@@ -72,26 +79,39 @@ Each element is moved from \`in\` to \`out\` **at most once** in its lifetime, s
       ],
       resources: [
         {
-          title: "Striver — implement a queue using stacks",
-          url: `${TUF}/implement-a-queue-using-stacks`,
+          title: "Striver — Introduction to stack",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/introduction-to-stack",
           kind: "read",
-          minutes: 20,
-          whyThisOne: "Both the push-heavy and pop-heavy versions, with the amortised argument spelled out.",
+          minutes: 25,
+          whyThisOne:
+            "What a stack is and every operation on it, with a dry run — from zero.",
+          steps: [
+            "Read **What is a Stack?** and **Stack Operations** (push, pop, peek, isEmpty).",
+            "Follow **Dry Run of Stack Operations** on paper.",
+            "Read **Stack Overflow and Underflow**.",
+            "Then do *Implement a queue using stacks* (next link).",
+          ],
           isPrimary: true,
         },
         {
-          title: "Striver — design a circular queue",
-          url: `${TUF}/design-circular-queue`,
-          kind: "read",
-          minutes: 15,
-          whyThisOne: "The modular-index bookkeeping, including the full-versus-empty case.",
+          title: "Striver — Implement a queue using stacks",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/implement-a-queue-using-stacks",
+          kind: "do",
+          minutes: 30,
+          whyThisOne:
+            "Both versions, and why moving elements only when the out-stack is empty gives amortised O(1).",
+          steps: [
+            "Read the problem and examples, and try it yourself for 10–15 minutes.",
+            "Read the approaches in order — brute force first — following each **Dry Run** on paper.",
+          ],
         },
         {
-          title: "VisuAlgo — stack, queue and deque",
-          url: "https://visualgo.net/en/list",
+          title: "Striver — Design a circular queue",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/design-circular-queue",
           kind: "do",
-          minutes: 10,
-          whyThisOne: "Step through push and pop on each until the three rules are reflexes.",
+          minutes: 25,
+          whyThisOne:
+            "A queue in a fixed array with wrap-around indices, including telling full from empty.",
         },
       ],
     },
@@ -101,6 +121,15 @@ Each element is moved from \`in\` to \`out\` **at most once** in its lifetime, s
       objective:
         "Solve the matching, min-stack and postfix-evaluation family, and recognise when a stack is simulating something.",
       estMinutes: 75,
+      primer: `A stack fits any problem where **the most recent unfinished thing is the one you deal with next**.
+
+**Matching brackets**: in \`{[()]}\`, each closing bracket must match the most recent unmatched opening one. Push every opener; on a closer, the top of the stack must be its partner — pop it. At the end the stack must be empty.
+
+**Min stack**: a stack that also answers "what is the smallest value in it?" in O(1), by storing the running minimum alongside each element.
+
+**Postfix (Reverse Polish) expressions** like \`3 4 + 2 *\`: push numbers; on an operator, pop two numbers, apply it, push the result.
+
+**You need already:** the stack operations from the last unit.`,
       conceptMd: `A stack is the right tool whenever **the most recent unresolved thing is the one you resolve next**. Three classics show it:
 
 **Matching brackets.** Push openers; on a closer, the top must be its partner. Valid means every closer matched *and* the stack is empty at the end.
@@ -152,26 +181,35 @@ bool valid(const string &s) {
       ],
       resources: [
         {
-          title: "Striver — balanced parentheses using a stack",
-          url: `${TUF}/check-balanced-parentheses-using-a-stack`,
-          kind: "read",
-          minutes: 15,
-          whyThisOne: "The canonical version, including the empty-stack checks people forget.",
+          title: "Striver — Check balanced parentheses using a stack",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/check-balanced-parentheses-using-a-stack",
+          kind: "do",
+          minutes: 20,
+          whyThisOne:
+            "The canonical stack problem, including the empty-stack checks people forget.",
+          steps: [
+            "Try it yourself first.",
+            "Read **Approach** and follow the **Dry Run** on `{[()]}` and on `(]`.",
+            "Answer the **Interview follow-up Questions** before reading the answers.",
+            "Then do *Evaluate reverse Polish notation* (next link).",
+          ],
           isPrimary: true,
         },
         {
-          title: "Striver — evaluate reverse Polish notation",
-          url: `${TUF}/evaluate-reverse-polish-notation`,
-          kind: "read",
-          minutes: 15,
-          whyThisOne: "Operand order and integer division towards zero, both spelled out.",
+          title: "Striver — Evaluate reverse Polish notation",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/evaluate-reverse-polish-notation",
+          kind: "do",
+          minutes: 25,
+          whyThisOne:
+            "Operand order and integer division toward zero, both spelled out.",
         },
         {
-          title: "Striver — asteroid collision",
-          url: `${TUF}/asteroid-collision`,
-          kind: "read",
-          minutes: 20,
-          whyThisOne: "The stack-as-simulation shape, which transfers to a whole family of cancellation problems.",
+          title: "Striver — Asteroid collision",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/asteroid-collision",
+          kind: "do",
+          minutes: 30,
+          whyThisOne:
+            "The stack as a simulation of things cancelling out — a shape that transfers to many problems.",
         },
       ],
     },
@@ -181,6 +219,15 @@ bool valid(const string &s) {
       objective:
         "Solve next-greater and stock-span style problems in O(n) with a monotonic stack, and explain why it is O(n).",
       estMinutes: 90,
+      primer: `"For each element, find the next element to its right that is bigger." Two nested loops do it in O(n²). A **monotonic stack** does it in O(n).
+
+Walk the array keeping a stack of elements that are **still waiting** for their answer. When a new element arrives, it is the answer for every waiting element smaller than it — pop those and record it. Then push the new element; it now waits too. Because of the popping, the stack's values always stay in decreasing order — that is what *monotonic* means.
+
+Each element is pushed once and popped at most once, so the total work is O(n) even though there is a loop inside the loop.
+
+The same idea answers "previous greater", "next smaller", and stock-span style questions.
+
+**You need already:** the stack units.`,
       conceptMd: `"For each element, find the next element to its right that is greater" is O(n²) with two loops. The **monotonic stack** does it in O(n):
 
 \`\`\`cpp
@@ -247,26 +294,34 @@ vector<int> nextGreater(const vector<int> &a) {
       ],
       resources: [
         {
-          title: "Striver — next greater element",
-          url: `${TUF}/next-greater-element`,
-          kind: "read",
-          minutes: 25,
-          whyThisOne: "Builds the monotonic stack from the brute force, which is how you rebuild it under pressure.",
+          title: "Striver — Next greater element",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/next-greater-element",
+          kind: "do",
+          minutes: 35,
+          whyThisOne:
+            "Builds the monotonic stack from the brute force — how you rebuild it under pressure.",
+          steps: [
+            "Read the problem and examples, and try it yourself for 10–15 minutes.",
+            "Read the approaches in order — brute force first — following each **Dry Run** on paper.",
+            "Answer *Why does the inner `while` loop still allow linear time?* out loud.",
+            "Then solve *Daily Temperatures* from the practice list the same way.",
+          ],
           isPrimary: true,
         },
         {
-          title: "Striver — stock span problem",
-          url: `${TUF}/stock-span-problem`,
-          kind: "read",
-          minutes: 15,
-          whyThisOne: "The previous-greater variant, and the one most often disguised as a design question.",
+          title: "Striver — Stock span problem",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/stock-span-problem",
+          kind: "do",
+          minutes: 30,
+          whyThisOne:
+            "The previous-greater variant, often disguised as a design question.",
         },
         {
-          title: "USACO Guide — Stacks",
+          title: "USACO Guide — Stacks (nearest smaller values)",
           url: "https://usaco.guide/gold/stacks",
           kind: "read",
-          minutes: 20,
-          whyThisOne: "A second framing of the nearest-smaller-values problem, with the proof of O(n).",
+          whyThisOne:
+            "A second explanation of the same idea, with the argument for why it is O(n).",
         },
       ],
     },
@@ -276,6 +331,13 @@ vector<int> nextGreater(const vector<int> &a) {
       objective:
         "Solve largest rectangle in a histogram and sum of subarray minimums by computing each element's reach with previous and next smaller.",
       estMinutes: 90,
+      primer: `Picture a bar chart of heights \`[2, 1, 5, 6, 2, 3]\`. What is the largest rectangle that fits inside the bars?
+
+The key question: **for each bar, how wide can a rectangle of exactly that bar's height be?** It stretches left and right until it hits a shorter bar on each side. So you need, for every bar, the *previous smaller* and *next smaller* bar — exactly what the monotonic stack from the last unit computes. Area = height × (right boundary − left boundary − 1). Take the largest.
+
+This "what does each element contribute when it is the limiting one?" trick also solves *sum of subarray minimums*, which looks unrelated at first.
+
+**You need already:** the monotonic stack.`,
       conceptMd: `Some of the best-known "hard" stack problems are one idea: **ask what each element contributes when it is the limiting one.**
 
 **Largest rectangle in a histogram.** Every candidate rectangle is limited by its shortest bar. So for each bar \`i\`, the widest rectangle *with bar i as the shortest* stretches left to the previous smaller bar and right to the next smaller bar:
@@ -328,19 +390,26 @@ Maximal Rectangle in a binary matrix is this problem run once per row, on height
       ],
       resources: [
         {
-          title: "Striver — largest rectangle in a histogram",
-          url: `${TUF}/largest-rectangle-in-histogram`,
-          kind: "read",
-          minutes: 30,
-          whyThisOne: "Two-pass and one-pass versions, in that order — the order you should learn them in.",
+          title: "Striver — Largest rectangle in a histogram",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/largest-rectangle-in-histogram",
+          kind: "do",
+          minutes: 45,
+          whyThisOne:
+            "Brute force first, then the stack solution — the order to learn them in.",
+          steps: [
+            "Read the problem and examples, and try it yourself for 10–15 minutes.",
+            "Read the approaches in order — brute force first — following each **Dry Run** on paper.",
+            "Answer *Why is the width calculated as right − left − 1?* before reading the answer.",
+          ],
           isPrimary: true,
         },
         {
-          title: "Striver — sum of subarray minimums",
-          url: `${TUF}/sum-of-subarray-minimums`,
-          kind: "read",
-          minutes: 25,
-          whyThisOne: "The contribution technique with the tie-breaking rule made explicit.",
+          title: "Striver — Sum of subarray minimums",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/sum-of-subarray-minimums",
+          kind: "do",
+          minutes: 40,
+          whyThisOne:
+            "The contribution technique, with the rule for equal values made explicit.",
         },
       ],
     },
@@ -350,6 +419,13 @@ Maximal Rectangle in a binary matrix is this problem run once per row, on height
       objective:
         "Find the maximum of every window of size k in O(n) with a deque, and extend it to windows with a min-max constraint.",
       estMinutes: 75,
+      primer: `"Find the maximum of every window of size k" — for \`[1, 3, -1, -3, 5, 3, 6, 7]\` and k = 3 that is \`[3, 3, 5, 5, 6, 7]\`. A running sum cannot track a maximum: when the maximum slides out, you need the next largest immediately.
+
+A **monotonic deque** keeps, in decreasing order, only the elements that could still become the maximum of some future window. When a new element arrives, anything smaller at the back can never win again — drop it. When the front falls out of the window, drop it too. The front is always the current maximum.
+
+Every element enters and leaves the deque once, so it is O(n).
+
+**You need already:** the monotonic stack, and the sliding window from the strings module.`,
       conceptMd: `A sliding window whose answer is "the maximum in the window" cannot be updated with a running sum: when the maximum leaves, you need the next largest immediately. A heap would do it in O(n log k). A **monotonic deque** does it in O(n).
 
 \`\`\`cpp
@@ -404,25 +480,33 @@ The front is always the current maximum. Every index enters and leaves the deque
       ],
       resources: [
         {
-          title: "cp-algorithms — Minimum stack / minimum queue",
-          url: "https://cp-algorithms.com/data_structures/stack_queue_modification.html",
+          title: "GeeksforGeeks — Sliding window maximum",
+          url: "https://www.geeksforgeeks.org/dsa/sliding-window-maximum-maximum-of-all-subarrays-of-size-k/",
           kind: "read",
-          minutes: 25,
-          whyThisOne: "Derives the monotonic deque from the min-stack you already know, which is the connection that makes it stick.",
+          minutes: 30,
+          whyThisOne:
+            "Goes from nested loops to a heap to the deque, so you see what each step improves.",
+          steps: [
+            "Read **[Naive Approach]** and **[Better Approach] – Using Max-Heap** quickly.",
+            "Read **[Expected Approach] – Using Deque** and trace the deque's contents for the example by hand.",
+            "Solve LeetCode *Sliding Window Maximum* from the practice list without looking.",
+          ],
           isPrimary: true,
         },
         {
-          title: "Striver — longest subarray with absolute difference ≤ limit",
-          url: `${TUF}/longest-continuous-subarray-with-absolute-diff-less-than-or-equal-to-limit`,
-          kind: "read",
-          minutes: 20,
-          whyThisOne: "The two-deque extension inside a variable-size window.",
+          title: "Striver — Longest subarray with absolute difference ≤ limit",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/longest-continuous-subarray-with-absolute-diff-less-than-or-equal-to-limit",
+          kind: "do",
+          minutes: 35,
+          whyThisOne:
+            "Two deques — one for the max, one for the min — inside a window that grows and shrinks.",
         },
         {
-          title: "cppreference — std::deque",
-          url: "https://en.cppreference.com/w/cpp/container/deque",
-          kind: "docs",
-          whyThisOne: "Both ends are O(1), which is the entire reason this works.",
+          title: "cp-algorithms — Minimum stack / minimum queue",
+          url: "https://cp-algorithms.com/data_structures/stack_queue_modification.html",
+          kind: "read",
+          whyThisOne:
+            "Optional: derives the deque idea from the min-stack you already know.",
         },
       ],
     },

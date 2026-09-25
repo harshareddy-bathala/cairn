@@ -16,6 +16,16 @@ export const docker: Module = {
       objective:
         "Explain a container as a Linux process with restricted visibility and bounded resources.",
       estMinutes: 75,
+      primer: `"It works on my machine" happens because your laptop and the server have different versions of everything. A **container** packages your program *together with everything it needs* — libraries, runtime, config — so it runs the same everywhere.
+
+A container is not a small virtual machine. It is an **ordinary process on the host's Linux kernel**, with two restrictions applied:
+
+- **namespaces** limit what it can *see*: its own process list, its own network, its own files;
+- **cgroups** limit what it can *use*: how much CPU and memory.
+
+That is why containers start in under a second and you can run dozens on a laptop — there is no second operating system booting inside. **Docker** is the tool that builds and runs them.
+
+**You need already:** processes from the Linux module, and Docker installed.`,
       conceptMd: `**A container is just a process on the host kernel.** There is no guest OS. Run \`ps aux\` on the host and you can see it. Two kernel features do the work:
 
 **Namespaces** restrict what a process can *see*: \`pid\` (its own process tree, so it thinks it is PID 1), \`net\` (its own interfaces and ports), \`mnt\` (its own filesystem view), \`uts\` (its own hostname), \`ipc\`, and \`user\` (UID mapping).
@@ -66,19 +76,33 @@ Being PID 1 also matters — PID 1 does not get default signal handlers, so a sh
       ],
       resources: [
         {
-          title: "Docker docs — what is a container",
-          url: "https://docs.docker.com/get-started/docker-overview/",
+          title: "Docker docs — What is a container?",
+          url: "https://docs.docker.com/get-started/docker-concepts/the-basics/what-is-a-container/",
           kind: "read",
-          minutes: 25,
-          whyThisOne: "Official, accurate, and the diagram is the one to reproduce on a whiteboard.",
+          minutes: 20,
+          whyThisOne:
+            "The official beginner lesson: the idea, the comparison with virtual machines, and your first container.",
+          steps: [
+            "Read **Explanation** and **Containers versus virtual machines (VMs)**.",
+            "Do **Try it out** on your own machine, including *Explore your container* and *Stop your container*.",
+            "While it runs, find its process with `ps aux` on the host — it is just a process.",
+          ],
           isPrimary: true,
+        },
+        {
+          title: "Julia Evans — What even is a container: namespaces and cgroups",
+          url: "https://jvns.ca/blog/2016/10/10/what-even-is-a-container/",
+          kind: "read",
+          minutes: 15,
+          whyThisOne:
+            "A short, friendly explanation of the two kernel features that make a container.",
         },
         {
           title: "unshare(1) — make a namespace by hand",
           url: "https://man7.org/linux/man-pages/man1/unshare.1.html",
           kind: "lab",
-          minutes: 30,
-          whyThisOne: "Run `sudo unshare --pid --fork --mount-proc bash` then `ps aux`. Containers stop being magic.",
+          whyThisOne:
+            "Run `sudo unshare --pid --fork --mount-proc bash`, then `ps aux`: you are in your own process namespace.",
         },
       ],
     },
@@ -88,6 +112,13 @@ Being PID 1 also matters — PID 1 does not get default signal handlers, so a sh
       objective:
         "Order a Dockerfile so the cache actually helps, and explain why a deleted file can still bloat an image.",
       estMinutes: 75,
+      primer: `An **image** is the packaged, read-only template a container starts from — a bit like a class, where a running container is an object made from it.
+
+Images are built in **layers**. Each instruction in the build recipe adds one layer on top of the previous ones: a base OS layer, then installed packages, then your code. Layers are shared and **cached**: if nothing has changed up to a given layer, Docker reuses the saved one instead of rebuilding it.
+
+That gives the unit's main lesson: put the things that rarely change (installing dependencies) *before* the things that change all the time (copying your code). Then editing your code rebuilds only the last layer — seconds instead of minutes.
+
+**You need already:** the previous unit — running a container.`,
       conceptMd: `An image is a stack of read-only layers; a container adds one writable layer on top. Each Dockerfile instruction creates a layer, and layers are cached by content.
 
 **The cache rule that matters:** a changed layer invalidates every layer after it. So order from least to most frequently changing — dependency manifests before source code:
@@ -136,12 +167,34 @@ Reversing those two lines means reinstalling every dependency on every build. It
       ],
       resources: [
         {
-          title: "Docker — building best practices",
+          title: "Docker docs — Understanding the image layers",
+          url: "https://docs.docker.com/get-started/docker-concepts/building-images/understanding-image-layers/",
+          kind: "read",
+          minutes: 25,
+          whyThisOne:
+            "Shows layers being created and stacked, then has you build them by hand.",
+          steps: [
+            "Read **Image layers** and **Stacking the layers**.",
+            "Do **Try it out**: *Create a base image*, then *Build an app image*.",
+            "Run `docker history` on your image and match each layer to a step.",
+            "Then read *Using the build cache* (next link).",
+          ],
+          isPrimary: true,
+        },
+        {
+          title: "Docker docs — Using the build cache",
+          url: "https://docs.docker.com/get-started/docker-concepts/building-images/using-the-build-cache/",
+          kind: "read",
+          minutes: 20,
+          whyThisOne:
+            "What invalidates the cache and how instruction order decides your rebuild time.",
+        },
+        {
+          title: "Docker — Building best practices",
           url: "https://docs.docker.com/build/building/best-practices/",
           kind: "read",
-          minutes: 35,
-          whyThisOne: "The cache-ordering and layer-size sections are the two worth reading closely.",
-          isPrimary: true,
+          whyThisOne:
+            "Once the basics are clear: the official list of habits for small, fast, safe images.",
         },
       ],
     },
@@ -151,6 +204,17 @@ Reversing those two lines means reinstalling every dependency on every build. It
       objective:
         "Write a multi-stage Dockerfile producing a small image that runs as a non-root user.",
       estMinutes: 90,
+      primer: `A **Dockerfile** is the recipe for building an image — a text file of instructions run top to bottom:
+
+- \`FROM python:3.12-slim\` — start from this base image;
+- \`WORKDIR /app\` — work in this folder;
+- \`COPY . .\` — copy files in;
+- \`RUN pip install -r requirements.txt\` — run a command while building;
+- \`CMD ["python", "app.py"]\` — what to run when a container starts.
+
+Two ideas make a Dockerfile production-grade. A **multi-stage build** uses one stage with all the build tools, then copies only the finished result into a small clean final stage. And **running as a non-root user** means a break-in through your app does not get root inside the container.
+
+**You need already:** images and layers from the last unit.`,
       conceptMd: `**CMD vs ENTRYPOINT.** ENTRYPOINT is the executable; CMD supplies default arguments and is replaced by anything you pass on the command line. \`ENTRYPOINT ["python", "app.py"]\` with \`CMD ["--port", "8000"]\` means \`docker run img --port 9000\` overrides just the port. If you only set CMD, any argument replaces the whole command. Use the **exec form** (JSON array) — the shell form wraps your process in \`/bin/sh -c\`, which breaks signal handling.
 
 **COPY vs ADD**: use COPY. ADD additionally auto-extracts tarballs and fetches URLs, which is surprising behaviour you rarely want.
@@ -213,18 +277,34 @@ ENTRYPOINT ["/app"]
       ],
       resources: [
         {
-          title: "Dockerfile reference",
-          url: "https://docs.docker.com/reference/dockerfile/",
-          kind: "docs",
-          minutes: 40,
-          whyThisOne: "Read the ENTRYPOINT and CMD interaction table directly — summaries of it are usually wrong.",
+          title: "Docker docs — Writing a Dockerfile",
+          url: "https://docs.docker.com/get-started/docker-concepts/building-images/writing-a-dockerfile/",
+          kind: "read",
+          minutes: 25,
+          whyThisOne:
+            "The common instructions explained one by one, then a Dockerfile you write yourself.",
+          steps: [
+            "Read **Explanation** and **Common instructions**.",
+            "Do **Try it out** and build the image.",
+            "Then read *Multi-stage builds* (next link) and convert your Dockerfile to two stages.",
+            "Add a `USER` line so the app does not run as root, and rebuild.",
+          ],
           isPrimary: true,
         },
         {
-          title: "hadolint — Dockerfile linter",
-          url: "https://github.com/hadolint/hadolint",
-          kind: "do",
-          whyThisOne: "Lint every Dockerfile you write. It teaches the conventions while catching real problems.",
+          title: "Docker docs — Multi-stage builds",
+          url: "https://docs.docker.com/get-started/docker-concepts/building-images/multi-stage-builds/",
+          kind: "read",
+          minutes: 20,
+          whyThisOne:
+            "Why the final image should not contain your compiler, and how two `FROM` lines achieve that.",
+        },
+        {
+          title: "Dockerfile reference — CMD and ENTRYPOINT",
+          url: "https://docs.docker.com/reference/dockerfile/",
+          kind: "docs",
+          whyThisOne:
+            "Look up *Understand how CMD and ENTRYPOINT interact* — the table that summaries usually get wrong.",
         },
       ],
     },
@@ -234,6 +314,15 @@ ENTRYPOINT ["/app"]
       objective:
         "Run a multi-service stack locally with compose, and persist data correctly across restarts.",
       estMinutes: 90,
+      primer: `Real applications are several containers working together — an API, a database, maybe a cache. Three things make that work.
+
+**Networking.** Containers on the same Docker network can reach each other *by name*: the API connects to \`db:5432\`, not \`localhost:5432\`. Inside a container, \`localhost\` means that container itself.
+
+**Volumes.** A container's own files disappear when it is removed. A **volume** is storage that lives outside the container, so a database keeps its data across restarts and upgrades.
+
+**Docker Compose.** Instead of typing long \`docker run\` commands, you describe every service, network and volume in one \`compose.yaml\` and start everything with \`docker compose up\`.
+
+**You need already:** running containers and writing a Dockerfile.`,
       conceptMd: `**Networking.** Containers on a user-defined bridge network reach each other **by service name** — Docker runs an embedded DNS server. That is why \`postgres://db:5432\` works in compose while \`localhost\` does not: inside a container, \`localhost\` is the container itself.
 
 **Volumes vs bind mounts.** A named volume is managed by Docker and is the right choice for databases. A bind mount maps a host path in and is the right choice for live-reloading source in development. Anything written to the container's writable layer disappears when the container is removed — which is how people lose their database.
@@ -284,19 +373,34 @@ This project's own \`docker-compose.yml\` is a working example — read it.`,
       ],
       resources: [
         {
-          title: "Docker Compose — file reference",
-          url: "https://docs.docker.com/reference/compose-file/",
-          kind: "docs",
+          title: "Docker docs — Multi-container applications",
+          url: "https://docs.docker.com/get-started/docker-concepts/running-containers/multi-container-applications/",
+          kind: "lab",
           minutes: 30,
-          whyThisOne: "The healthcheck and depends_on conditions section resolves a common source of compose confusion.",
+          whyThisOne:
+            "Runs a two-container app by hand first, then replaces all those commands with one Compose file.",
+          steps: [
+            "Read **Explanation**.",
+            "Do **Try it out** — build the images and run the containers by hand.",
+            "Do **Simplify the deployment using Docker Compose** and compare the two approaches.",
+            "Then do *Persisting container data* (next link) and restart your database without losing data.",
+          ],
           isPrimary: true,
+        },
+        {
+          title: "Docker docs — Persisting container data",
+          url: "https://docs.docker.com/get-started/docker-concepts/running-containers/persisting-container-data/",
+          kind: "lab",
+          minutes: 20,
+          whyThisOne:
+            "Volumes, shown by deleting a container and getting the data back.",
         },
         {
           title: "Docker networking overview",
           url: "https://docs.docker.com/engine/network/",
           kind: "read",
-          minutes: 25,
-          whyThisOne: "Bridge vs host vs none, and why service-name DNS works. Short and worth it.",
+          whyThisOne:
+            "Bridge, host and none networks, and why reaching a service by name works.",
         },
       ],
     },
@@ -306,6 +410,16 @@ This project's own \`docker-compose.yml\` is a working example — read it.`,
       objective:
         "Diagnose a container that exits immediately, and read the common exit codes.",
       estMinutes: 60,
+      primer: `Containers fail in a few typical ways: they exit the moment they start, they keep restarting, or they run but do not answer. Debugging follows the same short routine each time:
+
+1. \`docker ps -a\` — is it running, and what was its **exit code**?
+2. \`docker logs <name>\` — what did the program print before it died?
+3. \`docker inspect <name>\` — its full configuration: environment, ports, mounts, health.
+4. \`docker exec -it <name> sh\` — open a shell *inside* a running container and look around.
+
+Exit codes tell you a lot: 0 means the program simply finished (a container only lives as long as its main process), 1 is an application error, 137 means it was killed — often for using too much memory.
+
+**You need already:** the earlier Docker units.`,
       conceptMd: `The commands, in the order you actually reach for them: \`docker logs --tail 100 -f <c>\`, \`docker inspect <c>\`, \`docker exec -it <c> sh\`, \`docker stats\`.
 
 **Exit codes worth recognising:**
@@ -358,12 +472,32 @@ This project's own \`docker-compose.yml\` is a working example — read it.`,
       ],
       resources: [
         {
-          title: "Docker CLI reference",
-          url: "https://docs.docker.com/reference/cli/docker/",
+          title: "Docker CLI — docker container logs",
+          url: "https://docs.docker.com/reference/cli/docker/container/logs/",
           kind: "docs",
-          minutes: 25,
-          whyThisOne: "Skim logs, exec, inspect and stats so the flags are in your fingers during an incident.",
+          minutes: 10,
+          whyThisOne:
+            "The first command in every container investigation, with the flags that matter.",
+          steps: [
+            "Read the description and the options table; try `--tail`, `-f` and `--since` on a running container.",
+            "Break a container on purpose (a typo in its command), then find the cause from `docker ps -a` and `docker logs` alone.",
+            "Read the `docker container exec` page (next link) and open a shell inside a running container.",
+          ],
           isPrimary: true,
+        },
+        {
+          title: "Docker CLI — docker container exec",
+          url: "https://docs.docker.com/reference/cli/docker/container/exec/",
+          kind: "docs",
+          whyThisOne:
+            "Getting a shell inside a live container, and running one-off commands in it.",
+        },
+        {
+          title: "Docker CLI — docker inspect",
+          url: "https://docs.docker.com/reference/cli/docker/inspect/",
+          kind: "docs",
+          whyThisOne:
+            "Reading the full state of a container, including its exit code and the reason it was killed.",
         },
       ],
     },

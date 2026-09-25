@@ -15,6 +15,15 @@ export const dbms: Module = {
       objective:
         "Normalise a schema to 3NF and justify a deliberate denormalisation.",
       estMinutes: 75,
+      primer: `A **relational database** stores data in **tables**: rows are records, columns are fields. A \`students\` table might have columns \`id\`, \`name\`, \`email\`.
+
+Every table needs a way to identify each row uniquely — a **key**. The **primary key** (often \`id\`) is the one you choose. A **foreign key** is a column that holds another table's key, and that is how tables link: \`enrolments.student_id\` points at \`students.id\`.
+
+**Normalisation** means storing each fact exactly once. If a student's email is copied into every enrolment row, changing it means finding every copy — and missing one leaves the data contradicting itself. The normal forms (1NF, 2NF, 3NF) are step-by-step rules for splitting tables so that cannot happen.
+
+An **ER diagram** is the drawing of these tables and how they relate, done before writing any SQL.
+
+**You need already:** nothing — this is where databases begin.`,
       conceptMd: `**Keys**: a *super key* uniquely identifies a row; a *candidate key* is a minimal super key; the *primary key* is the candidate you chose; a *foreign key* references another table's primary key; a *composite key* spans multiple columns.
 
 **Normalisation**, each form fixing one class of anomaly:
@@ -69,12 +78,34 @@ Then the answer that shows judgement: **denormalisation is a legitimate performa
       ],
       resources: [
         {
-          title: "GeeksforGeeks — normalisation with examples",
-          url: "https://www.geeksforgeeks.org/normal-forms-in-dbms/",
+          title: "GeeksforGeeks — Keys in the relational model",
+          url: "https://www.geeksforgeeks.org/dbms/types-of-keys-in-relational-model-candidate-super-primary-alternate-and-foreign/",
           kind: "read",
-          minutes: 40,
-          whyThisOne: "Worked decompositions in the format written tests use.",
+          minutes: 20,
+          whyThisOne:
+            "Each kind of key with a small table example — the vocabulary normalisation is built on.",
+          steps: [
+            "Read each key type and point to it in the example table.",
+            "Then read *Normal Forms in DBMS* (next link), working each decomposition on paper.",
+            "Normalise a table of your own — say, orders with the customer's details copied into each row — to 3NF.",
+          ],
           isPrimary: true,
+        },
+        {
+          title: "GeeksforGeeks — Normal forms in DBMS",
+          url: "https://www.geeksforgeeks.org/dbms/normal-forms-in-dbms/",
+          kind: "read",
+          minutes: 30,
+          whyThisOne:
+            "1NF to BCNF with worked decompositions in the format written tests use.",
+        },
+        {
+          title: "GeeksforGeeks — Introduction of ER model",
+          url: "https://www.geeksforgeeks.org/dbms/introduction-of-er-model/",
+          kind: "read",
+          minutes: 20,
+          whyThisOne:
+            "Entities, attributes and relationships, and how to draw them — the diagram before the tables.",
         },
       ],
     },
@@ -84,6 +115,17 @@ Then the answer that shows judgement: **denormalisation is a legitimate performa
       objective:
         "Write every join type and a grouped aggregate correctly, and know when HAVING is required.",
       estMinutes: 90,
+      primer: `**SQL** is the language for asking a database questions. The basic shape: \`SELECT columns FROM table WHERE condition\`.
+
+Three ideas carry most interview questions:
+
+- **JOIN** combines rows from two tables that match on a key — say, each order with its customer's name. An *inner* join keeps only matches; a *left* join keeps every row from the left table, with blanks where nothing matched.
+- **GROUP BY** collapses rows into groups and computes one value per group with \`COUNT\`, \`SUM\`, \`AVG\`: "orders per customer". \`WHERE\` filters rows *before* grouping; \`HAVING\` filters groups *after*.
+- **Window functions** compute across related rows without collapsing them — a rank or running total alongside each row.
+
+SQL is learned by writing it. Aim for about fifty queries typed from scratch.
+
+**You need already:** tables and keys from the last unit.`,
       conceptMd: `**Joins**: INNER (matches only), LEFT (all left rows, NULLs where unmatched), RIGHT, FULL OUTER, CROSS (cartesian), SELF (a table joined to itself, for hierarchies like employee → manager).
 
 **WHERE filters rows before grouping; HAVING filters groups after.** The distinction is asked constantly, and the answer is mechanical:
@@ -143,19 +185,27 @@ ORDER BY avg_salary DESC;
       ],
       resources: [
         {
-          title: "PostgreSQL tutorial — joins, grouping, window functions",
-          url: "https://www.postgresql.org/docs/current/tutorial-window.html",
-          kind: "docs",
-          minutes: 45,
-          whyThisOne: "Official docs on the real database you are using in atlas, so the practice transfers directly.",
+          title: "PostgreSQL tutorial 2.6 — Joins between tables",
+          url: "https://www.postgresql.org/docs/current/tutorial-join.html",
+          kind: "read",
+          minutes: 25,
+          whyThisOne:
+            "The official tutorial, on the database you use in atlas, building joins up from a two-table example.",
+          steps: [
+            "Create the tutorial's `weather` and `cities` tables in your own Postgres and run every query.",
+            "Continue to [2.7 Aggregate Functions](https://www.postgresql.org/docs/current/tutorial-agg.html) — GROUP BY and HAVING.",
+            "Then [3.5 Window Functions](https://www.postgresql.org/docs/current/tutorial-window.html).",
+            "Then solve this unit's SQL problems without looking anything up.",
+          ],
           isPrimary: true,
         },
         {
-          title: "LeetCode — SQL 50",
-          url: "https://leetcode.com/studyplan/top-sql-50/",
+          title: "SQLBolt — Lesson 6: Multi-table queries with JOINs",
+          url: "https://sqlbolt.com/lesson/select_queries_with_joins",
           kind: "do",
-          minutes: 90,
-          whyThisOne: "This is where the fifty hand-written queries come from. Work it, do not read it.",
+          minutes: 20,
+          whyThisOne:
+            "Interactive exercises in the browser — type queries and see the result immediately. Lessons 6 to 12 cover this unit.",
         },
       ],
     },
@@ -165,6 +215,15 @@ ORDER BY avg_salary DESC;
       objective:
         "Explain when a B-tree index helps and when it hurts, and read an EXPLAIN output.",
       estMinutes: 75,
+      primer: `Without help, finding one row in a table of a million means reading all million. An **index** is a separate, sorted structure that lets the database jump straight to the rows it needs — like the index at the back of a book.
+
+The standard kind is a **B-tree**: a balanced tree that finds any value in a few steps and also handles ranges ("price between 100 and 200") and sorting.
+
+Indexes are not free. Every insert and update must also update every index, and they take disk space. So you index the columns you search, join and sort on — not everything.
+
+\`EXPLAIN\` shows the plan the database chose for a query: whether it used an index or scanned the whole table. Reading it is how you find out *why* a query is slow instead of guessing.
+
+**You need already:** SELECT and WHERE from the SQL unit.`,
       conceptMd: `A **B-tree index** is a balanced tree giving O(log n) lookup, and it supports range queries and ordered scans — which is why it is the default.
 
 **When indexes help**: WHERE on a selective column, JOIN keys, ORDER BY, and covering queries where the index alone answers the query.
@@ -219,19 +278,25 @@ The classic index-defeating mistake: wrapping the column in a function. \`WHERE 
       ],
       resources: [
         {
-          title: "Use The Index, Luke",
-          url: "https://use-the-index-luke.com/",
+          title: "Use The Index, Luke — Anatomy of an SQL index",
+          url: "https://use-the-index-luke.com/sql/anatomy",
           kind: "read",
-          minutes: 60,
-          whyThisOne: "The best free writing on indexing anywhere. The leftmost-prefix chapter alone earns the time.",
+          minutes: 30,
+          whyThisOne:
+            "The best free writing on indexes, starting from what an index physically is.",
+          steps: [
+            "Read this chapter's pages in order: the leaf nodes, [the B-tree](https://use-the-index-luke.com/sql/anatomy/the-tree), and slow indexes.",
+            "Then read [Concatenated keys](https://use-the-index-luke.com/sql/where-clause/the-equals-operator/concatenated-keys) — why column order matters.",
+            "Run `EXPLAIN` on a query of yours before and after adding an index (next link).",
+          ],
           isPrimary: true,
         },
         {
-          title: "PostgreSQL — using EXPLAIN",
+          title: "PostgreSQL — Using EXPLAIN",
           url: "https://www.postgresql.org/docs/current/using-explain.html",
           kind: "docs",
-          minutes: 30,
-          whyThisOne: "Run it against your own atlas queries and the abstract advice becomes concrete.",
+          whyThisOne:
+            "How to read a query plan. Run it against your own atlas queries.",
         },
       ],
     },
@@ -241,6 +306,13 @@ The classic index-defeating mistake: wrapping the column in a function. \`WHERE 
       objective:
         "Name the anomaly each isolation level prevents, and explain what a deadlock looks like in a database.",
       estMinutes: 75,
+      primer: `A **transaction** groups several changes so they happen **all together or not at all**. Moving money between accounts is two updates — take from one, add to the other — and the database must never stop halfway.
+
+The guarantees a transaction gives are called **ACID**: *Atomicity* (all or nothing), *Consistency* (the rules you set still hold afterwards), *Isolation* (transactions running at the same time do not see each other's half-finished work), *Durability* (once it says committed, it survives a crash).
+
+Isolation has levels, because perfect isolation is slow. Weaker levels allow specific **anomalies** — reading uncommitted data, a value changing between two reads, new rows appearing — and each level is defined by which of those it prevents.
+
+**You need already:** SQL basics.`,
       conceptMd: `**ACID**: **Atomicity** (all or nothing), **Consistency** (constraints hold before and after), **Isolation** (concurrent transactions do not corrupt each other), **Durability** (committed means survives a crash — implemented by the write-ahead log).
 
 The three anomalies, in increasing subtlety:
@@ -309,12 +381,33 @@ Higher isolation costs concurrency — that is the trade-off, and naming it is t
       ],
       resources: [
         {
-          title: "PostgreSQL — transaction isolation",
+          title: "GeeksforGeeks — ACID properties in DBMS",
+          url: "https://www.geeksforgeeks.org/dbms/acid-properties-in-dbms/",
+          kind: "read",
+          minutes: 20,
+          whyThisOne:
+            "Each property with a bank-transfer example of what goes wrong without it.",
+          steps: [
+            "Read the four properties, writing one failure example for each in your own words.",
+            "Then read *Transaction Isolation Levels* (next link) and make a table: level → anomalies it prevents.",
+            "Check your table against the PostgreSQL page (last link) — Postgres differs from the textbook in one place.",
+          ],
+          isPrimary: true,
+        },
+        {
+          title: "GeeksforGeeks — Transaction isolation levels",
+          url: "https://www.geeksforgeeks.org/dbms/transaction-isolation-levels-dbms/",
+          kind: "read",
+          minutes: 20,
+          whyThisOne:
+            "Dirty reads, non-repeatable reads and phantoms, and which level prevents which.",
+        },
+        {
+          title: "PostgreSQL — Transaction isolation",
           url: "https://www.postgresql.org/docs/current/transaction-iso.html",
           kind: "docs",
-          minutes: 35,
-          whyThisOne: "Precise about which anomalies each level actually prevents in a real engine, not just in theory.",
-          isPrimary: true,
+          whyThisOne:
+            "What each level does in a real engine. Its table is the authority when a textbook disagrees.",
         },
       ],
     },

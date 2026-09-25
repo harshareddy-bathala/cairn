@@ -16,6 +16,17 @@ export const offCampus: Module = {
       objective:
         "Produce DevOps/SRE, SDE/Backend and Core IT/Infra resumes on one page each, with every bullet in action-plus-result form.",
       estMinutes: 150,
+      primer: `A recruiter spends seconds on a resume, and software (an **ATS**) often filters it before a person sees it. So a resume has one job: make the right three things obvious, fast.
+
+The rules that matter:
+
+- **One page**, a plain layout a machine can read — no tables, columns or photos.
+- Each bullet is **action + result**: "Built X using Y, which cut Z by 40%", not "Responsible for X".
+- Put the skills and keywords of the role you are applying for where they show.
+
+Since you are aiming at DevOps/SRE, SDE/backend and core IT/infra roles, keep **one base resume** and make three versions from it, each leading with what that role cares about.
+
+**You need already:** your project list, and your STAR stories for the numbers.`,
       conceptMd: `One base document, three orderings. The content barely changes between them; the **emphasis** does:
 
 | resume | leads with | top projects |
@@ -74,9 +85,15 @@ Name the files by role — \`resume-sre.pdf\`, not \`resume-final-v3.pdf\` — a
           title: "Tech Interview Handbook — Writing software engineer resumes",
           url: "https://www.techinterviewhandbook.org/resume/",
           kind: "read",
-          minutes: 30,
+          minutes: 40,
           whyThisOne:
-            "Bullet formulas, ATS rules and worked before-and-after examples — the whole unit's checklist in one page.",
+            "Bullet formulas, ATS rules and worked before-and-after examples — the whole unit's checklist on one page.",
+          steps: [
+            "Read the page and turn its rules into a checklist.",
+            "Rewrite every bullet of your current resume as action plus result.",
+            "Make the three versions from one base, changing only the order and the emphasis.",
+            "Check each version against your checklist.",
+          ],
           isPrimary: true,
         },
       ],
@@ -87,6 +104,13 @@ Name the files by role — \`resume-sre.pdf\`, not \`resume-final-v3.pdf\` — a
       objective:
         "Send five tracked, targeted applications a week, and write outreach that asks for a conversation rather than a job.",
       estMinutes: 90,
+      primer: `Most off-campus jobs are filled through people, not job boards. A referral from someone inside the company puts your resume in front of a person instead of a filter.
+
+You get referrals by having real conversations first. Find engineers at companies you want (LinkedIn works), and ask for **15 minutes to hear about their work** — an *informational interview* — not for a job. A small, specific request is easy to say yes to. If the conversation goes well, a referral often follows without you asking.
+
+Alongside, send **five targeted applications a week**, each tracked (company, role, date, status) so you follow up instead of forgetting.
+
+**You need already:** your resumes from the last unit.`,
       conceptMd: `Cold applications to a careers page convert badly for everyone, and worst for a diploma candidate that a filter may drop before a person reads. Referrals convert far better — and **referrals come out of conversations, not requests**.
 
 **Five quality applications a week, tracked.** Quality means the resume variant fits the role, you have read what the team does, and you could say in one sentence why you applied. Track each one — company, role, date, source, status — in the applications log on Career, so follow-ups happen on time and rejections turn into data.
@@ -145,15 +169,22 @@ The numbers are small on purpose. Five a week, every week, beats forty in one an
           url: "https://www.themuse.com/advice/how-to-ask-for-an-informational-interview-and-get-a-yes",
           kind: "read",
           minutes: 15,
-          whyThisOne: "Why a small, specific ask gets a yes, with message examples to adapt rather than copy.",
+          whyThisOne:
+            "Why a small, specific ask gets a yes, with message examples to adapt rather than copy.",
+          steps: [
+            "Read the article and its example messages.",
+            "Write your own short outreach message for a named engineer at one company.",
+            "Read the LinkedIn guide (next link) for what to ask during the call and how to follow up.",
+            "Log five applications and two outreach messages in the Desk this week.",
+          ],
           isPrimary: true,
         },
         {
           title: "LinkedIn — Guide to informational interviews",
           url: "https://www.linkedin.com/business/learning/blog/career-success-tips/guide-to-informational-interviews",
           kind: "read",
-          minutes: 15,
-          whyThisOne: "What to ask during the conversation and how to follow up afterwards — the part most people skip.",
+          whyThisOne:
+            "What to ask during the conversation and how to follow up afterwards — the part most people skip.",
         },
       ],
     },
@@ -163,6 +194,13 @@ The numbers are small on purpose. Five a week, every week, beats forty in one an
       objective:
         "Publish one short write-up per project and a README that explains it in a minute, and hold your ground in a group discussion.",
       estMinutes: 120,
+      primer: `Two ways of being judged on communication.
+
+**Project write-ups.** A good README lets a reviewer understand your project in a minute: what it does, why, how to run it, and what is interesting about how it works. A short blog post per project goes further — the problem, the design, one hard thing you solved — and gives interviewers something specific to ask about.
+
+**Group discussion (GD).** Many campus drives include a GD round: a group discusses a topic while evaluators watch. They reward clear points backed by facts, listening and building on others' points, and summarising — not the loudest voice. Practise by preparing two points on each side of a few topics.
+
+**You need already:** your projects, and your STAR stories.`,
       conceptMd: `**A write-up per project.** One short post for each shipped project, on LinkedIn or a blog: what you built, **what broke**, and what you learned. The breakage is the interesting part — "the health check passed while the database was down, so I split liveness from readiness" is the kind of line an engineer stops scrolling for. These get read far more than people expect, and they give interviewers something to ask about that you are guaranteed to know.
 
 A shape that works:
@@ -214,24 +252,31 @@ Two or three practice rounds with classmates are worth more than any amount of r
         {
           title: "Make a README",
           url: "https://www.makeareadme.com/",
-          kind: "read",
-          minutes: 15,
-          whyThisOne: "A short, opinionated template for what a README owes its reader — use it on all four pinned repos.",
+          kind: "do",
+          minutes: 20,
+          whyThisOne:
+            "A short, opinionated template for what a README owes its reader.",
+          steps: [
+            "Read the template's sections.",
+            "Rewrite the README of your best project to follow it.",
+            "Write a short post about that project using the freeCodeCamp structure (next link).",
+            "Prepare both sides of two topics from IndiaBix (last link) and argue one aloud for three minutes.",
+          ],
           isPrimary: true,
         },
         {
           title: "freeCodeCamp — How to write a great technical blog post",
           url: "https://www.freecodecamp.org/news/how-to-write-a-great-technical-blog-post-414c414b67f6/",
           kind: "read",
-          minutes: 15,
-          whyThisOne: "Structure and length for a post an engineer will actually finish.",
+          whyThisOne:
+            "Structure and length for a post an engineer will actually finish.",
         },
         {
           title: "IndiaBix — Group discussion topics",
           url: "https://www.indiabix.com/group-discussion/",
           kind: "do",
-          minutes: 30,
-          whyThisOne: "Topics in the style campus drives use, with points on both sides to practise against.",
+          whyThisOne:
+            "Topics in the style campus drives use, with points on both sides.",
         },
       ],
     },

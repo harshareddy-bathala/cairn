@@ -15,6 +15,18 @@ export const storyBank: Module = {
       objective:
         "Write six behavioural stories in STAR form, each with a number in the result, and map every common prompt onto one of them.",
       estMinutes: 120,
+      primer: `**Behavioural questions** — "tell me about a time you disagreed with a teammate", "a time you failed" — decide more interviews at this level than DSA does, and they are the one part you can prepare completely in advance.
+
+Answer them with **STAR**:
+
+- **Situation** — the context, in one or two sentences;
+- **Task** — what you were responsible for;
+- **Action** — what *you* did (say "I", not "we"), in the most detail;
+- **Result** — what happened, with a number if at all possible, and what you learned.
+
+You do not need a story for every question. Six strong stories — a conflict, a failure, a hard technical problem, leadership, a tight deadline, going beyond your role — can be adapted to almost any prompt.
+
+**You need already:** nothing. Your projects, college and Meridian work are the raw material.`,
       conceptMd: `A behavioural question is not a request for a story. It is a request for **evidence of a behaviour**, and STAR is the shape that makes the evidence checkable:
 
 | | what it answers | share of the answer |
@@ -79,25 +91,30 @@ Write them in the **star bank on Career**. It is the same six prompts, and a sto
           title: "Tech Interview Handbook — Behavioral interviews",
           url: "https://www.techinterviewhandbook.org/behavioral-interview/",
           kind: "read",
-          minutes: 25,
+          minutes: 30,
           whyThisOne:
-            "Written for software engineers specifically, with how to prepare a story bank rather than a list of generic answers.",
+            "Written for software engineers, with how to build a story bank instead of memorising answers.",
+          steps: [
+            "Read the page, noting how it tells you to prepare stories.",
+            "List six experiences from your projects, college and Meridian.",
+            "Fill the MIT STAR worksheet (next link) once for each story.",
+            "Write each story as STAR prose, with a number in every Result.",
+          ],
           isPrimary: true,
         },
         {
           title: "MIT CAPD — The STAR method, with worksheet",
           url: "https://capd.mit.edu/resources/the-star-method-for-behavioral-interviews/",
           kind: "do",
-          minutes: 30,
-          whyThisOne: "The worksheet is the useful part: fill it once per story before you write the prose.",
+          whyThisOne:
+            "The worksheet is the useful part: fill it once per story before writing the prose.",
         },
         {
           title: "Amazon — Leadership Principles",
           url: "https://www.amazon.jobs/content/en/our-workplace/leadership-principles",
           kind: "read",
-          minutes: 15,
           whyThisOne:
-            "The most widely copied behavioural rubric in the industry. Checking which principle each story shows exposes the gaps.",
+            "The most widely copied behavioural rubric. Check which principle each story shows to spot the gaps.",
         },
       ],
     },
@@ -107,6 +124,13 @@ Write them in the **star bank on Career**. It is the same six prompts, and a sto
       objective:
         "Deliver a 90-second introduction without notes, and walk your best project at 60 seconds, 3 minutes and 10 minutes.",
       estMinutes: 90,
+      primer: `Almost every interview opens with **"tell me about yourself"**. It is not small talk: it is your chance to steer the next hour toward what you are strongest at.
+
+A strong answer is about 90 seconds: who you are now (your course, your focus), two or three things you have built or done with a concrete detail each, and why you want *this* role. Rehearse it until it is smooth — but not word for word, or it sounds recited.
+
+Then prepare your best project at **three lengths**: 60 seconds (what it does and your part), 3 minutes (add the design and one hard problem you solved), and 10 minutes (add the trade-offs and what you would change). The interviewer picks the length by how much they ask.
+
+**You need already:** your six STAR stories from the last unit.`,
       conceptMd: `"Tell me about yourself" is the first question and it sets the tone for the whole interview. It is not a biography. It is a **90-second pitch** with four beats:
 
 1. **Who you are** — one line. Diploma CS, first in branch, the one thing you are building toward.
@@ -165,17 +189,23 @@ The 10-minute version is a **system design answer about your own system**, not a
           title: "Tech Interview Handbook — Crafting the self introduction",
           url: "https://www.techinterviewhandbook.org/self-introduction/",
           kind: "read",
-          minutes: 15,
-          whyThisOne: "A concrete structure and a worked example for engineers, not generic interview advice.",
+          minutes: 20,
+          whyThisOne:
+            "A concrete structure and a worked example for engineers.",
+          steps: [
+            "Read the structure and the example.",
+            "Write your 90-second introduction and record yourself saying it.",
+            "Write your project walk at 60 seconds, 3 minutes and 10 minutes.",
+            "Run the 30 common questions (next link) against your stories and introduction.",
+          ],
           isPrimary: true,
         },
         {
-          title: "Tech Interview Handbook — the 30 most common behavioural questions",
+          title: "Tech Interview Handbook — The 30 most common behavioural questions",
           url: "https://www.techinterviewhandbook.org/behavioral-interview-questions/",
           kind: "do",
-          minutes: 30,
           whyThisOne:
-            "Run the list against your six stories and your introduction: any question you cannot map is a gap to close now.",
+            "Any question you cannot map to one of your stories is a gap to close now.",
         },
       ],
     },
@@ -185,6 +215,13 @@ The 10-minute version is a **system design answer about your own system**, not a
       objective:
         "Give a mature, honest answer about on-call and shifts, and have three questions ready that show you understand the role.",
       estMinutes: 60,
+      primer: `Two moments near the end of an interview that are easy to prepare for and easy to fumble.
+
+**The on-call question.** DevOps and SRE roles often include on-call or shifts, and interviewers ask how you feel about it. The good answer is honest and informed: you understand on-call is part of running systems, you know a healthy rotation has rare, actionable pages and good runbooks, and you would ask how theirs works.
+
+**"Do you have any questions for us?"** "No" reads as uninterested. Have three real questions whose answers you want — about the team, how work is reviewed and shipped, what a new person's first months look like.
+
+**You need already:** the SRE incidents unit helps with the on-call answer.`,
       conceptMd: `Two short answers that are scored far more than people expect.
 
 **"Are you comfortable with on-call?"** SRE and DevOps roles involve it, and both extremes lose. "I'll do anything" sounds naive; "I'd rather not" ends the conversation. The mature answer shows you know what on-call *is*:
@@ -235,23 +272,28 @@ Avoid questions the website answers, and do not open with salary or leave in a t
           url: "https://www.techinterviewhandbook.org/final-questions/",
           kind: "read",
           minutes: 15,
-          whyThisOne: "A long list sorted by who you are talking to. Pick three whose answers you actually want.",
+          whyThisOne:
+            "A long list sorted by who you are talking to. Pick three whose answers you actually want.",
+          steps: [
+            "Read the list and pick three questions for an engineer and three for a manager.",
+            "Read the Google chapter on being on-call (next link) and write a four-sentence on-call answer.",
+            "Practise both out loud.",
+          ],
           isPrimary: true,
         },
         {
-          title: "Google SRE Book — ch. 11, Being On-Call",
+          title: "Google SRE book — Being on-call",
           url: "https://sre.google/sre-book/being-on-call/",
           kind: "read",
-          minutes: 25,
           whyThisOne:
-            "What a healthy rotation looks like from the inside — the vocabulary that makes your on-call answer sound informed.",
+            "What a healthy rotation looks like — the vocabulary that makes your answer sound informed.",
         },
         {
           title: "IndiaBix — HR interview questions",
           url: "https://www.indiabix.com/hr-interview/questions-and-answers/",
           kind: "do",
-          minutes: 20,
-          whyThisOne: "The HR-round questions campus recruiters in India actually ask, relocation and shifts included.",
+          whyThisOne:
+            "The HR-round questions campus recruiters in India actually ask, relocation and shifts included.",
         },
       ],
     },

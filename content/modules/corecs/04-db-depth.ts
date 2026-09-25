@@ -1,7 +1,5 @@
 import type { Module } from "@/content/types";
 
-const PG = "https://www.postgresql.org/docs/current";
-
 export const dbDepth: Module = {
   slug: "corecs-db-depth",
   trackSlug: "corecs",
@@ -18,6 +16,13 @@ export const dbDepth: Module = {
       objective:
         "Read a Postgres plan inside-out, recognise the common scan and join nodes, and find the step where time actually goes.",
       estMinutes: 70,
+      primer: `When a query is slow, do not guess — ask the database what it did. \`EXPLAIN ANALYZE\` runs the query and prints its **plan**: a tree of steps, each with how many rows it produced and how long it took.
+
+Read the tree from the **innermost, most indented** step outward — those run first and feed the steps above them. The step names tell a story: a **Seq Scan** read the whole table; an **Index Scan** used an index; a **Nested Loop**, **Hash Join** or **Merge Join** combined two inputs.
+
+Two things to look for: the step where most of the time goes, and places where the planner's **estimated** row count is far from the **actual** one — a bad estimate is often why it chose a slow plan.
+
+**You need already:** SQL joins, and indexes from the Phase 1 DBMS unit.`,
       conceptMd: `\`EXPLAIN\` shows the plan the optimiser chose, with **estimates**. \`EXPLAIN ANALYZE\` **runs the query** and adds what actually happened. \`EXPLAIN (ANALYZE, BUFFERS)\` also shows how many pages came from cache versus disk.
 
 Because ANALYZE executes the statement, wrap writes in a transaction you roll back:
@@ -82,19 +87,25 @@ Index Scan using links_pkey on links  (cost=0.42..8.44 rows=1 width=64) (actual 
       ],
       resources: [
         {
-          title: "PostgreSQL — using EXPLAIN",
-          url: `${PG}/using-explain.html`,
+          title: "PostgreSQL — Using EXPLAIN",
+          url: "https://www.postgresql.org/docs/current/using-explain.html",
           kind: "docs",
           minutes: 40,
-          whyThisOne: "The official walkthrough of every field, with real plans — the best explanation there is.",
+          whyThisOne:
+            "The official walkthrough of every field, with real plans — the best explanation there is.",
+          steps: [
+            "Read *EXPLAIN Basics* and run the same kind of queries on your own tables.",
+            "Read *EXPLAIN ANALYZE* and compare estimated with actual rows in your output.",
+            "Paste one of atlas's plans into explain.dalibo.com (next link) and find the slowest node.",
+          ],
           isPrimary: true,
         },
         {
           title: "explain.dalibo.com — plan visualiser",
           url: "https://explain.dalibo.com/",
           kind: "do",
-          minutes: 15,
-          whyThisOne: "Paste a plan from atlas and see where the time goes as a tree.",
+          whyThisOne:
+            "Paste a plan and see where the time goes, as a tree.",
         },
       ],
     },
@@ -104,6 +115,16 @@ Index Scan using links_pkey on links  (cost=0.42..8.44 rows=1 width=64) (actual 
       objective:
         "Design composite, covering, partial and expression indexes for specific queries, and weigh each index against its write cost.",
       estMinutes: 70,
+      primer: `An index helps only the queries it was designed for, so you design indexes from your actual queries.
+
+- A **composite index** covers several columns, and **order matters**: an index on \`(user_id, created_at)\` helps \`WHERE user_id = ?\` and \`WHERE user_id = ? ORDER BY created_at\`, but not \`WHERE created_at > ?\` alone. Put columns you test with \`=\` first.
+- A **covering index** also stores the columns the query returns (\`INCLUDE\`), so the table itself need not be read.
+- A **partial index** indexes only some rows (\`WHERE status = 'open'\`) — smaller and faster when you only ever query those.
+- An **expression index** indexes a computed value, like \`lower(email)\`.
+
+Every index slows down writes and takes space, so each one must earn its place.
+
+**You need already:** EXPLAIN from the last unit.`,
       conceptMd: `An index is designed **for a query**, not for a column. Start from the \`WHERE\`, \`JOIN\` and \`ORDER BY\` of the queries that matter.
 
 **Composite index column order.** Put columns compared with **equality first**, then the one used for a **range or sort**:
@@ -168,26 +189,33 @@ Build indexes on a live table with \`CREATE INDEX CONCURRENTLY\` so writes are n
       ],
       resources: [
         {
-          title: "Use The Index, Luke — column order in multi-column indexes",
+          title: "Use The Index, Luke — Column order in multi-column indexes",
           url: "https://use-the-index-luke.com/sql/where-clause/the-equals-operator/concatenated-keys",
           kind: "read",
           minutes: 25,
-          whyThisOne: "The best free book on indexing; this chapter is the column-order argument.",
+          whyThisOne:
+            "Why a two-column index helps some queries and not others — the argument for column order.",
+          steps: [
+            "Read the page and predict which of its example queries can use the index.",
+            "Read Postgres's covering-index page (next link) and add an `INCLUDE` to one of your indexes.",
+            "Read the partial-index page (last link).",
+            "For three atlas queries, write the index you would add and check it with EXPLAIN.",
+          ],
           isPrimary: true,
         },
         {
-          title: "PostgreSQL — index-only scans and covering indexes",
-          url: `${PG}/indexes-index-only-scans.html`,
+          title: "PostgreSQL — Index-only scans and covering indexes",
+          url: "https://www.postgresql.org/docs/current/indexes-index-only-scans.html",
           kind: "docs",
-          minutes: 15,
-          whyThisOne: "INCLUDE, and the visibility-map condition for index-only scans.",
+          whyThisOne:
+            "`INCLUDE`, and the visibility-map condition for index-only scans.",
         },
         {
-          title: "PostgreSQL — partial indexes",
-          url: `${PG}/indexes-partial.html`,
+          title: "PostgreSQL — Partial indexes",
+          url: "https://www.postgresql.org/docs/current/indexes-partial.html",
           kind: "docs",
-          minutes: 10,
-          whyThisOne: "When a partial index helps, with examples.",
+          whyThisOne:
+            "When a partial index helps, with examples.",
         },
       ],
     },
@@ -197,6 +225,15 @@ Build indexes on a live table with \`CREATE INDEX CONCURRENTLY\` so writes are n
       objective:
         "Recognise and fix N+1 queries from an ORM, and move row-by-row application logic into single set-based SQL statements.",
       estMinutes: 60,
+      primer: `The **N+1 problem** is the most common way an app makes a database slow without any single slow query.
+
+You load 50 blog posts (1 query), then loop over them and load each post's author (50 more queries) — 51 round trips where 1 or 2 would do. ORMs do this silently when you access a related object inside a loop.
+
+The fixes: load the related rows **up front** — with a **join**, or with one extra query using \`WHERE id IN (...)\` — which ORMs offer as \`joinedload\` / \`selectinload\`.
+
+The wider habit is **thinking in sets**: instead of fetching rows and looping over them in Python, write one SQL statement that does the whole job — an \`UPDATE ... FROM\`, a \`GROUP BY\`, a join.
+
+**You need already:** SQL joins; SQLAlchemy if you use it in atlas.`,
       conceptMd: `**N+1**: one query fetches a list, then the code runs one more query **per item**:
 
 \`\`\`python
@@ -255,19 +292,26 @@ The database can use indexes, avoid the round trips, and never ship unneeded row
       ],
       resources: [
         {
-          title: "PlanetScale — what is the N+1 query problem?",
+          title: "PlanetScale — What is the N+1 query problem?",
           url: "https://planetscale.com/blog/what-is-n-1-query-problem-and-how-to-solve-it",
           kind: "read",
-          minutes: 15,
-          whyThisOne: "The problem measured, and both fixes compared.",
+          minutes: 20,
+          whyThisOne:
+            "The problem shown and measured, then both fixes compared.",
+          steps: [
+            "Read the article and note the query count before and after each fix.",
+            "Find one N+1 in atlas: turn on SQL logging and load a list page.",
+            "Fix it with `selectinload` or `joinedload` from SQLAlchemy (next link).",
+            "Set `raiseload` on a relationship so a future N+1 becomes an error.",
+          ],
           isPrimary: true,
         },
         {
-          title: "SQLAlchemy — relationship loading techniques",
+          title: "SQLAlchemy — Relationship loading techniques",
           url: "https://docs.sqlalchemy.org/en/20/orm/queryguide/relationships.html",
           kind: "docs",
-          minutes: 25,
-          whyThisOne: "lazy, joinedload, selectinload and raiseload — the last one makes N+1 an error.",
+          whyThisOne:
+            "lazy, joinedload, selectinload and raiseload.",
         },
       ],
     },
@@ -277,6 +321,19 @@ The database can use indexes, avoid the round trips, and never ship unneeded row
       objective:
         "Use PARTITION BY, ORDER BY and frame clauses for rankings, top-N per group, running totals, moving averages and row-to-row comparisons.",
       estMinutes: 80,
+      primer: `\`GROUP BY\` squashes rows into one per group. Sometimes you want to keep every row **and** see something about its group — a rank, a running total, the previous row's value. That is what **window functions** do.
+
+\`\`\`sql
+SELECT name, dept, salary,
+       rank() OVER (PARTITION BY dept ORDER BY salary DESC)
+FROM employees;
+\`\`\`
+
+\`OVER (...)\` defines the window: \`PARTITION BY\` splits rows into groups (here, per department), \`ORDER BY\` orders them within each group. Useful functions: \`row_number\`, \`rank\`, \`dense_rank\`, \`lag\` / \`lead\` (the previous or next row), and \`sum\` / \`avg\` used as running totals.
+
+"Top 3 salaries per department" and "compare each day with the day before" are standard interview questions, and both are one window function.
+
+**You need already:** GROUP BY and ORDER BY.`,
       conceptMd: `A window function computes a value for each row **from a set of related rows**, without collapsing them the way \`GROUP BY\` does.
 
 \`\`\`sql
@@ -342,19 +399,26 @@ Without \`ORDER BY\` in the window, the frame is the whole partition — \`SUM(x
       ],
       resources: [
         {
-          title: "PostgreSQL — window functions tutorial",
-          url: `${PG}/tutorial-window.html`,
+          title: "PostgreSQL — Window functions tutorial",
+          url: "https://www.postgresql.org/docs/current/tutorial-window.html",
           kind: "docs",
-          minutes: 20,
-          whyThisOne: "Partitions, ordering and frames with small examples.",
+          minutes: 25,
+          whyThisOne:
+            "Partitions, ordering and frames, with small examples.",
+          steps: [
+            "Read the tutorial and run each example on a small table of your own.",
+            "Write *top 3 salaries per department* with `dense_rank`.",
+            "Write a running total and a 7-day moving average.",
+            "Look up any function you need in the reference (next link).",
+          ],
           isPrimary: true,
         },
         {
-          title: "PostgreSQL — window function reference",
-          url: `${PG}/functions-window.html`,
+          title: "PostgreSQL — Window function reference",
+          url: "https://www.postgresql.org/docs/current/functions-window.html",
           kind: "docs",
-          minutes: 10,
-          whyThisOne: "Every window function, including ntile, first_value and nth_value.",
+          whyThisOne:
+            "Every window function, including ntile, first_value and nth_value.",
         },
       ],
     },
@@ -364,6 +428,14 @@ Without \`ORDER BY\` in the window, the frame is the whole partition — \`SUM(x
       objective:
         "Reproduce lost updates and write skew in Postgres, pick the isolation level or locking that prevents each, and write the retry loop serializable transactions need.",
       estMinutes: 80,
+      primer: `Isolation levels (from the Phase 1 transactions unit) become real under concurrency. Two anomalies to recognise:
+
+- **Lost update** — two transactions read the same balance, both add to it, both write back; one addition disappears. Fix: \`SELECT ... FOR UPDATE\` to lock the row, or an atomic \`UPDATE ... SET x = x + 1\`.
+- **Write skew** — two transactions each check a condition ("at least one doctor stays on call"), both see it holds, and both make changes that together break it. Only the **Serializable** level, or explicit locking, prevents it.
+
+Serializable does not block; it **aborts** one of the conflicting transactions with a serialization error. So code that uses it needs a **retry loop**: on that error, roll back and run the whole transaction again.
+
+**You need already:** ACID and isolation levels from Phase 1.`,
       conceptMd: `The Phase 1 anomalies (dirty read, non-repeatable read, phantom) are about **reading**. The ones that corrupt data in real systems are about **writing**:
 
 **Lost update.** Two transactions read a value, both compute from it, both write — one write is lost.
@@ -433,26 +505,33 @@ Retry the **whole** transaction, including its reads — its decisions were base
       ],
       resources: [
         {
-          title: "PostgreSQL — transaction isolation",
-          url: `${PG}/transaction-iso.html`,
-          kind: "docs",
-          minutes: 30,
-          whyThisOne: "Exactly what each level does in Postgres, with the serializable examples.",
+          title: "Cockroach Labs — What write skew looks like",
+          url: "https://www.cockroachlabs.com/blog/what-write-skew-looks-like/",
+          kind: "read",
+          minutes: 20,
+          whyThisOne:
+            "The on-call doctors example, step by step — the clearest picture of the anomaly.",
+          steps: [
+            "Read the example and replay it in two `psql` sessions at Read Committed.",
+            "Repeat at Serializable and watch one transaction fail.",
+            "Read the Postgres isolation page (next link) for what each level guarantees.",
+            "Read serialization failure handling (last link) and write a retry loop for atlas.",
+          ],
           isPrimary: true,
         },
         {
-          title: "PostgreSQL — serialization failure handling",
-          url: `${PG}/mvcc-serialization-failure-handling.html`,
+          title: "PostgreSQL — Transaction isolation",
+          url: "https://www.postgresql.org/docs/current/transaction-iso.html",
           kind: "docs",
-          minutes: 10,
-          whyThisOne: "The official statement that applications must retry, and which errors are retryable.",
+          whyThisOne:
+            "What each level does in Postgres, with the serializable examples.",
         },
         {
-          title: "Cockroach Labs — what write skew looks like",
-          url: "https://www.cockroachlabs.com/blog/what-write-skew-looks-like/",
-          kind: "read",
-          minutes: 15,
-          whyThisOne: "The on-call doctors example, step by step.",
+          title: "PostgreSQL — Serialization failure handling",
+          url: "https://www.postgresql.org/docs/current/mvcc-serialization-failure-handling.html",
+          kind: "docs",
+          whyThisOne:
+            "The official statement that applications must retry, and which errors are retryable.",
         },
       ],
     },

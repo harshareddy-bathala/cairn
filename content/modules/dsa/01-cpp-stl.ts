@@ -15,6 +15,15 @@ export const cppStl: Module = {
       objective:
         "Compile and run C++ from your own terminal with warnings on, and know why competitive I/O is written the way it is.",
       estMinutes: 45,
+      primer: `Every DSA problem in this course is a small C++ program: it reads numbers from the input, computes something, and prints the answer. Before any algorithm, three plain things have to work.
+
+**Compiling.** \`g++\` turns your \`sol.cpp\` into a program you can run. You will type one command for this, and it can also warn you about likely mistakes.
+
+**Reading input quickly.** \`cin\` and \`cout\` are fine, but by default they are slow on big inputs. Two lines at the top of \`main\` fix that.
+
+**Numbers have a size.** An \`int\` holds about ±2.1 billion. Multiply two numbers near 100,000 and the result no longer fits — the program quietly prints garbage. \`long long\` holds far more.
+
+**You need already:** writing a C++ program with variables, \`if\`, loops and functions. If \`cin >> n;\` is new to you, do the learncpp lesson listed last below first.`,
       conceptMd: `Set up **g++** with the flags you will actually keep:
 
 \`\`\`bash
@@ -90,20 +99,35 @@ The rule: the moment a product, sum, or prefix sum can pass ~2·10⁹, make one 
       ],
       resources: [
         {
-          title: "Striver A2Z — Step 1: Learn the basics",
-          url: "https://takeuforward.org/strivers-a2z-dsa-course/strivers-a2z-dsa-course-sheet-2",
-          kind: "do",
-          minutes: 40,
+          title: "USACO Guide — Fast Input & Output",
+          url: "https://usaco.guide/general/fast-io",
+          kind: "read",
+          minutes: 15,
           whyThisOne:
-            "Your one sheet, followed in order. Everything else in this app hangs off its sequence.",
+            "Short, C++-first, and shows the slow and fast versions of the same program side by side.",
+          steps: [
+            "Under **Standard I/O**, read the *Slow* and *Fast* C++ versions and spot the two extra lines.",
+            "Read **Additional Notes** — what `ios::sync_with_stdio(false)` and `cin.tie(nullptr)` each switch off.",
+            "Skip **File I/O**; interview platforms read standard input.",
+            "Then open learncpp 4.4 below and read its part on **integer overflow** and **integer division**.",
+          ],
           isPrimary: true,
         },
         {
-          title: "cppreference — Standard library headers",
-          url: "https://en.cppreference.com/w/cpp/header",
-          kind: "docs",
+          title: "learncpp 4.4 — Signed integers (overflow, integer division)",
+          url: "https://www.learncpp.com/cpp-tutorial/signed-integers/",
+          kind: "read",
+          minutes: 15,
           whyThisOne:
-            "The reference to build the habit on. Slower than a tutorial at first, correct forever after.",
+            "Explains, with runnable examples, why a too-big result wraps around and why 7 / 2 is 3 in C++.",
+        },
+        {
+          title: "learncpp 1.5 — cout, cin and endl",
+          url: "https://www.learncpp.com/cpp-tutorial/introduction-to-iostream-cout-cin-and-endl/",
+          kind: "read",
+          minutes: 20,
+          whyThisOne:
+            "Only if reading input with cin is new to you — this is the lesson that teaches it from zero.",
         },
       ],
     },
@@ -113,6 +137,13 @@ The rule: the moment a product, sum, or prefix sum can pass ~2·10⁹, make one 
       objective:
         "Use vector and string without thinking, and explain why push_back is amortised O(1).",
       estMinutes: 60,
+      primer: `A **vector** is a list of values that can grow. \`vector<int> v;\` starts empty; \`v.push_back(5);\` adds 5 at the end; \`v[0]\` reads the first value; \`v.size()\` says how many there are. It is the array you will use in almost every problem.
+
+A **string** is the same idea for text: a growable list of characters, with extras like \`s.substr(...)\` and \`s.find(...)\`.
+
+The one idea to take from this unit: a vector keeps a block of memory with some spare room. When the room runs out it moves everything to a bigger block, twice the size. Moving is slow, but it happens so rarely that adding an element is still fast *on average*. Interviewers ask about exactly that.
+
+**You need already:** C++ basics, and the idea of an index starting at 0.`,
       conceptMd: `\`vector\` doubles its capacity when it fills. Copying n elements every doubling averages to a **constant** per push — that is amortised analysis, and "why is push_back O(1)?" is a standard interview probe. The answer they want: *n pushes cost n + n/2 + n/4 + … < 2n copies total, so O(1) each on average, with one O(n) spike at each reallocation.*
 
 | | does what | when |
@@ -183,19 +214,37 @@ first = 5;           // undefined behaviour
       ],
       resources: [
         {
-          title: "learncpp — std::vector resizing and capacity",
-          url: "https://www.learncpp.com/cpp-tutorial/stdvector-resizing-and-capacity/",
+          title: "learncpp 16.2 — Introduction to std::vector",
+          url: "https://www.learncpp.com/cpp-tutorial/introduction-to-stdvector-and-list-constructors/",
           kind: "read",
-          minutes: 25,
+          minutes: 20,
           whyThisOne:
-            "Separates length from capacity and resize from reserve with runnable examples — the exact distinction this unit is about.",
+            "Starts from what a vector is and how to create, read and loop over one — no prior STL assumed.",
+          steps: [
+            "Read the whole lesson and type out its examples: creating a vector, `v[i]`, `v.size()`.",
+            "Stop and predict the output of each example before running it.",
+            "Then read learncpp 16.10 (next link) for why `push_back` is fast on average.",
+          ],
           isPrimary: true,
         },
         {
-          title: "cppreference — std::vector",
-          url: "https://en.cppreference.com/w/cpp/container/vector",
-          kind: "docs",
-          whyThisOne: "Read the complexity column. That column is what gets asked about.",
+          title: "learncpp 16.10 — std::vector resizing and capacity",
+          url: "https://www.learncpp.com/cpp-tutorial/stdvector-resizing-and-capacity/",
+          kind: "read",
+          minutes: 15,
+          whyThisOne:
+            "The difference between size and capacity, and what `reserve` does — the part the interview question is about.",
+          steps: [
+            "Read the parts on length vs capacity and on `reserve()`; skip anything about `std::array`.",
+          ],
+        },
+        {
+          title: "learncpp 5.7 — Introduction to std::string",
+          url: "https://www.learncpp.com/cpp-tutorial/introduction-to-stdstring/",
+          kind: "read",
+          minutes: 15,
+          whyThisOne:
+            "Strings from zero: declaring one, reading a whole line with getline, and getting its length.",
         },
       ],
     },
@@ -205,6 +254,13 @@ first = 5;           // undefined behaviour
       objective:
         "Derive time and space complexity from your own code, including amortised and log-factor cases.",
       estMinutes: 60,
+      primer: `**Complexity** answers one question: *if the input gets 10 times bigger, how much slower does my code get?*
+
+We write it as **O(something)**. A single loop over n items is **O(n)** — double the input, double the time. A loop inside a loop is **O(n²)** — double the input, four times the time. Cutting the problem in half each step, as binary search does, is **O(log n)** — it barely slows down at all.
+
+This matters because a judge gives your program about one second, which is roughly 10⁸ simple steps. So the input size tells you which approach can work at all: n = 100,000 and an O(n²) solution means 10¹⁰ steps — too slow before you have written a line.
+
+**You need already:** loops, and what a function call is.`,
       conceptMd: `Anyone can recite "binary search is O(log n)". The skill being tested is **deriving** it from a loop you just wrote, under pressure.
 
 **Method.** Count how many times the innermost statement runs as a function of n, drop constants and lower-order terms. For recursion, write the recurrence and expand it two levels until the pattern shows.
@@ -275,12 +331,18 @@ Read the constraints backwards: *n ≤ 10⁵* rules out O(n²) and points at O(n
       ],
       resources: [
         {
-          title: "USACO Guide — Time complexity",
+          title: "USACO Guide — Time Complexity",
           url: "https://usaco.guide/bronze/time-comp",
           kind: "read",
           minutes: 25,
           whyThisOne:
-            "Derives complexity from loop shapes and ends with the constraint-to-complexity table you should be reading problems against.",
+            "Explains Big O by counting how often lines run, then gives the table that turns an input size into the complexity you need.",
+          steps: [
+            "Read **Complexity Calculations** and work each code example out yourself before reading its answer.",
+            "Read **Common Complexities and Constraints** and copy the n → complexity table into your notes.",
+            "Skim **Constant Factor**; skip **Formal Definition** for now.",
+            "Take the **Quiz** at the end.",
+          ],
           isPrimary: true,
         },
       ],
@@ -291,6 +353,14 @@ Read the constraints backwards: *n ≤ 10⁵* rules out O(n²) and points at O(n
       objective:
         "Choose between map/unordered_map and set/multiset for a stated reason, not by habit.",
       estMinutes: 60,
+      primer: `Often you need to *look something up* rather than walk the whole list: "have I seen this number before?", "how many times does each letter appear?". Scanning a vector for that is O(n) every time. Containers built for lookup do it far faster.
+
+- A **set** stores unique values: add, remove, "is x in here?".
+- A **map** stores *key → value* pairs, like a dictionary: \`count["apple"] = 3\`.
+
+C++ gives two versions of each. \`set\` / \`map\` keep the keys **sorted** (a tree, O(log n) per operation). \`unordered_set\` / \`unordered_map\` do not keep order but are usually faster (a hash table, O(1) on average). The usual rule: take the unordered one unless you need sorted order.
+
+**You need already:** vectors, and Big O from the last unit.`,
       conceptMd: `\`map\` and \`set\` are balanced binary search trees: **ordered**, O(log n), and they support \`lower_bound\`. \`unordered_map\` and \`unordered_set\` are hash tables: O(1) average, no order, no \`lower_bound\`.
 
 | | order | lookup | has lower_bound |
@@ -360,18 +430,27 @@ ms.erase(ms.find(value));   // removes exactly one
       ],
       resources: [
         {
-          title: "Striver — Hashing: hash maps and collisions",
-          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/hashing-data-structures",
+          title: "USACO Guide — Introduction to Sets & Maps",
+          url: "https://usaco.guide/bronze/intro-sets",
           kind: "read",
           minutes: 30,
-          whyThisOne: "Covers collisions and the division rule, which is where the follow-up questions go.",
+          whyThisOne:
+            "Teaches sets and maps in C++ with the sorted-vs-hash choice made explicit, on one worked problem.",
+          steps: [
+            "Read **Sets**: *Sorted Sets* and then *Hashsets*.",
+            "Work through **Solution – Distinct Numbers** — the same problem solved three ways.",
+            "Read **Maps** and **Iterating Over Maps**.",
+            "Skip *Should I worry about anti-hash tests* for now.",
+          ],
           isPrimary: true,
         },
         {
-          title: "cppreference — Containers library",
-          url: "https://en.cppreference.com/w/cpp/container",
-          kind: "docs",
-          whyThisOne: "The comparison table settles ordered-vs-unordered arguments in ten seconds.",
+          title: "Striver — Hashing: hash maps and collisions",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/hashing-data-structures",
+          kind: "read",
+          minutes: 20,
+          whyThisOne:
+            "What happens inside a hash table — buckets and collisions — which is why unordered_map is fast on average, not always.",
         },
       ],
     },
@@ -381,6 +460,11 @@ ms.erase(ms.find(value));   // removes exactly one
       objective:
         "Sort by any rule you can state, and use lower_bound / upper_bound correctly on the first attempt.",
       estMinutes: 60,
+      primer: `\`sort(v.begin(), v.end());\` puts a vector in increasing order in O(n log n). Most problems need more: sort people by age, then by name; sort pairs by their second value. For that you pass a **comparator** — a small function that answers "should \`a\` come before \`b\`?".
+
+Once data is sorted, you can find things in it very fast. \`lower_bound\` finds the first position whose value is **≥ x**; \`upper_bound\` finds the first **> x**. Both are binary search already written for you, O(log n).
+
+**You need already:** vectors, and the idea that a function can be passed to another function (a comparator is just that).`,
       conceptMd: `\`sort(v.begin(), v.end(), cmp)\` where \`cmp(a, b)\` returns **true if a must come before b**.
 
 \`\`\`cpp
@@ -456,26 +540,36 @@ Also worth having in hand: \`next_permutation\`, \`accumulate\` (pass \`0LL\` as
       ],
       resources: [
         {
-          title: "learncpp — Introduction to standard library algorithms",
-          url: "https://www.learncpp.com/cpp-tutorial/introduction-to-standard-library-algorithms/",
+          title: "USACO Guide — Custom Comparators",
+          url: "https://usaco.guide/silver/sorting-custom",
           kind: "read",
-          minutes: 30,
+          minutes: 25,
           whyThisOne:
-            "Passing your own comparator to std::sort, alongside find_if and count_if — the algorithms you will reach for weekly.",
+            "Sorting with your own rule in C++, from a key function up to multi-field comparisons.",
+          steps: [
+            "Read **Comparators** (*Key Function*, then *Comparator*).",
+            "Read **Variations**: *Sorting in Descending Order* and *Sorting by Multiple Criteria*.",
+            "Skip **Coordinate Compression** — it returns in a later module.",
+          ],
           isPrimary: true,
         },
         {
-          title: "cppreference — the Compare requirement",
-          url: "https://en.cppreference.com/w/cpp/named_req/Compare",
-          kind: "docs",
+          title: "Striver — Lower bound in a sorted array",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/lower-bound-in-sorted-array",
+          kind: "read",
+          minutes: 15,
           whyThisOne:
-            "The strict-weak-ordering rules, stated exactly. Read it once and `>=` in a comparator will look wrong forever.",
+            "What lower bound means, worked on small arrays by hand — do this before trusting the library call.",
+          steps: [
+            "Read the examples and the dry run; then compare with `std::lower_bound` in the next link.",
+          ],
         },
         {
           title: "cppreference — std::lower_bound",
-          url: "https://en.cppreference.com/w/cpp/algorithm/lower_bound",
+          url: "https://en.cppreference.com/cpp/algorithm/lower_bound",
           kind: "docs",
-          whyThisOne: "The off-by-one between lower and upper bound is worth reading once, precisely.",
+          whyThisOne:
+            "The exact contract: a sorted range, and the iterator it returns when x is missing. Look at the example at the bottom.",
         },
       ],
     },
@@ -485,6 +579,15 @@ Also worth having in hand: \`next_permutation\`, \`accumulate\` (pass \`0LL\` as
       objective:
         "Write base case and recursive step without hesitating, and trace a recursion tree on paper.",
       estMinutes: 60,
+      primer: `**Recursion** is a function that calls itself on a smaller version of the same problem.
+
+To print 1 to n: print 1 to n−1 (the same problem, smaller), then print n. That alone would call itself forever, so every recursive function also needs a **base case** — an input small enough to answer directly. Here, "if n is 0, print nothing and return".
+
+So every recursive function has two parts: (1) the base case, which stops it; (2) the step, which makes the problem smaller and calls itself.
+
+Each call waits for the call it made to finish. The computer keeps those waiting calls on the **call stack**, so very deep recursion (around a million calls) runs out of room and crashes.
+
+**You need already:** functions, parameters and return values.`,
       conceptMd: `Every recursive function is two questions: **what is the smallest case I can answer outright**, and **how do I reduce toward it**. Write the base case first, always — a missing base case is not a wrong answer, it is a stack overflow.
 
 \`\`\`cpp
@@ -546,20 +649,30 @@ Check the step really does *reach* the base case, not just shrink toward it. \`s
       ],
       resources: [
         {
-          title: "Striver — basic recursion: print a name N times",
-          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/print-name-n-times-using-recursion",
-          kind: "do",
-          minutes: 45,
+          title: "learncpp 20.3 — Recursion",
+          url: "https://www.learncpp.com/cpp-tutorial/recursion/",
+          kind: "read",
+          minutes: 25,
           whyThisOne:
-            "The smallest possible recursion, with the call stack traced by hand. Work on through the sheet's 1-to-N, sum and factorial pages after it.",
+            "Builds recursion up from one function calling itself, with the termination condition explained before any clever examples.",
+          steps: [
+            "Read up to and including the part on **termination conditions**; run the countdown example.",
+            "Trace one recursive call by hand on paper, writing down each waiting call.",
+            "Read the Fibonacci example — it sets up the recursion tree in the notes.",
+            "Skip the quiz's harder questions for now.",
+          ],
           isPrimary: true,
         },
         {
-          title: "NeetCode — Recursion explained",
-          url: "https://neetcode.io/courses/dsa-for-beginners/8",
-          kind: "watch",
-          minutes: 20,
-          whyThisOne: "Your designated second explanation, for when Striver's framing does not land.",
+          title: "Striver — Print name N times using recursion",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/print-name-n-times-using-recursion",
+          kind: "do",
+          minutes: 15,
+          whyThisOne:
+            "The first recursion drill, with a dry run of every call. Then do its siblings from the same site: print 1 to N and N to 1.",
+          steps: [
+            "Write it yourself first; then read **Dry Run** and the **Interview follow-up Questions**.",
+          ],
         },
       ],
     },

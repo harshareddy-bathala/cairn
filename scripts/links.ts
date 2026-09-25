@@ -13,10 +13,10 @@
  * LeetCode refuses scripts on every problem page, so a problem link is checked
  * against LeetCode's own GraphQL instead: the slug has to resolve to a question,
  * and a difficulty that disagrees with ours is reported (not failed).
- * Exits non-zero if anything is dead.
+ * Exits non-zero if anything is dead or has moved.
  */
 import { modules } from "@/content";
-import { APTITUDE_SOURCES } from "@/content/aptitude";
+import { APTITUDE_PRACTICE, APTITUDE_SOURCES } from "@/content/aptitude";
 
 type Link = { owner: string; url: string; difficulty?: string };
 
@@ -27,6 +27,8 @@ for (const m of modules) {
     links.push({ owner: `${m.slug} problem ${p.slug}`, url: p.url, difficulty: p.difficulty });
 }
 for (const s of APTITUDE_SOURCES) links.push({ owner: "aptitude", url: s.url });
+for (const [pool, topics] of Object.entries(APTITUDE_PRACTICE))
+  for (const [topic, url] of Object.entries(topics)) links.push({ owner: `aptitude ${pool}: ${topic}`, url });
 
 const only = process.argv.includes("--only") ? process.argv[process.argv.indexOf("--only") + 1] : null;
 const todo = only ? links.filter((l) => l.owner.includes(only)) : links;
@@ -52,11 +54,13 @@ async function leetcode(slug: string): Promise<Verdict & { difficulty?: string; 
       }),
       signal: AbortSignal.timeout(20_000),
     });
-    if (!res.ok) return { status: res.status, final: res.url };
+    // the page, not the API: the final URL is what the move check compares
+    const page = `https://leetcode.com/problems/${slug}/`;
+    if (!res.ok) return { status: res.status, final: page };
     const body = (await res.json()) as { data?: { question: { difficulty: string; isPaidOnly: boolean } | null } };
     const q = body.data?.question;
-    if (!q) return { status: 404, final: res.url, note: "no such problem" };
-    return { status: 200, final: res.url, difficulty: q.difficulty.toLowerCase(), paid: q.isPaidOnly };
+    if (!q) return { status: 404, final: page, note: "no such problem" };
+    return { status: 200, final: page, difficulty: q.difficulty.toLowerCase(), paid: q.isPaidOnly };
   } catch (e) {
     return { status: "error", final: slug, note: (e as Error).message };
   }
@@ -89,6 +93,25 @@ async function probe(url: string): Promise<Verdict> {
   }
 }
 
+/**
+ * A page that now lives somewhere else. Not dead — but a redirect is how the
+ * old Striver link survived this check while landing on a hub of the whole
+ * sheet instead of the lesson it named. The curriculum holds canonical URLs,
+ * so any change of host or path is reported, and the URL gets updated to
+ * where the site actually serves the page.
+ */
+function moved(url: string, final: string) {
+  const norm = (u: string) => {
+    const x = new URL(u);
+    return `${x.host.replace(/^www\./, "")}${decodeURI(x.pathname).replace(/\/+$/, "").replace(/\.html$/, "").toLowerCase()}`;
+  };
+  try {
+    return norm(url) !== norm(final);
+  } catch {
+    return false;
+  }
+}
+
 /** a soft 404: some sites answer 200 and bounce a missing page to their front door */
 function softMiss(url: string, final: string) {
   const a = new URL(url);
@@ -109,6 +132,7 @@ async function main() {
   );
 
   let dead = 0;
+  let relocated = 0;
   let blocked = 0;
   let warned = 0;
   for (const url of unique) {
@@ -124,6 +148,9 @@ async function main() {
       dead++;
       const why = v.status === "error" ? v.note : softMiss(url, v.final) ? `-> ${v.final}` : "";
       console.log(`DEAD    ${v.status}  ${url}  ${why ?? ""}  (${owners.join(", ")})`);
+    } else if (v.status !== "error" && moved(url, v.final)) {
+      relocated++;
+      console.log(`MOVED   ${url}  -> ${v.final}  (${owners.join(", ")})`);
     } else {
       for (const l of todo.filter((l) => l.url === url && l.difficulty && v.difficulty)) {
         if (l.difficulty !== v.difficulty) {
@@ -138,10 +165,11 @@ async function main() {
     }
   }
   console.log(
-    `\n${unique.length} links: ${unique.length - dead - blocked} ok, ${blocked} blocked, ${dead} dead` +
+    `\n${unique.length} links: ${unique.length - dead - relocated - blocked} ok, ${blocked} blocked, ` +
+      `${relocated} moved, ${dead} dead` +
       (warned ? `; ${warned} warnings` : ""),
   );
-  process.exit(dead ? 1 : 0);
+  process.exit(dead || relocated ? 1 : 0);
 }
 
 main();

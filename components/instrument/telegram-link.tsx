@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { startTelegramLink, unlinkTelegram } from "@/app/actions/reminders";
 import { useAction } from "@/lib/use-action";
+import { buttonClass } from "./button";
 import { Button } from "./button";
 
 /**
@@ -112,7 +113,7 @@ export function TelegramLink({ linked, configured }: { linked: boolean; configur
               href={issued.url}
               target="_blank"
               rel="noreferrer"
-              className="tap inline-block rounded-[3px] border border-phos-dim px-4 py-1.5 text-sm text-hi hover:border-phos"
+              className={buttonClass("primary", "md", "py-1.5")}
             >
               {issued.qr ? "or open Telegram here →" : "open the bot →"}
             </a>

@@ -16,6 +16,13 @@ export const recursionBacktracking: Module = {
       objective:
         "Draw the recursion tree for a subset problem and write the two-branch template from memory.",
       estMinutes: 75,
+      primer: `List every **subset** of \`[1, 2, 3]\`: [], [1], [2], [3], [1,2], [1,3], [2,3], [1,2,3]. How do you generate them all without missing or repeating any?
+
+Walk through the elements one at a time and, for each, make one choice: **take it or leave it**. Two choices for each of 3 elements gives 2 × 2 × 2 = 8 subsets. Recursion expresses this directly: a function looks at element \`i\`, calls itself once *with* the element added and once *without* it, and when it has run past the last element it records what it collected.
+
+Drawing those calls as a tree — each call branching into "take" and "leave" — is the **recursion tree**. Being able to draw it is how you design and debug every problem in this module.
+
+**You need already:** the recursion basics unit — base case and smaller call.`,
       conceptMd: `Almost every recursive combinatorial problem is the same two-branch decision: **include the current element, or do not.**
 
 \`\`\`cpp
@@ -66,13 +73,30 @@ Draw the tree for \`n = 3\` once, by hand. Every leaf is one subset, there are 2
       ],
       resources: [
         {
-          title: "GeeksforGeeks — subsets of a given array",
-          url: "https://www.geeksforgeeks.org/dsa/backtracking-to-find-all-subsets/",
+          title: "USACO Guide — Complete search with recursion",
+          url: "https://usaco.guide/bronze/complete-rec",
           kind: "read",
           minutes: 30,
           whyThisOne:
-            "The pick / not-pick backtracking first, then the iterative and bitmask versions — seeing all three is how the template stops being magic.",
+            "Introduces generating subsets with the take-or-leave recursion, in C++, on a real problem.",
+          steps: [
+            "Read **Subsets** and **Solution – Apple Division → Generating Subsets Recursively**.",
+            "Draw the recursion tree for `[1, 2, 3]` on paper and check you get 8 leaves.",
+            "Skip *Generating Subsets with Bitmasks* — it comes back in the bits module.",
+            "Leave **Permutations** and **Backtracking** for later units.",
+          ],
           isPrimary: true,
+        },
+        {
+          title: "GeeksforGeeks — Subsets of a given array",
+          url: "https://www.geeksforgeeks.org/dsa/backtracking-to-find-all-subsets/",
+          kind: "read",
+          minutes: 15,
+          whyThisOne:
+            "The same take-or-leave idea written with backtracking — the `pop_back` that undoes each choice.",
+          steps: [
+            "Read **Using Recursion** and trace the `pop_back` on a 2-element array.",
+          ],
         },
       ],
     },
@@ -82,6 +106,13 @@ Draw the tree for \`n = 3\` once, by hand. Every leaf is one subset, there are 2
       objective:
         "Generate subsets and combination sums, including the variants where duplicates must not repeat.",
       estMinutes: 90,
+      primer: `Once take-or-leave is familiar, the variants are small changes to the same function.
+
+**Combination sum**: pick numbers that add up to a target, where a number may be used again and again. The change: after taking an element, stay on the same element instead of moving to the next.
+
+**Duplicates**: with \`[1, 2, 2]\`, naive generation outputs \`[1, 2]\` twice. The fix is to **sort** first, so equal values sit next to each other, and then, at any one level of the recursion, skip a value that equals the one just tried. Removing duplicates afterwards with a \`set\` also works, but interviewers read it as not understanding the tree.
+
+**You need already:** the take-or-leave template from the last unit, written from memory.`,
       conceptMd: `Once the template is automatic, the variations are small edits.
 
 **Combination sum** (unlimited reuse): on the pick branch, recurse with \`i\` again rather than \`i + 1\`.
@@ -152,12 +183,17 @@ The \`j > i\` guard is doing precise work: it permits a repeated value *deeper* 
       ],
       resources: [
         {
-          title: "GeeksforGeeks — find all unique subsets",
-          url: "https://www.geeksforgeeks.org/dsa/find-distinct-subsets-given-set/",
+          title: "GeeksforGeeks — Find all unique subsets",
+          url: "https://www.geeksforgeeks.org/dsa/find-all-unique-subsets-of-a-given-set/",
           kind: "read",
-          minutes: 30,
+          minutes: 25,
           whyThisOne:
-            "Sort, then skip a repeated value at the same level — the duplicate guard this unit is built around, set against the lazy fix of deduplicating with a set.",
+            "Sort, then skip a repeated value at the same level — the duplicate guard this unit is built around.",
+          steps: [
+            "Read **[Approach - 1] Using Backtracking** and trace it on `[1, 2, 2]`.",
+            "Find the line that skips duplicates and explain in one sentence why it is safe.",
+            "Skim approach 2 (using a set) to see the lazy fix you should *not* give in an interview.",
+          ],
           isPrimary: true,
         },
       ],
@@ -168,6 +204,13 @@ The \`j > i\` guard is doing precise work: it permits a repeated value *deeper* 
       objective:
         "Generate permutations both by swapping and by a used-array, and state the trade-off.",
       estMinutes: 60,
+      primer: `A **permutation** is an ordering. \`[1, 2, 3]\` has 6: 123, 132, 213, 231, 312, 321 — in general n! of them.
+
+This is recursion again, but the choice at each step is different. For subsets it was "take or leave this element"; for permutations it is "**which element goes in the next position?**" — any one not yet used.
+
+Two ways to write it: keep a \`used[]\` array and try every unused element in the next position; or **swap** each candidate into the current position, recurse, then swap it back. The swap back is the backtracking step — it restores the array for the next choice.
+
+**You need already:** the subsets units.`,
       conceptMd: `Two standard approaches, and you should be able to produce either.
 
 **Swap-based**: for each index \`i\` from the current position, swap it in, recurse, swap back. No extra storage, but it emits permutations in a non-lexicographic order.
@@ -206,20 +249,28 @@ For permutations II, sort and skip \`if (i > 0 && a[i] == a[i-1] && !used[i-1]) 
       ],
       resources: [
         {
-          title: "GeeksforGeeks — permutations of a string",
+          title: "GeeksforGeeks — Permutations of a given string",
           url: "https://www.geeksforgeeks.org/dsa/write-a-c-program-to-print-all-permutations-of-a-given-string/",
           kind: "read",
-          minutes: 25,
-          whyThisOne: "The swap-based version, with the swap back that makes it backtracking.",
+          minutes: 20,
+          whyThisOne:
+            "The swap-based version, with the swap back that makes it backtracking.",
+          steps: [
+            "Read **[Approach] Recursion and Swapping**.",
+            "Trace it on `\"abc\"` and write out all 6 results in the order it produces them.",
+          ],
           isPrimary: true,
         },
         {
-          title: "USACO Guide — complete search with recursion",
+          title: "USACO Guide — Complete search: permutations",
           url: "https://usaco.guide/bronze/complete-rec",
           kind: "read",
-          minutes: 25,
+          minutes: 15,
           whyThisOne:
-            "The used-array version and next_permutation — the other half of the comparison an interviewer probes.",
+            "The used-array version and `next_permutation` — the other half of the comparison.",
+          steps: [
+            "Read **Permutations** → *Lexicographical Order* and *Generating Permutations Recursively*.",
+          ],
         },
       ],
     },
@@ -229,6 +280,13 @@ For permutations II, sort and skip \`if (i > 0 && a[i] == a[i-1] && !used[i-1]) 
       objective:
         "Prune a search tree with a validity check, and explain why pruning changes the practical runtime.",
       estMinutes: 90,
+      primer: `**Backtracking** is trying options one at a time and **giving up on a path the moment it cannot work**, then going back to try the next option.
+
+N-Queens: place n queens on an n×n board so that no two attack each other. Place one queen per row. In each row, try each column; if the square is attacked, skip it; if safe, place the queen and move to the next row. If a row has no safe square, go back to the previous row and move that queen. Skipping impossible choices early — **pruning** — is what makes this fast enough in practice.
+
+The same shape solves mazes (try each direction, step back from dead ends) and word search in a grid.
+
+**You need already:** the recursion units, and 2D vectors.`,
       conceptMd: `Backtracking becomes genuinely useful when you **prune** — abandon a branch the moment it cannot lead to a solution. The brute-force tree for 8 queens is astronomically large; with pruning it is trivial for a computer.
 
 For N-Queens, place one queen per row and keep three boolean arrays: \`col[]\`, \`diag1[row + col]\`, \`diag2[row - col + n - 1]\`. That makes the validity check O(1) instead of rescanning the board — and deriving those two diagonal index formulas yourself is the part worth doing on paper.
@@ -275,13 +333,29 @@ The universal shape: **choose → explore → un-choose.** Forgetting the un-cho
       ],
       resources: [
         {
-          title: "GeeksforGeeks — N-Queen problem",
+          title: "GeeksforGeeks — N Queen problem",
           url: "https://www.geeksforgeeks.org/dsa/n-queen-problem-backtracking-3/",
           kind: "read",
-          minutes: 40,
+          minutes: 30,
           whyThisOne:
-            "Goes from scanning the board for attacks to O(1) row and diagonal lookups — the step that makes pruning cheap enough to matter.",
+            "Goes from scanning the board for attacks to O(1) lookups — the step that makes pruning cheap enough to matter.",
+          steps: [
+            "Read **[Naive Approach] Using Backtracking**; solve n = 4 on paper first.",
+            "Read **[Expected Approach 1] Backtracking with Hashing** — the column and diagonal arrays.",
+            "Skip the bit-masking approach for now.",
+          ],
           isPrimary: true,
+        },
+        {
+          title: "USACO Guide — Backtracking: Chessboard & Queens",
+          url: "https://usaco.guide/bronze/complete-rec",
+          kind: "read",
+          minutes: 15,
+          whyThisOne:
+            "The same idea in compact C++ on a real judge problem.",
+          steps: [
+            "Read **Backtracking** → *Solution – Chessboard & Queens*.",
+          ],
         },
       ],
     },

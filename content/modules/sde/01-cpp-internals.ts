@@ -15,6 +15,15 @@ export const cppInternals: Module = {
       objective:
         "Explain where a variable lives, when it dies, and what a dangling pointer actually is.",
       estMinutes: 75,
+      primer: `A running C++ program keeps its data in two main places.
+
+The **stack** holds a function's local variables. Space is taken when the function starts and handed back automatically when it returns. It is very fast but small (a few megabytes), which is why very deep recursion crashes.
+
+The **heap** is a large pool you request from explicitly with \`new\` and must give back with \`delete\`. Heap memory lives until you free it, so it outlives the function that created it — useful, but it means *you* are responsible.
+
+Getting that responsibility wrong causes the classic bugs: forgetting to free (a **leak**), using memory after freeing it (a **dangling pointer**), or freeing it twice. Tools like Valgrind and AddressSanitizer find them for you.
+
+**You need already:** functions, and what a pointer holds (an address).`,
       conceptMd: `**Stack**: automatic storage, freed when the scope exits, fast (a pointer bump), small (typically 1–8 MB), and the reason deep recursion overflows.
 
 **Heap**: dynamic storage via \`new\`/\`malloc\`, lives until explicitly freed, large, slower, and fragmentable.
@@ -65,19 +74,33 @@ Also know **struct padding** — compilers align members, so \`struct { char a; 
       ],
       resources: [
         {
-          title: "learncpp — dynamic memory allocation",
+          title: "learncpp 20.2 — The stack and the heap",
+          url: "https://www.learncpp.com/cpp-tutorial/the-stack-and-the-heap/",
+          kind: "read",
+          minutes: 20,
+          whyThisOne:
+            "Explains both regions from scratch: what goes where, and what each costs.",
+          steps: [
+            "Read the whole lesson, stopping to predict where each example variable lives.",
+            "Then read learncpp 19.1 (next link) on `new` and `delete`.",
+            "Write a program that leaks on purpose and run it under Valgrind (last link).",
+          ],
+          isPrimary: true,
+        },
+        {
+          title: "learncpp 19.1 — Dynamic memory allocation with new and delete",
           url: "https://www.learncpp.com/cpp-tutorial/dynamic-memory-allocation-with-new-and-delete/",
           kind: "read",
-          minutes: 40,
-          whyThisOne: "The most careful free C++ resource; it explains the failure modes rather than just the syntax.",
-          isPrimary: true,
+          minutes: 20,
+          whyThisOne:
+            "`new` and `delete` with each failure mode — dangling pointers, leaks, double delete — explained.",
         },
         {
           title: "Valgrind quick start",
           url: "https://valgrind.org/docs/manual/quick-start.html",
           kind: "lab",
-          minutes: 30,
-          whyThisOne: "Write a leaking program deliberately, then watch valgrind find it. That loop teaches fast.",
+          whyThisOne:
+            "Run your deliberately leaking program under it and read the report.",
         },
       ],
     },
@@ -87,6 +110,15 @@ Also know **struct padding** — compilers align members, so \`struct { char a; 
       objective:
         "State the real differences between a pointer and a reference, and read a const declaration right to left.",
       estMinutes: 60,
+      primer: `A **pointer** is a variable that holds a memory address. \`int* p = &x;\` stores the address of \`x\`; \`*p\` reads or changes the value at that address. A pointer can be \`nullptr\` (pointing at nothing) and can be changed to point somewhere else.
+
+A **reference** is a second name for an existing variable: \`int& r = x;\` — using \`r\` *is* using \`x\`. It must be set when created, can never be empty, and can never be moved to another variable.
+
+Both let a function change the caller's variable, or avoid copying something large. The rule of thumb: use a reference when the thing must exist, a pointer when "nothing" is a valid answer.
+
+\`const\` adds a promise not to change something. With pointers it can apply to the value (\`const int* p\`) or to the pointer itself (\`int* const p\`) — reading the declaration right to left tells you which.
+
+**You need already:** variables and functions in C++.`,
       conceptMd: `A **reference** must be initialised, can never be rebound, and cannot be null. A **pointer** may be null, may be reassigned, and supports arithmetic. Prefer references when the thing must exist; use a pointer when absence is meaningful.
 
 Read const declarations **right to left**:
@@ -131,12 +163,34 @@ Arrays and pointers are related but not identical: an array **decays** to a poin
       ],
       resources: [
         {
-          title: "learncpp — lvalue references and pointers",
+          title: "learncpp 12.7 — Introduction to pointers",
+          url: "https://www.learncpp.com/cpp-tutorial/introduction-to-pointers/",
+          kind: "read",
+          minutes: 25,
+          whyThisOne:
+            "Pointers from nothing: the address-of operator, dereferencing, and what a pointer really stores.",
+          steps: [
+            "Read the lesson and run each example, printing both `p` and `*p`.",
+            "Then read learncpp 12.3 on references (next link).",
+            "Then read learncpp 12.9 on pointers and const (last link) and decode `const int* const p` out loud.",
+          ],
+          isPrimary: true,
+        },
+        {
+          title: "learncpp 12.3 — Lvalue references",
           url: "https://www.learncpp.com/cpp-tutorial/lvalue-references/",
           kind: "read",
-          minutes: 35,
-          whyThisOne: "Careful about the exact distinctions interviewers probe, rather than hand-waving them.",
-          isPrimary: true,
+          minutes: 15,
+          whyThisOne:
+            "What a reference is, and the rules that make it different from a pointer.",
+        },
+        {
+          title: "learncpp 12.9 — Pointers and const",
+          url: "https://www.learncpp.com/cpp-tutorial/pointers-and-const/",
+          kind: "read",
+          minutes: 15,
+          whyThisOne:
+            "The four combinations of const and pointer, one at a time.",
         },
       ],
     },
@@ -146,6 +200,16 @@ Arrays and pointers are related but not identical: an array **decays** to a poin
       objective:
         "Explain RAII as the idea behind C++ resource safety, and choose between unique_ptr and shared_ptr.",
       estMinutes: 75,
+      primer: `Remembering to \`delete\` everything you \`new\` is error-prone — especially when a function can return early or throw. C++'s answer is **RAII** (Resource Acquisition Is Initialisation): wrap the resource in an object whose **destructor** releases it. Destructors run automatically whenever the object goes out of scope, on *every* path out, so the cleanup cannot be forgotten.
+
+**Smart pointers** are RAII for heap memory:
+
+- \`unique_ptr\` — one owner. When it goes away, the memory is freed. It cannot be copied, only *moved* to a new owner.
+- \`shared_ptr\` — shared ownership with a counter; the memory is freed when the last owner goes away.
+
+In modern C++ you almost never write \`delete\` yourself. Default to \`unique_ptr\`.
+
+**You need already:** the stack/heap unit, and classes with constructors and destructors.`,
       conceptMd: `**RAII** — Resource Acquisition Is Initialisation — is arguably C++'s central idea: tie a resource's lifetime to an object's lifetime. The constructor acquires, the destructor releases, and because destructors run on *every* exit path including exceptions, cleanup cannot be forgotten. That is why \`std::lock_guard\` is safer than manual lock/unlock.
 
 **\`unique_ptr\`** — sole ownership, zero overhead, movable but not copyable. **This should be your default.**
@@ -193,12 +257,34 @@ If you can explain RAII well, you are signalling that you understand C++ rather 
       ],
       resources: [
         {
-          title: "C++ Core Guidelines — Resource management",
-          url: "https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#S-resource",
-          kind: "docs",
-          minutes: 35,
-          whyThisOne: "From the people who designed the language; each rule states the reasoning.",
+          title: "learncpp 22.1 — Introduction to smart pointers and move semantics",
+          url: "https://www.learncpp.com/cpp-tutorial/introduction-to-smart-pointers-move-semantics/",
+          kind: "read",
+          minutes: 25,
+          whyThisOne:
+            "Builds a tiny smart pointer by hand, which shows exactly why RAII works and why copying is the hard part.",
+          steps: [
+            "Read the lesson; type the hand-written smart pointer class and run it.",
+            "Read the part where copying it goes wrong — that problem is why move semantics exist.",
+            "Then read 22.5 `unique_ptr` (next link); skim 22.6 `shared_ptr` (last link).",
+          ],
           isPrimary: true,
+        },
+        {
+          title: "learncpp 22.5 — std::unique_ptr",
+          url: "https://www.learncpp.com/cpp-tutorial/stdunique_ptr/",
+          kind: "read",
+          minutes: 20,
+          whyThisOne:
+            "The smart pointer you should reach for first, and `make_unique`.",
+        },
+        {
+          title: "learncpp 22.6 — std::shared_ptr",
+          url: "https://www.learncpp.com/cpp-tutorial/stdshared_ptr/",
+          kind: "read",
+          minutes: 15,
+          whyThisOne:
+            "Shared ownership, the reference count, and its cost.",
         },
       ],
     },
@@ -208,6 +294,15 @@ If you can explain RAII well, you are signalling that you understand C++ rather 
       objective:
         "Explain dynamic dispatch mechanically, and say why a base class needs a virtual destructor.",
       estMinutes: 75,
+      primer: `**Polymorphism** lets one piece of code work with many types. With a base class \`Shape\` and derived classes \`Circle\` and \`Square\`, a \`Shape*\` can point at either; calling \`shape->area()\` should run the right version for the actual object.
+
+Marking the function \`virtual\` in the base class makes that happen. Behind the scenes, each class with virtual functions gets a hidden table of function addresses — the **vtable** — and every object carries a hidden pointer to its class's table. A virtual call looks the function up there at run time.
+
+One rule follows: a base class meant to be used this way needs a **virtual destructor**, otherwise deleting a \`Circle\` through a \`Shape*\` runs only \`Shape\`'s destructor.
+
+**Move semantics** is a separate idea covered here too: letting an object hand its heap memory to another instead of copying it.
+
+**You need already:** classes and inheritance in C++.`,
       conceptMd: `A class with virtual functions gets a hidden **vptr** pointing at a per-class **vtable** of function addresses. A virtual call is therefore an extra indirection: load the vptr, index the vtable, call. That is the cost, and it is why virtual is not free.
 
 **The virtual destructor rule.** Deleting a derived object through a base pointer when the base destructor is *not* virtual is undefined behaviour — the derived destructor never runs and its resources leak. Rule: **if a class has any virtual function, its destructor must be virtual.** This is asked in interviews very often.
@@ -256,12 +351,34 @@ If you can explain RAII well, you are signalling that you understand C++ rather 
       ],
       resources: [
         {
-          title: "learncpp — virtual functions and the vtable",
+          title: "learncpp 25.2 — Virtual functions and polymorphism",
+          url: "https://www.learncpp.com/cpp-tutorial/virtual-functions/",
+          kind: "read",
+          minutes: 25,
+          whyThisOne:
+            "Starts with the problem a base-class pointer has without `virtual`, then fixes it.",
+          steps: [
+            "Read the lesson and run the example with and without `virtual`.",
+            "Then read learncpp 25.6 on the virtual table (next link) and draw the vtable for two classes.",
+            "Then read 22.3 on move constructors (last link).",
+          ],
+          isPrimary: true,
+        },
+        {
+          title: "learncpp 25.6 — The virtual table",
           url: "https://www.learncpp.com/cpp-tutorial/the-virtual-table/",
           kind: "read",
-          minutes: 35,
-          whyThisOne: "Shows the actual mechanism, which is what turns a memorised rule into an explanation.",
-          isPrimary: true,
+          minutes: 20,
+          whyThisOne:
+            "The actual mechanism — what turns a memorised rule into an explanation.",
+        },
+        {
+          title: "learncpp 22.3 — Move constructors and move assignment",
+          url: "https://www.learncpp.com/cpp-tutorial/move-constructors-and-move-assignment/",
+          kind: "read",
+          minutes: 25,
+          whyThisOne:
+            "Moving instead of copying, and why it makes returning big objects cheap.",
         },
       ],
     },

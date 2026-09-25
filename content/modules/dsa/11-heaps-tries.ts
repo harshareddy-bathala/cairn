@@ -1,7 +1,5 @@
 import type { Module } from "@/content/types";
 
-const TUF = "https://takeuforward.org/blogs/data-structure-and-algorithm";
-
 export const heapsTries: Module = {
   slug: "dsa-heaps-tries",
   trackSlug: "dsa",
@@ -18,6 +16,13 @@ export const heapsTries: Module = {
       objective:
         "Explain the array-backed binary heap, use std::priority_queue as a max- and min-heap, and solve kth-largest with a size-k heap.",
       estMinutes: 70,
+      primer: `A **heap** is a structure that always knows its smallest (or largest) item. You can add items and remove the top one in O(log n), and look at the top in O(1).
+
+It is a binary tree kept in a plain array: the children of position i sit at 2i+1 and 2i+2, so no pointers are needed. The only rule is that every parent is smaller than its children (a *min-heap*) — or larger, for a *max-heap*. Adding an item puts it at the end and lets it rise while it beats its parent; removing the top moves the last item up and lets it sink.
+
+In C++ this is \`priority_queue\`, which is a **max**-heap by default; a min-heap needs \`priority_queue<int, vector<int>, greater<int>>\`.
+
+**You need already:** binary trees, and arrays.`,
       conceptMd: `A **binary heap** is a complete binary tree stored in an array, with one rule: every parent is ≤ its children (min-heap) or ≥ them (max-heap). Nothing is said about siblings, so a heap is *not* sorted — only the root is known.
 
 In a 0-indexed array, node \`i\` has children \`2i+1\` and \`2i+2\` and parent \`(i-1)/2\`. No pointers, and the tree is always balanced, so its height is ⌊log₂ n⌋.
@@ -75,26 +80,34 @@ There is no decrease-key and no way to erase an arbitrary element; the usual wor
       ],
       resources: [
         {
-          title: "Striver — introduction to the heap",
-          url: `${TUF}/introduction-to-heap`,
+          title: "Striver — Introduction to heap",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/introduction-to-heap",
           kind: "read",
-          minutes: 25,
-          whyThisOne: "The array layout, sift up and sift down, written out before you use the library.",
+          minutes: 35,
+          whyThisOne:
+            "What a heap is, how it sits in an array, and sift up / sift down with a dry run — before using the library.",
+          steps: [
+            "Read **What is a Heap?** and **Array Representation of a Binary Heap**.",
+            "Read **Min Heap and Max Heap**.",
+            "Work **Heapify** — sift up, sift down — and redo **Dry Run of Max Heapify Down** on paper.",
+            "Then use `priority_queue` to solve *Kth Largest Element* from the practice list.",
+          ],
           isPrimary: true,
         },
         {
-          title: "VisuAlgo — binary heap",
+          title: "VisuAlgo — Binary heap",
           url: "https://visualgo.net/en/heap",
           kind: "do",
-          minutes: 15,
-          whyThisOne: "Watch sift-up, sift-down and the O(n) build on the tree and the array side by side.",
+          minutes: 10,
+          whyThisOne:
+            "Watch insert and extract move items on the tree and the array side by side.",
         },
         {
           title: "cppreference — std::priority_queue",
-          url: "https://en.cppreference.com/w/cpp/container/priority_queue",
+          url: "https://en.cppreference.com/cpp/container/priority_queue",
           kind: "docs",
-          minutes: 10,
-          whyThisOne: "The template parameters and the comparator direction, which everyone gets backwards once.",
+          whyThisOne:
+            "The template parameters and the comparator direction, which everyone gets backwards once.",
         },
       ],
     },
@@ -104,6 +117,13 @@ There is no decrease-key and no way to erase an arbitrary element; the usual wor
       objective:
         "Recognise top-k and k-way merge problems and solve them with a bounded heap in O(n log k).",
       estMinutes: 80,
+      primer: `"Find the k largest items" — sorting everything costs O(n log n). A heap of size k does it in O(n log k).
+
+Keep a **min-heap holding at most k items**. For each new item, push it; if the heap grows past k, pop the smallest. At the end the heap holds exactly the k largest — every item that was popped had k bigger ones above it. It feels backwards (a *min*-heap for the *largest*), and that is the point to remember.
+
+**Merging k sorted lists** uses a heap differently: put the front item of every list in a heap, repeatedly take the smallest, and push the next item from the list it came from.
+
+**You need already:** \`priority_queue\` from the last unit.`,
       conceptMd: `**Top-k** problems ask for the k best items by some score: most frequent, closest, largest. The recipe is always the same — a heap of size k ordered so that the *worst of the best* is on top, and evicted when something better arrives:
 
 \`\`\`cpp
@@ -148,26 +168,34 @@ The same shape solves "kth smallest in a sorted matrix" (each row is a list) and
       ],
       resources: [
         {
-          title: "Striver — merge k sorted lists",
-          url: `${TUF}/merge-k-sorted-linked-lists`,
-          kind: "read",
-          minutes: 20,
-          whyThisOne: "The heap-of-fronts idea and the O(N log k) argument, with the brute force it replaces.",
+          title: "Striver — Top k frequent elements",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/top-k-frequent-elements",
+          kind: "do",
+          minutes: 30,
+          whyThisOne:
+            "Counting with a map, then a size-k heap — and the bucket version that beats it.",
+          steps: [
+            "Read the problem and examples, and try it yourself for 10–15 minutes.",
+            "Read the approaches in order — brute force first — following each **Dry Run** on paper.",
+            "Explain why a *min*-heap finds the *largest* k.",
+          ],
           isPrimary: true,
         },
         {
-          title: "Striver — top k frequent elements",
-          url: `${TUF}/top-k-frequent-elements`,
-          kind: "read",
-          minutes: 15,
-          whyThisOne: "The bounded heap, then the bucket-sort version that beats it.",
+          title: "Striver — Merge k sorted lists",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/merge-k-sorted-linked-lists",
+          kind: "do",
+          minutes: 35,
+          whyThisOne:
+            "A heap of list fronts, and the O(N log k) argument, after the brute force it replaces.",
         },
         {
-          title: "Striver — task scheduler",
-          url: `${TUF}/task-scheduler`,
-          kind: "read",
-          minutes: 20,
-          whyThisOne: "Both the heap simulation and the closed-form formula, with the idle-slot picture.",
+          title: "Striver — Task scheduler",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/task-scheduler",
+          kind: "do",
+          minutes: 35,
+          whyThisOne:
+            "Both the heap simulation and the formula, with a picture of the idle slots.",
         },
       ],
     },
@@ -177,6 +205,13 @@ The same shape solves "kth smallest in a sorted matrix" (each row is a list) and
       objective:
         "Maintain a running median with a max-heap and a min-heap, and use two heaps to pick greedily under a constraint.",
       estMinutes: 70,
+      primer: `"Numbers keep arriving; after each one, report the **median**." Re-sorting each time is far too slow.
+
+Split the numbers into two halves with two heaps: a **max-heap** for the smaller half (so its top is the largest of the small numbers) and a **min-heap** for the larger half (its top is the smallest of the large numbers). Keep the two sizes equal, or the max-heap one bigger. The median is then always sitting at the top of one heap, or halfway between the two tops.
+
+Each new number goes into one heap, and at most one item moves across to rebalance — O(log n) per number.
+
+**You need already:** min-heaps and max-heaps.`,
       conceptMd: `**Running median.** Split the numbers seen so far into a lower half and an upper half:
 
 - \`lo\` — a **max-heap** holding the smaller half, so its top is the largest of the small numbers;
@@ -226,19 +261,26 @@ Add is O(log n), median is O(1). Sorting on every query would be O(n log n) each
       ],
       resources: [
         {
-          title: "Striver — find median from data stream",
-          url: `${TUF}/find-median-data-stream`,
-          kind: "read",
-          minutes: 20,
-          whyThisOne: "The two invariants and the rebalance step, traced on a small stream.",
+          title: "Striver — Find median from data stream",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/find-median-data-stream",
+          kind: "do",
+          minutes: 40,
+          whyThisOne:
+            "The two rules the heaps keep, and the rebalance step, traced on a small stream.",
+          steps: [
+            "Read the problem and examples, and try it yourself for 10–15 minutes.",
+            "Read the approaches in order — brute force first — following each **Dry Run** on paper.",
+            "Trace the two heaps by hand for the stream 5, 15, 1, 3, 8.",
+          ],
           isPrimary: true,
         },
         {
           title: "Striver — IPO",
-          url: `${TUF}/ipo`,
-          kind: "read",
-          minutes: 20,
-          whyThisOne: "The gate-then-pick pattern that reappears in scheduling problems.",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/ipo",
+          kind: "do",
+          minutes: 35,
+          whyThisOne:
+            "Two heaps used differently: unlock what you can afford, then pick the best — a pattern that reappears in scheduling.",
         },
       ],
     },
@@ -248,6 +290,13 @@ Add is O(log n), median is O(1). Sorting on every query would be O(n log n) each
       objective:
         "Implement a trie with insert, search and startsWith, extend it to wildcard search, and use a binary trie for maximum XOR.",
       estMinutes: 90,
+      primer: `A **trie** (said "try") stores a set of words so you can ask "is this a word?" and "does any word start with this?" in time proportional to the *length of the word*, not the number of words stored.
+
+Each node represents a prefix, with up to 26 child pointers, one per next letter. "cat" and "car" share the path c → a, then split. A flag on a node marks "a word ends here". Inserting and searching both just follow the letters down from the root.
+
+Tries power autocomplete and spell-checkers. A binary version, storing numbers bit by bit, finds the **maximum XOR** of two numbers greedily — at each bit, try to go the opposite way.
+
+**You need already:** trees and pointers; the XOR unit for the last problem.`,
       conceptMd: `A **trie** (prefix tree) stores strings character by character. Each node has up to 26 children and a flag saying "a word ends here". Words sharing a prefix share the path.
 
 \`\`\`cpp
@@ -302,26 +351,34 @@ void insert(Node *root, const string &w) {
       ],
       resources: [
         {
-          title: "Striver — implementing a trie",
-          url: `${TUF}/trie-implementation`,
+          title: "Striver — Introduction to trie",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/introduction-to-trie",
           kind: "read",
-          minutes: 25,
-          whyThisOne: "Insert, search and startsWith with the node structure spelled out.",
+          minutes: 35,
+          whyThisOne:
+            "Why a trie is needed, its structure, then insert and search, one idea per section.",
+          steps: [
+            "Read **Why a Trie Is Needed** and **Trie Structure: Root, Children, and End Marker**.",
+            "Work **Inserting Words into a Trie** and the search sections, drawing the trie for `cat, car, cart, dog`.",
+            "Then implement it yourself from *Implementing a trie* (next link).",
+          ],
           isPrimary: true,
         },
         {
-          title: "Striver — maximum XOR of two numbers",
-          url: `${TUF}/maximum-xor-of-two-numbers-in-an-array`,
-          kind: "read",
-          minutes: 20,
-          whyThisOne: "The binary trie and the opposite-bit greedy, bit by bit.",
+          title: "Striver — Implementing a trie",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/trie-implementation",
+          kind: "do",
+          minutes: 30,
+          whyThisOne:
+            "insert, search and startsWith, with the node structure in code.",
         },
         {
-          title: "Striver — word search II",
-          url: `${TUF}/word-search-ii`,
-          kind: "read",
-          minutes: 25,
-          whyThisOne: "Trie plus grid DFS, including pruning found words.",
+          title: "Striver — Maximum XOR of two numbers",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/maximum-xor-of-two-numbers-in-an-array",
+          kind: "do",
+          minutes: 35,
+          whyThisOne:
+            "The binary trie and the take-the-opposite-bit greedy.",
         },
       ],
     },

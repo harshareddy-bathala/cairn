@@ -15,6 +15,15 @@ export const linuxFoundations: Module = {
       objective:
         "Read `ls -la` output field by field, and explain a hard link versus a symlink at the inode level.",
       estMinutes: 60,
+      primer: `On Linux everything lives in **one tree of folders** starting at \`/\` (the "root"). There is no \`C:\` drive: disks, USB sticks and even information about the running system appear somewhere inside that one tree.
+
+A few folders to know by name: \`/home/you\` is your stuff, \`/etc\` holds configuration files, \`/var/log\` holds logs, \`/tmp\` is scratch space, and \`/proc\` is not on disk at all — it is the kernel showing you live information as if it were files.
+
+You move around with \`pwd\` (where am I?), \`ls\` (what is here?) and \`cd\` (go there). \`ls -l\` shows details for each file: its permissions, owner, size and date.
+
+Under the hood a file's name and its contents are stored separately. That split is why Linux has two kinds of link: a **hard link** is a second name for the same data, a **symbolic link** is a signpost pointing at another name.
+
+**You need already:** a terminal open on your machine. Nothing else.`,
       conceptMd: `The filesystem hierarchy is not arbitrary: \`/etc\` is configuration, \`/var\` is state that changes, \`/proc\` is a window into the kernel, \`/usr\` is read-only program data.
 
 An **inode** holds a file's metadata and block pointers — everything except its name. A directory entry maps a name to an inode number. That single fact explains both link types: a **hard link** is a second directory entry pointing at the same inode (so the file survives deleting either name, and the link count in \`ls -l\` is what tracks it), while a **symlink** is a tiny file containing a *path*, which is why it breaks when the target moves.
@@ -53,20 +62,37 @@ Be able to read every field of \`ls -la\`: type character, permission triads, li
       ],
       resources: [
         {
-          title: "OverTheWire — Bandit levels 0–8",
-          url: "https://overthewire.org/wargames/bandit/",
-          kind: "lab",
-          minutes: 90,
+          title: "LinuxCommand — Lesson 2: Navigation",
+          url: "https://linuxcommand.org/lc3_lts0020.php",
+          kind: "read",
+          minutes: 20,
           whyThisOne:
-            "The assignment, not a suggestion. It teaches file navigation by making you actually need it.",
+            "Short, gentle and hands-on: the tree, where you are in it, and how to move — typed at a real prompt.",
+          steps: [
+            "Read **File System Organization**, then type every `pwd`, `cd` and `ls` example in your own terminal.",
+            "Read **A Few Shortcuts** and **Important facts about file names**.",
+            "Continue straight into Lesson 4, *A Guided Tour* (next link).",
+          ],
           isPrimary: true,
         },
         {
-          title: "The Linux Command Line — ch. 2–4 (Shotts, free PDF)",
-          url: "https://linuxcommand.org/tlcl.php",
+          title: "LinuxCommand — Lesson 4: A Guided Tour",
+          url: "https://linuxcommand.org/lc3_lts0040.php",
           kind: "read",
-          minutes: 45,
-          whyThisOne: "The clearest written treatment of the hierarchy, and it is free.",
+          minutes: 20,
+          whyThisOne:
+            "Walks the standard folders one by one, and ends on symbolic links — *A weird kind of file…*.",
+        },
+        {
+          title: "OverTheWire — Bandit, level 0",
+          url: "https://overthewire.org/wargames/bandit/bandit0.html",
+          kind: "lab",
+          minutes: 60,
+          whyThisOne:
+            "The assignment: a game you play over SSH where every level needs the commands from this unit. Clear levels 0 to 8.",
+          steps: [
+            "Follow the level page to log in over SSH; each level's page says where the next password is.",
+          ],
         },
       ],
     },
@@ -76,6 +102,13 @@ Be able to read every field of \`ls -la\`: type character, permission triads, li
       objective:
         "Convert between rwx and octal instantly, and explain what SUID actually does to a running process.",
       estMinutes: 60,
+      primer: `Linux is built for many users sharing one machine, so every file records **who owns it** and **who may do what** with it.
+
+There are three kinds of access — **r**ead, **w**rite, e**x**ecute — given separately to three groups of people: the file's **owner**, its **group**, and **everyone else**. \`ls -l\` shows this as \`rwxr-xr--\`: owner can do all three, group can read and run, others can only read.
+
+The same thing is often written as three digits, where r = 4, w = 2, x = 1 are added up per group: \`rwxr-xr--\` is \`754\`. \`chmod\` changes permissions; \`chown\` changes the owner; \`sudo\` runs one command as the all-powerful \`root\` user.
+
+**You need already:** moving around with \`cd\` and \`ls -l\` from the last unit.`,
       conceptMd: `Three triads — owner, group, other — each \`rwx\`, each a bit: r=4, w=2, x=1. So \`755\` is \`rwxr-xr-x\`.
 
 On a **directory** the bits mean something different and this is the part people get wrong: \`x\` means you may traverse into it, \`r\` means you may list its contents. A directory with \`x\` but no \`r\` lets you open a file whose name you already know but not discover it.
@@ -120,19 +153,35 @@ On a **directory** the bits mean something different and this is the part people
       ],
       resources: [
         {
-          title: "Red Hat — Linux file permissions explained",
-          url: "https://www.redhat.com/en/blog/linux-file-permissions-explained",
+          title: "LinuxCommand — Lesson 9: Permissions",
+          url: "https://linuxcommand.org/lc3_lts0090.php",
           kind: "read",
           minutes: 25,
-          whyThisOne: "Covers SUID, SGID and the sticky bit, which most permissions tutorials leave out.",
+          whyThisOne:
+            "Permissions from zero, with chmod in both the letter and the number form.",
+          steps: [
+            "Read **File Permissions** and decode three lines of your own `ls -l` output.",
+            "Read **chmod**; make a script file, try to run it, `chmod 755` it, and run it again.",
+            "Read **Directory Permissions** — `x` on a folder means *you may enter it*.",
+            "Read **Becoming the Superuser** and **Changing File Ownership**.",
+          ],
           isPrimary: true,
         },
         {
-          title: "OverTheWire — Bandit levels 9–15",
-          url: "https://overthewire.org/wargames/bandit/",
+          title: "Red Hat — Linux file permissions explained",
+          url: "https://www.redhat.com/en/blog/linux-file-permissions-explained",
+          kind: "read",
+          minutes: 15,
+          whyThisOne:
+            "Adds the three special bits — SUID, SGID and sticky — that most tutorials leave out.",
+        },
+        {
+          title: "OverTheWire — Bandit, level 10",
+          url: "https://overthewire.org/wargames/bandit/bandit10.html",
           kind: "lab",
-          minutes: 90,
-          whyThisOne: "Where permissions and SSH keys stop being theory.",
+          minutes: 60,
+          whyThisOne:
+            "Levels 9 to 15, where permissions and SSH keys stop being theory.",
         },
       ],
     },
@@ -142,6 +191,16 @@ On a **directory** the bits mean something different and this is the part people
       objective:
         "Answer a question about a log file with one pipeline, without reaching for a script.",
       estMinutes: 90,
+      primer: `Most of operations work is **reading text**: logs, config files, command output. Linux has small tools that each do one job, and you join them into a **pipeline** with \`|\`, which feeds one command's output into the next command's input.
+
+- \`grep\` keeps only the lines that match a pattern: \`grep error app.log\`.
+- \`sort\` and \`uniq -c\` group and count identical lines.
+- \`cut\` and \`awk\` pull out one column; \`sed\` finds and replaces text.
+- \`>\` saves output to a file; \`<\` reads input from one.
+
+So "which 5 IP addresses hit the server most?" is one line: pull out the IP column, sort, count, sort by count, show the top 5. Build such a line one stage at a time, checking the output after each \`|\`.
+
+**You need already:** moving around the filesystem.`,
       conceptMd: `This is the daily work of operations. Build the pipeline left to right, checking the output at each stage before adding the next.
 
 \`grep -rniE\` covers most searching: recursive, case-insensitive, with line numbers, extended regex. \`cut\` splits fixed-delimiter fields; \`awk '{print $2}'\` handles whitespace columns and does arithmetic. \`sed 's/a/b/g'\` substitutes.
@@ -190,18 +249,35 @@ Also get redirection exactly right: \`>\` truncates, \`>>\` appends, \`2>&1\` se
       ],
       resources: [
         {
-          title: "The Linux Command Line — ch. 6–7, 19–20 (Shotts)",
-          url: "https://linuxcommand.org/tlcl.php",
+          title: "LinuxCommand — Lesson 7: I/O Redirection",
+          url: "https://linuxcommand.org/lc3_lts0070.php",
           kind: "read",
-          minutes: 60,
-          whyThisOne: "Redirection and expansion explained properly, once, so you stop guessing.",
+          minutes: 25,
+          whyThisOne:
+            "Redirection and pipelines from the start, then the filter commands that go in them.",
+          steps: [
+            "Read **Standard Output** and **Standard Input**; try `>`, `>>` and `<` yourself.",
+            "Read **Pipelines** and **Filters**.",
+            "Work **Performing tasks with pipelines**, typing each example.",
+            "Then build the top-5-IP pipeline from the notes on any log file you have.",
+          ],
           isPrimary: true,
         },
         {
-          title: "GNU grep manual — regular expressions",
-          url: "https://www.gnu.org/software/grep/manual/grep.html#Regular-Expressions",
-          kind: "docs",
-          whyThisOne: "The basic-vs-extended regex distinction is the source of most grep confusion.",
+          title: "DigitalOcean — Using grep and regular expressions",
+          url: "https://www.digitalocean.com/community/tutorials/using-grep-regular-expressions-to-search-for-text-patterns-in-linux",
+          kind: "read",
+          minutes: 25,
+          whyThisOne:
+            "grep's everyday options, then regular expressions one idea at a time.",
+        },
+        {
+          title: "DigitalOcean — How to use AWK",
+          url: "https://www.digitalocean.com/community/tutorials/how-to-use-the-awk-language-to-manipulate-text-in-linux",
+          kind: "read",
+          minutes: 20,
+          whyThisOne:
+            "awk for pulling out and adding up columns — the part of awk you will actually use.",
         },
       ],
     },
@@ -211,6 +287,16 @@ Also get redirection exactly right: \`>\` truncates, \`>>\` appends, \`2>&1\` se
       objective:
         "Explain SIGTERM versus SIGKILL convincingly, and identify a zombie versus an orphan.",
       estMinutes: 90,
+      primer: `A **process** is a program that is running. Each has a number, its **PID**, and a parent — the process that started it. \`ps aux\` lists them all; \`top\` shows them live.
+
+You talk to a running process by sending it a **signal**, a small numbered message. The two that matter most:
+
+- **SIGTERM** (15, what plain \`kill PID\` sends): "please shut down". The program can catch it, save its work and exit cleanly.
+- **SIGKILL** (9, \`kill -9 PID\`): the kernel stops the process immediately. It cannot be caught, so nothing gets cleaned up.
+
+Always try SIGTERM first. A **zombie** is a process that has finished but whose parent has not yet collected its exit status; an **orphan** is one whose parent died first.
+
+**You need already:** using the terminal comfortably.`,
       conceptMd: `A process is created by **fork** (a copy of the parent) followed by **exec** (replacing its image). That model explains PID, PPID, and why a shell can set up redirection before the program starts.
 
 **SIGTERM (15)** politely asks a process to shut down — it can be caught, so the process flushes buffers, closes connections, and exits cleanly. **SIGKILL (9)** cannot be caught or ignored; the kernel destroys the process immediately, with no cleanup. Reaching for \`kill -9\` first is a genuine interview tell. This is also exactly why a container gets SIGTERM and a grace period before SIGKILL.
@@ -259,19 +345,26 @@ A **zombie** has exited but its parent has not reaped its exit status — it hol
       ],
       resources: [
         {
-          title: "LinuxCommand — Job control: ps, kill and signals",
+          title: "LinuxCommand — Lesson 10: Job Control",
           url: "https://linuxcommand.org/lc3_lts0100.php",
           kind: "read",
-          minutes: 30,
+          minutes: 20,
           whyThisOne:
-            "Reading process state with ps, then sending signals with kill, at a terminal — man 7 signal below fills in the semantics.",
+            "Running, listing and stopping processes at a real prompt, with kill and its signals introduced gently.",
+          steps: [
+            "Work through **A Practical Example** and **Putting a Program into the Background**.",
+            "Read **Listing Running Processes**; run `ps` and `ps aux | head` yourself.",
+            "Read **Killing a Process** and **A Little More About kill**.",
+            "Start `sleep 300 &`, then stop it with SIGTERM and check it is gone.",
+          ],
           isPrimary: true,
         },
         {
           title: "man 7 signal",
           url: "https://man7.org/linux/man-pages/man7/signal.7.html",
           kind: "docs",
-          whyThisOne: "The authoritative table. Read the default-action column.",
+          whyThisOne:
+            "The official table of signals. Read the *Standard signals* table and its default-action column.",
         },
       ],
     },
@@ -281,6 +374,18 @@ A **zombie** has exited but its parent has not reaped its exit status — it hol
       objective:
         "Write, enable and debug a .service unit of your own, and read its logs with journalctl.",
       estMinutes: 90,
+      primer: `Servers need programs that start by themselves at boot, restart if they crash, and keep logs. On most Linux systems that job belongs to **systemd**.
+
+You describe a program to systemd in a small text file called a **unit**, usually \`something.service\`: what command to run, and when. Then:
+
+- \`systemctl start name\` runs it now; \`systemctl stop name\` stops it.
+- \`systemctl enable name\` makes it start at every boot (separate from starting it now).
+- \`systemctl status name\` shows whether it is running and its last few log lines.
+- \`journalctl -u name\` shows its full log.
+
+In this unit you write a \`.service\` file for a small script of your own and watch systemd run it.
+
+**You need already:** processes and signals from the last unit, and editing a file with \`sudo\`.`,
       conceptMd: `A **unit** is a declarative description of something systemd manages. \`.service\` runs a process, \`.timer\` schedules one, \`.socket\` activates on connection.
 
 The distinction that gets asked: \`systemctl start\` runs it **now**; \`systemctl enable\` makes it run **at boot**. They are independent — \`enable --now\` does both.
@@ -345,19 +450,35 @@ This unit is a direct prerequisite for shipping \`sentinel\` — you will write 
       ],
       resources: [
         {
-          title: "systemd.service — man page",
-          url: "https://www.freedesktop.org/software/systemd/man/latest/systemd.service.html",
-          kind: "docs",
-          minutes: 30,
-          whyThisOne: "The Type= section alone resolves most first-service confusion.",
+          title: "DigitalOcean — Managing services with systemctl",
+          url: "https://www.digitalocean.com/community/tutorials/how-to-use-systemctl-to-manage-systemd-services-and-units",
+          kind: "read",
+          minutes: 25,
+          whyThisOne:
+            "The everyday commands, each explained and shown with its output — start, stop, enable, status.",
+          steps: [
+            "Read the service-management parts: starting and stopping, restarting, enabling and disabling, and checking status.",
+            "Try each command on a real service, such as `sshd` or `NetworkManager`.",
+            "Read how to view a unit file with `systemctl cat`.",
+            "Then write your own unit using the example in the notes.",
+          ],
           isPrimary: true,
         },
         {
-          title: "Arch Wiki — systemd",
-          url: "https://wiki.archlinux.org/title/Systemd",
+          title: "DigitalOcean — Understanding systemd units and unit files",
+          url: "https://www.digitalocean.com/community/tutorials/understanding-systemd-units-and-unit-files",
           kind: "read",
-          minutes: 30,
-          whyThisOne: "The best practical writeup anywhere, and you are already on Arch.",
+          minutes: 25,
+          whyThisOne:
+            "What goes in the `[Unit]`, `[Service]` and `[Install]` sections, so your own file makes sense line by line.",
+        },
+        {
+          title: "DigitalOcean — Using journalctl",
+          url: "https://www.digitalocean.com/community/tutorials/how-to-use-journalctl-to-view-and-manipulate-systemd-logs",
+          kind: "read",
+          minutes: 15,
+          whyThisOne:
+            "Reading a service's logs: `-u`, `-f` and time filters — how you debug a unit that will not start.",
         },
       ],
     },
@@ -367,6 +488,13 @@ This unit is a direct prerequisite for shipping \`sentinel\` — you will write 
       objective:
         "Write a script with strict mode, argument parsing, exit codes and a trap — and explain each.",
       estMinutes: 90,
+      primer: `A **shell script** is a text file of commands that run one after another, like typing them yourself. It starts with \`#!/usr/bin/env bash\`, you make it runnable with \`chmod +x\`, and you run it with \`./script.sh\`.
+
+Scripts get variables (\`name="x"\`, used as \`"$name"\`), arguments (\`$1\`, \`$2\`), \`if\` tests and loops — a small programming language.
+
+The danger: by default bash **keeps going after a command fails**, so a script can half-work and report success. Three settings at the top — \`set -euo pipefail\` — make it stop at the first error instead. That line, plus always writing variables in double quotes, prevents most script disasters.
+
+**You need already:** the commands from the earlier Linux units.`,
       conceptMd: `Start every script with the line that separates working scripts from hopeful ones:
 
 \`\`\`bash
@@ -420,20 +548,33 @@ set -euo pipefail
       ],
       resources: [
         {
-          title: "Google Shell Style Guide",
-          url: "https://google.github.io/styleguide/shellguide.html",
+          title: "LinuxCommand — Writing your first script",
+          url: "https://linuxcommand.org/lc3_wss0010.php",
           kind: "read",
-          minutes: 35,
+          minutes: 20,
           whyThisOne:
-            "Opinionated and short. Following it makes your sentinel scripts look professionally written.",
+            "A first script, from the empty file to running it, with each step explained.",
+          steps: [
+            "Write and run the script exactly as the lesson shows.",
+            "Add `set -euo pipefail` after the first line, then read the next link on what it changes.",
+            "Paste your script into ShellCheck (last link) and fix whatever it flags.",
+          ],
           isPrimary: true,
+        },
+        {
+          title: "Bash strict mode",
+          url: "http://redsymbol.net/articles/unofficial-bash-strict-mode/",
+          kind: "read",
+          minutes: 15,
+          whyThisOne:
+            "What each part of `set -euo pipefail` does, with the failure it prevents.",
         },
         {
           title: "ShellCheck",
           url: "https://www.shellcheck.net/",
           kind: "do",
           whyThisOne:
-            "Run every script through it. It catches the quoting bugs you cannot yet see, and teaches while it does.",
+            "Paste any script in and it points out the quoting and logic bugs you cannot yet see, with an explanation for each.",
         },
       ],
     },

@@ -1,7 +1,5 @@
 import type { Module } from "@/content/types";
 
-const PROM = "https://prometheus.io/docs";
-
 export const observability: Module = {
   slug: "devops-observability",
   trackSlug: "devops",
@@ -18,6 +16,15 @@ export const observability: Module = {
       objective:
         "Say what question each pillar answers, what it costs, and when to reach for which — and explain cardinality.",
       estMinutes: 50,
+      primer: `**Observability** is being able to tell what your system is doing from the outside, without logging in and poking around. It rests on three kinds of data:
+
+- **Metrics** — numbers over time: requests per second, error rate, memory used. Cheap to store, good for dashboards and alerts — they tell you *that* something is wrong.
+- **Logs** — a line of text (ideally JSON) for each event. They tell you *what* happened to one particular request.
+- **Traces** — the path of one request through every service it touched, with timings. They tell you *where* the time went.
+
+For any service that serves users, watch the **four golden signals**: latency, traffic, errors and saturation (how full it is).
+
+**You need already:** the networking module; a service of your own (atlas) to instrument.`,
       conceptMd: `The three pillars are not three ways of storing the same thing. Each answers a different question:
 
 | Pillar | Answers | Shape | Cost |
@@ -65,26 +72,33 @@ Three checklists name what to measure:
       ],
       resources: [
         {
-          title: "Google SRE book — monitoring distributed systems",
+          title: "Google SRE book — Monitoring distributed systems",
           url: "https://sre.google/sre-book/monitoring-distributed-systems/",
           kind: "read",
-          minutes: 35,
-          whyThisOne: "The four golden signals and symptoms-versus-causes, from the chapter that named them.",
+          minutes: 30,
+          whyThisOne:
+            "The chapter that named the four golden signals, and symptoms versus causes.",
+          steps: [
+            "Read up to and including **The Four Golden Signals**.",
+            "Write down what latency, traffic, errors and saturation would each mean for atlas.",
+            "Read the part on symptoms versus causes.",
+            "Skim the OpenTelemetry signals page (next link) for the three data types.",
+          ],
           isPrimary: true,
         },
         {
-          title: "OpenTelemetry — signals",
+          title: "OpenTelemetry — Signals",
           url: "https://opentelemetry.io/docs/concepts/signals/",
           kind: "docs",
-          minutes: 15,
-          whyThisOne: "Metrics, logs and traces as the vendor-neutral standard defines them.",
+          whyThisOne:
+            "Metrics, logs and traces as the vendor-neutral standard defines them.",
         },
         {
-          title: "Brendan Gregg — the USE method",
+          title: "Brendan Gregg — The USE method",
           url: "https://www.brendangregg.com/usemethod.html",
           kind: "read",
-          minutes: 15,
-          whyThisOne: "The resource-side checklist, from the person who wrote it.",
+          whyThisOne:
+            "The checklist for machines rather than requests: utilisation, saturation, errors.",
         },
       ],
     },
@@ -94,6 +108,16 @@ Three checklists name what to measure:
       objective:
         "Explain pull-based scraping, exporters and the data model, and choose correctly between counter, gauge, histogram and summary.",
       estMinutes: 70,
+      primer: `**Prometheus** is the most common open-source metrics system. It works by **pulling**: every few seconds it visits a \`/metrics\` URL on each of your services and reads the current numbers. A program that exposes metrics for something else (Linux, a database) is called an **exporter**.
+
+Each metric has a name and **labels**, like \`http_requests_total{route="/login", status="500"}\`. There are four types:
+
+- **counter** — only goes up (requests served); you look at its rate;
+- **gauge** — goes up and down (memory in use, queue length);
+- **histogram** — counts values into buckets (request durations), so you can compute percentiles like p95;
+- **summary** — percentiles computed in the app itself (rarely the right choice).
+
+**You need already:** the pillars unit, and Docker to run Prometheus locally.`,
       conceptMd: `**Pull, not push.** Prometheus **scrapes** an HTTP endpoint (\`/metrics\`) on each target every 15–60 seconds. Targets come from static config or service discovery. The upside: Prometheus knows when a target is down (\`up == 0\`), and apps do not need to know where the monitoring lives. Short-lived batch jobs, which may finish before a scrape, push to a **Pushgateway** instead.
 
 **Exporters** translate things that do not speak Prometheus: \`node_exporter\` for host CPU, memory and disk; \`postgres_exporter\`; \`blackbox_exporter\` to probe URLs from the outside. Your own app exposes metrics with a client library.
@@ -140,26 +164,33 @@ Naming conventions: \`snake_case\`, base units (\`_seconds\`, \`_bytes\`), count
       ],
       resources: [
         {
-          title: "Prometheus — metric types",
-          url: `${PROM}/concepts/metric_types/`,
-          kind: "docs",
-          minutes: 15,
-          whyThisOne: "The four types, precisely, from the source.",
+          title: "Prometheus — Getting started",
+          url: "https://prometheus.io/docs/prometheus/latest/getting_started/",
+          kind: "lab",
+          minutes: 30,
+          whyThisOne:
+            "Run Prometheus, let it scrape itself, and query your first metrics.",
+          steps: [
+            "Download and run Prometheus exactly as the page shows.",
+            "Open the expression browser and query `up` and `prometheus_http_requests_total`.",
+            "Then read *Metric types* (next link) and label each metric you saw with its type.",
+            "Add node_exporter using the last link.",
+          ],
           isPrimary: true,
         },
         {
-          title: "Prometheus — histograms and summaries",
-          url: `${PROM}/practices/histograms/`,
+          title: "Prometheus — Metric types",
+          url: "https://prometheus.io/docs/concepts/metric_types/",
           kind: "docs",
-          minutes: 25,
-          whyThisOne: "The aggregation argument and how to choose buckets around an SLO.",
+          whyThisOne:
+            "The four types, precisely, from the source.",
         },
         {
-          title: "Prometheus — monitoring Linux with node_exporter",
-          url: `${PROM}/guides/node-exporter/`,
+          title: "Prometheus — Monitoring Linux with node_exporter",
+          url: "https://prometheus.io/docs/guides/node-exporter/",
           kind: "lab",
-          minutes: 30,
-          whyThisOne: "Run Prometheus and an exporter, and see scraping and `up` for yourself.",
+          whyThisOne:
+            "Run an exporter and see scraping and `up` for a real machine.",
         },
       ],
     },
@@ -169,6 +200,15 @@ Naming conventions: \`snake_case\`, base units (\`_seconds\`, \`_bytes\`), count
       objective:
         "Write PromQL for request rate, error ratio and p95 latency, and use recording rules for queries you run constantly.",
       estMinutes: 75,
+      primer: `**PromQL** is Prometheus's query language. Three patterns cover most dashboards and alerts:
+
+- **Rate** — how many per second over the last 5 minutes: \`rate(http_requests_total[5m])\`.
+- **Error ratio** — errors divided by all requests: the rate of requests with status 5xx, divided by the rate of all requests.
+- **Latency percentile** — the 95th percentile from a histogram: \`histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket[5m])))\`.
+
+\`[5m]\` means "over the last five minutes of samples"; \`sum by (route)\` adds series together while keeping a label. A **recording rule** saves the result of an expensive query as a new metric so dashboards stay fast.
+
+**You need already:** the Prometheus unit, with Prometheus running.`,
       conceptMd: `PromQL has two kinds of vector. An **instant vector** is one sample per series at a moment (\`http_requests_total\`). A **range vector** is a window of samples per series (\`http_requests_total[5m]\`), which functions like \`rate()\` turn back into an instant vector.
 
 **The five queries that cover most dashboards and alerts:**
@@ -230,26 +270,33 @@ The rules behind them:
       ],
       resources: [
         {
-          title: "Prometheus — querying basics",
-          url: `${PROM}/prometheus/latest/querying/basics/`,
+          title: "Prometheus — Querying basics",
+          url: "https://prometheus.io/docs/prometheus/latest/querying/basics/",
           kind: "docs",
-          minutes: 25,
-          whyThisOne: "Instant and range vectors, selectors and matchers — the grammar everything else uses.",
+          minutes: 30,
+          whyThisOne:
+            "Instant and range vectors, selectors and matchers — the grammar everything else uses.",
+          steps: [
+            "Read the page, running each example in your own Prometheus.",
+            "Write rate, error ratio and p95 latency queries for atlas — or for Prometheus's own HTTP metrics.",
+            "Check your queries against the PromLabs cheat sheet (next link).",
+            "Save one as a recording rule (last link).",
+          ],
           isPrimary: true,
         },
         {
           title: "PromLabs — PromQL cheat sheet",
           url: "https://promlabs.com/promql-cheat-sheet/",
           kind: "docs",
-          minutes: 15,
-          whyThisOne: "Every common pattern on one page, by the people who maintain PromQL.",
+          whyThisOne:
+            "Every common pattern on one page, by people who maintain PromQL.",
         },
         {
-          title: "Prometheus — recording rules",
-          url: `${PROM}/prometheus/latest/configuration/recording_rules/`,
+          title: "Prometheus — Recording rules",
+          url: "https://prometheus.io/docs/prometheus/latest/configuration/recording_rules/",
           kind: "docs",
-          minutes: 10,
-          whyThisOne: "The rule file format and the level:metric:operations naming convention.",
+          whyThisOne:
+            "The rule file format and the `level:metric:operations` naming convention.",
         },
       ],
     },
@@ -259,6 +306,17 @@ The rules behind them:
       objective:
         "Write alerting rules that page on symptoms with a `for` duration and a runbook link, and configure Alertmanager routing, grouping, inhibition and silences.",
       estMinutes: 70,
+      primer: `An **alert** is a query that, when true for long enough, notifies a person. The hard part is not writing one but writing ones worth waking up for.
+
+Good alerts:
+
+- fire on **symptoms users feel** (errors, slowness), not on causes that might not matter (CPU at 90%);
+- wait a little before firing (\`for: 5m\`), so a brief spike does not page anyone;
+- link to a **runbook** saying what to check first.
+
+In Prometheus, alerting rules live in the Prometheus config, and **Alertmanager** decides where each alert goes: it **groups** related alerts into one notification, **routes** them to the right person or channel, **inhibits** noisy follow-on alerts, and lets you **silence** alerts during planned work.
+
+**You need already:** PromQL.`,
       conceptMd: `**Prometheus evaluates alert rules; Alertmanager decides who hears about them.**
 
 \`\`\`yaml
@@ -322,26 +380,33 @@ For atlas: one alert, routed to you, that you have **seen fire** — break somet
       ],
       resources: [
         {
-          title: "Prometheus — alerting best practices",
-          url: `${PROM}/practices/alerting/`,
-          kind: "docs",
+          title: "Prometheus — Alerting best practices",
+          url: "https://prometheus.io/docs/practices/alerting/",
+          kind: "read",
           minutes: 15,
-          whyThisOne: "Short and opinionated: alert on symptoms, keep pages actionable.",
+          whyThisOne:
+            "Short and opinionated: alert on symptoms, keep every page actionable.",
+          steps: [
+            "Read the whole page and write down the three rules you will follow.",
+            "Write one alerting rule for atlas's error ratio with a `for` duration and a runbook annotation (next link).",
+            "Run Alertmanager and route that alert to email or Telegram (last link).",
+            "Make it fire on purpose.",
+          ],
           isPrimary: true,
         },
         {
-          title: "Prometheus — alerting rules",
-          url: `${PROM}/prometheus/latest/configuration/alerting_rules/`,
+          title: "Prometheus — Alerting rules",
+          url: "https://prometheus.io/docs/prometheus/latest/configuration/alerting_rules/",
           kind: "docs",
-          minutes: 15,
-          whyThisOne: "The rule format, `for`, labels and annotations with templating.",
+          whyThisOne:
+            "The rule format, `for`, labels, and annotations with templates.",
         },
         {
           title: "Prometheus — Alertmanager",
-          url: `${PROM}/alerting/latest/alertmanager/`,
+          url: "https://prometheus.io/docs/alerting/latest/alertmanager/",
           kind: "docs",
-          minutes: 20,
-          whyThisOne: "Grouping, inhibition, silences and routing.",
+          whyThisOne:
+            "Grouping, inhibition, silences and routing.",
         },
       ],
     },
@@ -351,6 +416,13 @@ For atlas: one alert, routed to you, that you have **seen fire** — break somet
       objective:
         "Build a Grafana dashboard that answers an incident question, and emit structured logs with request IDs that you can search in Loki or ELK.",
       estMinutes: 70,
+      primer: `A **dashboard** is only useful if it answers a question someone asks during an incident — "is it us or the database?", "when did errors start?". Build dashboards around questions, not around every metric you have.
+
+**Grafana** draws dashboards from Prometheus (and many other sources). The standard layout for a service is **RED**: its **R**ate of requests, **E**rrors and **D**uration — one row of panels each.
+
+For logs, write **structured** lines — one JSON object per event, with a request ID — so they can be searched precisely. **Loki** (from Grafana) and **ELK** (Elasticsearch) are the common log stores; Loki indexes only a few labels, which makes it much cheaper to run.
+
+**You need already:** Prometheus and PromQL; structured logging from the REST production unit.`,
       conceptMd: `**A dashboard should answer a question**, and the first question in an incident is *"is it broken, and for whom?"*. Lay atlas's dashboard out in that order:
 
 1. **Top row — the golden signals**: request rate, error ratio, p95 latency, and the SLO with the remaining error budget.
@@ -399,19 +471,33 @@ Keep it to one screen. Put units on every axis, and draw the SLO threshold as a 
       ],
       resources: [
         {
-          title: "Grafana — dashboard best practices",
-          url: "https://grafana.com/docs/grafana/latest/dashboards/build-dashboards/best-practices/",
-          kind: "docs",
-          minutes: 20,
-          whyThisOne: "RED and USE dashboards, and how to keep dashboards from sprawling.",
+          title: "Grafana — Build your first dashboard",
+          url: "https://grafana.com/docs/grafana/latest/fundamentals/getting-started/first-dashboards/",
+          kind: "lab",
+          minutes: 30,
+          whyThisOne:
+            "Install to first panel, step by step.",
+          steps: [
+            "Follow the page to run Grafana and add Prometheus as a data source.",
+            "Build a RED dashboard for atlas: request rate, error ratio, p95 latency.",
+            "Read the best-practices page (next link) and remove any panel that answers no question.",
+            "Read the Loki overview (last link).",
+          ],
           isPrimary: true,
         },
         {
-          title: "Grafana Loki — overview",
+          title: "Grafana — Dashboard best practices",
+          url: "https://grafana.com/docs/grafana/latest/visualizations/dashboards/build-dashboards/best-practices/",
+          kind: "docs",
+          whyThisOne:
+            "RED and USE dashboards, and how to stop dashboards sprawling.",
+        },
+        {
+          title: "Grafana Loki — Overview",
           url: "https://grafana.com/docs/loki/latest/get-started/overview/",
           kind: "docs",
-          minutes: 15,
-          whyThisOne: "The label-only index and why it is cheaper than full-text indexing.",
+          whyThisOne:
+            "The label-only index, and why it is cheaper than indexing every word.",
         },
       ],
     },

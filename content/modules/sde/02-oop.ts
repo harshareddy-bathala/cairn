@@ -16,6 +16,18 @@ export const oop: Module = {
       objective:
         "Give a concrete example of each pillar from code you wrote, not a textbook definition.",
       estMinutes: 75,
+      primer: `**Object-oriented programming** organises code around *objects* that bundle data with the functions that work on it. A \`BankAccount\` holds a balance *and* the \`deposit\` and \`withdraw\` functions that are allowed to change it.
+
+Interviews ask for the **four pillars**:
+
+- **Encapsulation** — keep the data private and change it only through methods, so it cannot get into a bad state.
+- **Abstraction** — expose *what* something does and hide *how*.
+- **Inheritance** — a class builds on another, reusing its code (\`Car\` is a \`Vehicle\`).
+- **Polymorphism** — code written for the base type works on any subtype, each behaving its own way.
+
+Definitions are easy to recite. What gets you noticed is one **real example from code you wrote** for each.
+
+**You need already:** C++ classes — members, constructors, \`public\` and \`private\`.`,
       conceptMd: `Everyone can recite these. Prepare a **one-sentence definition plus a real example from your own projects** for each — that is what makes the answer land.
 
 **Encapsulation** — state is private, access is through methods that maintain invariants. Example: a metrics collector that validates a threshold on set, so it can never hold a negative value.
@@ -66,13 +78,26 @@ Your \`sentinel\` project has natural homes for all four — use it as your exam
       ],
       resources: [
         {
-          title: "learncpp — Introduction to object-oriented programming",
+          title: "learncpp 14.1 — Introduction to object-oriented programming",
           url: "https://www.learncpp.com/cpp-tutorial/introduction-to-object-oriented-programming/",
           kind: "read",
-          minutes: 30,
+          minutes: 20,
           whyThisOne:
-            "Starts from the procedural version and shows what bundling data with behaviour buys you — which is what makes your own examples come easily.",
+            "Starts from the non-OOP version of a program and shows what bundling data with behaviour buys you.",
+          steps: [
+            "Read the lesson, comparing the procedural and object-oriented versions of the example.",
+            "Then read the GfG overview (next link) for one short example of each pillar.",
+            "Write one example per pillar from your own projects, in one sentence each.",
+          ],
           isPrimary: true,
+        },
+        {
+          title: "GeeksforGeeks — Object oriented programming in C++",
+          url: "https://www.geeksforgeeks.org/cpp/object-oriented-programming-in-cpp/",
+          kind: "read",
+          minutes: 20,
+          whyThisOne:
+            "Each pillar with a small C++ example — useful for checking your own examples against.",
         },
       ],
     },
@@ -82,6 +107,17 @@ Your \`sentinel\` project has natural homes for all four — use it as your exam
       objective:
         "Name all five principles and give a concrete violation and fix for each.",
       estMinutes: 75,
+      primer: `**SOLID** is five rules of thumb for classes that stay easy to change as a project grows:
+
+- **S**ingle responsibility — a class should have one job.
+- **O**pen/closed — add new behaviour by adding code, not by editing working code.
+- **L**iskov substitution — a subclass must work anywhere its parent does.
+- **I**nterface segregation — prefer several small interfaces over one huge one.
+- **D**ependency inversion — depend on an interface, not on a concrete class.
+
+Each rule exists because breaking it makes a specific kind of change painful. The best way to learn them — and to answer in an interview — is one **before and after** example for each: code that breaks the rule, and the fix.
+
+**You need already:** the four pillars, especially inheritance and polymorphism.`,
       conceptMd: `Being able to name them is the floor. Have a **violation and a fix** ready for each.
 
 **S — Single Responsibility.** A class has one reason to change. Violation: a \`Report\` class that computes *and* renders *and* emails. Fix: split into three.
@@ -137,11 +173,17 @@ Do not over-apply these. "I would not split this yet, it is only one reason to c
       ],
       resources: [
         {
-          title: "DigitalOcean — SOLID, the first five principles",
+          title: "DigitalOcean — SOLID: the first five principles",
           url: "https://www.digitalocean.com/community/conceptual-articles/s-o-l-i-d-the-first-five-principles-of-object-oriented-design",
           kind: "read",
-          minutes: 35,
-          whyThisOne: "Works through all five with code before and after, which is the shape a good interview answer takes.",
+          minutes: 30,
+          whyThisOne:
+            "Works through all five with code before and after — the shape a good interview answer takes.",
+          steps: [
+            "Read one principle at a time; for each, note the broken version and the fix.",
+            "After each principle, write your own tiny violation and fix in C++ (the article uses PHP — the idea carries over).",
+            "Close the page and say all five with one example each.",
+          ],
           isPrimary: true,
         },
       ],
@@ -152,6 +194,18 @@ Do not over-apply these. "I would not split this yet, it is only one reason to c
       objective:
         "Explain Singleton, Factory, Observer and Strategy — including when each is the wrong choice.",
       estMinutes: 75,
+      primer: `A **design pattern** is a well-known solution to a problem that keeps coming up in object-oriented code — named, so developers can say "use a Strategy here" and be understood.
+
+Four are enough for interviews:
+
+- **Singleton** — exactly one instance, reachable from anywhere (a config object).
+- **Factory** — a method that decides which class to create, so callers do not have to.
+- **Observer** — objects subscribe to another and are notified when it changes (event listeners).
+- **Strategy** — interchangeable algorithms behind one interface (different payment methods).
+
+For each, know the problem it solves, a sketch of the code, and **when not to use it** — that last part is what interviewers listen for.
+
+**You need already:** polymorphism and interfaces from the earlier units.`,
       conceptMd: `Four is enough. Knowing twenty superficially is worse than knowing four with judgement.
 
 **Singleton** — one instance, globally reachable. Used for config and connection pools. **Say the downsides**: it is global state, it makes testing hard, and it needs care to be thread-safe. Volunteering that is the whole point of the question.
@@ -199,12 +253,35 @@ The meta-answer that impresses: patterns are a **vocabulary for describing desig
       ],
       resources: [
         {
-          title: "Refactoring Guru — Catalog (Singleton, Factory, Observer, Strategy)",
-          url: "https://refactoring.guru/design-patterns/catalog",
+          title: "Refactoring Guru — Strategy",
+          url: "https://refactoring.guru/design-patterns/strategy",
           kind: "read",
-          minutes: 50,
-          whyThisOne: "Read only these four. The diagrams and the 'when not to use' sections are the valuable parts.",
+          minutes: 20,
+          whyThisOne:
+            "Each pattern page follows the same order: the problem, the solution, a diagram, code, and when not to use it.",
+          steps: [
+            "Read **Problem**, **Solution** and **Real-World Analogy**, then **Pros and Cons**.",
+            "Look at the C++ example under *Code Examples*.",
+            "Repeat for [Observer](https://refactoring.guru/design-patterns/observer), [Factory Method](https://refactoring.guru/design-patterns/factory-method) and [Singleton](https://refactoring.guru/design-patterns/singleton).",
+            "For each of the four, write one sentence on when *not* to use it.",
+          ],
           isPrimary: true,
+        },
+        {
+          title: "Refactoring Guru — Observer",
+          url: "https://refactoring.guru/design-patterns/observer",
+          kind: "read",
+          minutes: 20,
+          whyThisOne:
+            "Subscribe-and-notify, the pattern behind every event system.",
+        },
+        {
+          title: "Refactoring Guru — Singleton",
+          url: "https://refactoring.guru/design-patterns/singleton",
+          kind: "read",
+          minutes: 15,
+          whyThisOne:
+            "The simplest pattern, and the one whose downsides you are expected to volunteer.",
         },
       ],
     },

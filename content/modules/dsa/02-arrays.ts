@@ -7,7 +7,7 @@ export const arraysSorting: Module = {
   order: 2,
   title: "Sorting & array patterns",
   summary:
-    "The patterns that recur for the rest of the sheet: two pointers, prefix sums, Kadane's, partitioning. Write the sorts from scratch once — being able to code merge sort on a whiteboard is still asked.",
+    "The patterns that recur for the rest of the DSA track: two pointers, prefix sums, Kadane's, partitioning. Write the sorts from scratch once — being able to code merge sort on a whiteboard is still asked.",
   prereqSlugs: ["dsa-cpp-stl"],
   units: [
     {
@@ -16,6 +16,13 @@ export const arraysSorting: Module = {
       objective:
         "Code merge sort and quick sort from a blank file, and state each one's complexity and stability.",
       estMinutes: 90,
+      primer: `Sorting means putting items in order. \`std::sort\` does it for you, but interviews still ask you to write a sort by hand, and two of the classic ones teach ideas used everywhere else.
+
+**Merge sort** splits the array in half, sorts each half (by calling itself — recursion from the last module), then *merges* the two sorted halves by repeatedly taking the smaller front item. It is always O(n log n).
+
+**Quick sort** picks one value, the *pivot*, moves everything smaller to its left and everything bigger to its right, then sorts each side the same way. It is usually O(n log n), but a bad pivot choice makes it O(n²).
+
+**You need already:** recursion (base case plus a smaller call) and vectors.`,
       conceptMd: `You will almost never implement these in a real job. You will be asked to write one on a whiteboard, so write each once, properly, from nothing.
 
 **Merge sort** — divide in half, sort each half, merge. Always O(n log n), **stable**, needs O(n) extra space. The merge step is the part people fumble: two indices walking two sorted runs into a third buffer.
@@ -60,19 +67,38 @@ Know why \`std::sort\` is introsort: quicksort until the recursion gets too deep
       ],
       resources: [
         {
-          title: "Striver — merge sort",
+          title: "Striver — Merge sort",
           url: "https://takeuforward.org/blogs/data-structure-and-algorithm/merge-sort-algorithm",
           kind: "do",
-          minutes: 60,
-          whyThisOne: "Walks the merge step index by index, which is exactly where hand-written merge sort breaks.",
+          minutes: 40,
+          whyThisOne:
+            "Walks the merge step index by index, which is exactly where hand-written merge sort breaks.",
+          steps: [
+            "Watch the video at the top of the page, or read **Approach → Algorithm** if you prefer text.",
+            "Follow the **Dry Run** on paper with the page's example array.",
+            "Close the page and write merge sort from a blank file; run it on `[5, 2, 4, 1, 3]`.",
+            "Answer the **Interview follow-up Questions** out loud (stability, extra space).",
+          ],
           isPrimary: true,
+        },
+        {
+          title: "Striver — Quick sort",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/quick-sort-algorithm",
+          kind: "do",
+          minutes: 40,
+          whyThisOne:
+            "The same page layout for quick sort: partitioning by hand, then the worst case and how to avoid it.",
+          steps: [
+            "Same routine: **Algorithm**, **Dry Run** on paper, write it cold, then the follow-up *How can worst-case time be reduced?*",
+          ],
         },
         {
           title: "VisuAlgo — sorting visualiser",
           url: "https://visualgo.net/en/sorting",
           kind: "do",
-          minutes: 15,
-          whyThisOne: "Watch quicksort degrade on sorted input once and you will never forget the worst case.",
+          minutes: 10,
+          whyThisOne:
+            "Watch quick sort degrade on already-sorted input once and you will never forget the worst case.",
         },
       ],
     },
@@ -82,6 +108,13 @@ Know why \`std::sort\` is introsort: quicksort until the recursion gets too deep
       objective:
         "Solve largest / second-largest / move-zeros / rotate in one pass, without a second sort.",
       estMinutes: 60,
+      primer: `Many array questions look like they need sorting or two nested loops, but can be answered by walking the array **once** while remembering a few values.
+
+For example, the largest element: keep a variable \`best\`, look at each element, and update \`best\` whenever you see something bigger. One pass, O(n), no sorting. The second largest is the same idea with two variables — and it has a trap with repeated values that this unit is about.
+
+Rotating an array (shifting every element k places left) has a neat one-pass trick too: reverse parts of the array.
+
+**You need already:** loops over a vector, and Big O.`,
       conceptMd: `The habit to build: **can I answer this in one pass with a couple of variables?** Sorting to find a maximum is the beginner tell.
 
 Second largest is the canonical trap. Sorting is O(n log n); a single pass with two variables is O(n). The edge case that catches people is duplicates — \`[5,5,4]\` should give 4, so update \`second\` only when the candidate is strictly less than \`first\`.
@@ -119,12 +152,37 @@ Rotation by k has three approaches worth knowing: extra array O(n) space; one-by
       ],
       resources: [
         {
-          title: "Striver — arrays easy, from the largest element on",
-          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/find-the-largest-element-in-an-array",
+          title: "Striver — Second largest element",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/second-largest-element",
           kind: "do",
-          minutes: 50,
-          whyThisOne: "The easy tier exists to build speed. Move through it fast; do not linger.",
+          minutes: 25,
+          whyThisOne:
+            "The canonical one-pass problem, shown as brute force, better and optimal so you see why the single pass wins.",
+          steps: [
+            "Read **Problem Statement** and the three examples; try it yourself first.",
+            "Read **Brute Force**, **Better** and **Optimal** in order, following each **Dry Run**.",
+            "Write the optimal version cold and test it on `[5, 5, 4]` — it must print 4.",
+          ],
           isPrimary: true,
+        },
+        {
+          title: "Striver — Left rotate an array by k places",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/left-rotate-array-by-k-places",
+          kind: "do",
+          minutes: 25,
+          whyThisOne:
+            "The three-reversal trick, with the reason it works.",
+          steps: [
+            "Jump to **Optimal Approach**, dry-run it on paper, then answer *Why do the three reversals produce the required rotation?*",
+          ],
+        },
+        {
+          title: "Striver — Move zeros to the end",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/move-zeros-to-the-end-of-an-array",
+          kind: "do",
+          minutes: 20,
+          whyThisOne:
+            "A second one-pass drill, and the first taste of two pointers moving in the same direction.",
         },
       ],
     },
@@ -134,6 +192,13 @@ Rotation by k has three approaches worth knowing: extra array O(n) space; one-by
       objective:
         "Derive Kadane's rather than memorising it, and adapt it to return the subarray itself.",
       estMinutes: 60,
+      primer: `A **subarray** is a continuous stretch of an array: in \`[2, -3, 4, -1, 2]\`, \`[4, -1, 2]\` is one. The classic question: which subarray has the **largest sum**?
+
+Checking every subarray is O(n²). **Kadane's algorithm** does it in one pass with one idea: walk left to right keeping a running sum; if that sum ever drops below zero, it can only drag down whatever comes next, so throw it away and start again from zero. Keep track of the best sum you have seen.
+
+The same "carry one number forward and update it" shape solves the stock problem: remember the lowest price so far, and at each day check what selling today would earn.
+
+**You need already:** one-pass traversal from the last unit.`,
       conceptMd: `Kadane's is one line of insight: **a running sum that has gone negative can never help a future subarray, so drop it and start fresh.**
 
 \`\`\`cpp
@@ -176,13 +241,36 @@ The same running-state shape appears in the stock-buying problems — carry the 
       ],
       resources: [
         {
+          title: "GeeksforGeeks — Maximum subarray sum (Kadane's algorithm)",
+          url: "https://www.geeksforgeeks.org/dsa/largest-sum-contiguous-subarray/",
+          kind: "read",
+          minutes: 20,
+          whyThisOne:
+            "Starts from checking every subarray and arrives at Kadane's, with a step-by-step illustration.",
+          steps: [
+            "Read **[Naive Approach]** to see the O(n²) starting point.",
+            "Read **[Expected Approach] Using Kadane's Algorithm** and step through its illustration.",
+            "Write it yourself for `[-2, -3, 4, -1, -2, 1, 5, -3]` (answer 7), then for an all-negative array.",
+          ],
+          isPrimary: true,
+        },
+        {
+          title: "Striver — Best time to buy and sell stock",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/best-time-to-buy-and-sell-stock",
+          kind: "do",
+          minutes: 20,
+          whyThisOne:
+            "The same running-state idea on a different problem — the transfer is the lesson.",
+          steps: [
+            "Try it first, then read **Optimal Approach** and its **Dry Run**.",
+          ],
+        },
+        {
           title: "cp-algorithms — the subarray with the maximum sum",
           url: "https://cp-algorithms.com/others/maximum_average_segment.html",
           kind: "read",
-          minutes: 25,
           whyThisOne:
-            "Derives Kadane from prefix sums — the best subarray ending here is this prefix minus the smallest earlier one — so you can rebuild it rather than recite it.",
-          isPrimary: true,
+            "Optional, for later: derives Kadane's from prefix sums, so you can rebuild it instead of reciting it.",
         },
       ],
     },
@@ -192,6 +280,13 @@ The same running-state shape appears in the stock-buying problems — carry the 
       objective:
         "Partition an array around a pivot in place, and solve three-way sorting in a single pass.",
       estMinutes: 60,
+      primer: `**Partitioning** means rearranging an array into groups — say, all the small values first and all the big ones after — *in place*, without a second array.
+
+The classic version is an array of only 0s, 1s and 2s that must come out sorted. Counting them and rewriting works, but the interview answer is one pass with three markers: everything left of \`low\` is 0, everything right of \`high\` is 2, and \`mid\` walks through the unknown middle, swapping each value toward the side it belongs to. This is called the **Dutch national flag** algorithm (three colours, three bands).
+
+It is also the heart of quick sort's partition step from the first unit.
+
+**You need already:** swapping two elements, and loops with more than one index.`,
       conceptMd: `Dutch national flag sorts three categories in one pass with three pointers — \`low\`, \`mid\`, \`high\` — and one invariant:
 
 - everything before \`low\` is category 0
@@ -235,11 +330,17 @@ This is also quicksort's partition step, so the two units reinforce each other.`
       ],
       resources: [
         {
-          title: "Striver — sort an array of 0s, 1s and 2s",
+          title: "Striver — Sort an array of 0s, 1s and 2s",
           url: "https://takeuforward.org/blogs/data-structure-and-algorithm/sort-array-0s-1s-2s",
-          kind: "read",
-          minutes: 25,
-          whyThisOne: "Spells out the invariant, which is the only way this stays memorable.",
+          kind: "do",
+          minutes: 30,
+          whyThisOne:
+            "Goes from counting to the three-pointer version and spells out the rule that keeps it correct.",
+          steps: [
+            "Read **Brute Force** (sorting) and **Optimal Approach 1** (counting) quickly.",
+            "Read **Optimal Approach 2** — the Dutch national flag — and do its **Dry Run** on paper.",
+            "Answer *Why does the current position not move after swapping with the right boundary?* before reading the answer.",
+          ],
           isPrimary: true,
         },
       ],
@@ -250,6 +351,13 @@ This is also quicksort's partition step, so the two units reinforce each other.`
       objective:
         "Recognise when sorted input lets two converging pointers replace a nested loop.",
       estMinutes: 75,
+      primer: `**Two pointers** means walking an array with two indices at once instead of one index inside another loop.
+
+Example: in a *sorted* array, find two numbers that add up to a target. Put one pointer at the start and one at the end. If their sum is too small, move the left one right (to a bigger number); if too big, move the right one left. Each step rules out a whole row of pairs, so it takes O(n) instead of O(n²).
+
+There are two common shapes: pointers starting at **opposite ends** and moving toward each other (pair sums, palindromes), and pointers moving **in the same direction** at different speeds (removing duplicates in place).
+
+**You need already:** sorted arrays, one-pass traversal.`,
       conceptMd: `The trigger: **the array is sorted (or you can sort it), and you are looking for a pair or a window satisfying a condition.**
 
 Converging pointers work because sortedness makes the move decision unambiguous — if the current pair's sum is too small, only moving \`left\` right can increase it. That turns O(n²) into O(n).
@@ -301,19 +409,38 @@ Two shapes to keep separate:
       ],
       resources: [
         {
-          title: "Striver — two sum, then the sheet's 3Sum and 4Sum",
-          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/two-sum",
-          kind: "do",
-          minutes: 60,
-          whyThisOne: "Covers the family in sequence so the shared shape becomes obvious.",
+          title: "Striver — Two pointer: introduction",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/two-pointer-introduction",
+          kind: "read",
+          minutes: 30,
+          whyThisOne:
+            "Explains why the technique works before any hard problem, then shows each pointer pattern on a small example.",
+          steps: [
+            "Read **What Problem Does the Two Pointer Technique Solve?** and **The Core Requirement: Safe Elimination**.",
+            "Read **Main Two Pointer Patterns** — opposite-direction and same-direction.",
+            "Work **Checking Pair Sum in a Sorted Array** and **Reversing an Array** by hand.",
+            "Read **Common Mistakes**.",
+          ],
           isPrimary: true,
         },
         {
-          title: "NeetCode — Two pointers",
-          url: "https://neetcode.io/courses/advanced-algorithms/3",
-          kind: "watch",
+          title: "Striver — Two sum II (sorted input)",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/two-sum-ii-input-array-is-sorted",
+          kind: "do",
           minutes: 20,
-          whyThisOne: "Your second explanation when the duplicate-skipping in 3Sum stops making sense.",
+          whyThisOne:
+            "The first problem to solve with converging pointers on your own.",
+        },
+        {
+          title: "Striver — 3Sum",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/3sum",
+          kind: "do",
+          minutes: 40,
+          whyThisOne:
+            "Two pointers inside a loop, plus skipping duplicates — the part that trips everyone.",
+          steps: [
+            "Try it, then read each approach; spend your time on how duplicate triplets are skipped.",
+          ],
         },
       ],
     },
@@ -323,6 +450,13 @@ Two shapes to keep separate:
       objective:
         "Answer range-sum queries in O(1) after O(n) preprocessing, and count subarrays with a target sum.",
       estMinutes: 75,
+      primer: `Suppose you are asked many times: *what is the sum of the array from index l to r?* Adding the values each time is slow. Instead, build one helper array once: \`prefix[i]\` = the sum of the first i elements. Then any range sum is one subtraction: \`prefix[r+1] - prefix[l]\`.
+
+That is a **prefix sum**: O(n) work once, then each question answered in O(1).
+
+The harder use in this unit: *count the subarrays that add up to k.* Walk the array keeping a running total, and use a map to remember how many times each running total has appeared. If the total now is \`sum\`, every earlier point where the total was \`sum - k\` starts a subarray summing to k.
+
+**You need already:** maps from the containers unit, and one-pass traversal.`,
       conceptMd: `\`prefix[i]\` is the sum of everything before index i. Then any range sum is \`prefix[r+1] - prefix[l]\` in O(1). Build it once, answer many queries — that trade is the whole idea.
 
 The version that actually shows up: **count subarrays summing to k**. Walk once keeping a running sum, and a map of *how many times each running sum has been seen*. At each step, the number of subarrays ending here with sum k is the count of \`running - k\` already in the map.
@@ -372,13 +506,30 @@ The same trick with a map of remainders solves "subarrays divisible by k", and w
       ],
       resources: [
         {
-          title: "Striver — subarray sum equals k",
-          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/subarray-sum-equals-k",
+          title: "Striver — Prefix sum: introduction (range sum query)",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/prefix-sum-introduction-range-sum-query",
           kind: "read",
-          minutes: 30,
+          minutes: 25,
           whyThisOne:
-            "Builds the prefix-sum-plus-hashmap count from the brute force, including why the map has to start with {0: 1}.",
+            "Builds the prefix array from scratch and explains why the range formula works, including the edge cases.",
+          steps: [
+            "Read **Why Is Prefix Sum Needed?** and **Constructing the Prefix Sum Array**.",
+            "Read **Answering a Range Sum Query** and **Why Does the Range Sum Formula Work?**; check the formula on the example by hand.",
+            "Read **Query Beginning at Index 0** — the case that causes off-by-one bugs.",
+            "Skip **Two-Dimensional Prefix Sum** for now.",
+          ],
           isPrimary: true,
+        },
+        {
+          title: "Striver — Subarray sum equals k",
+          url: "https://takeuforward.org/blogs/data-structure-and-algorithm/subarray-sum-equals-k",
+          kind: "do",
+          minutes: 35,
+          whyThisOne:
+            "Prefix sums plus a hash map, built up from the brute force — including why the map has to start with {0: 1}.",
+          steps: [
+            "Read **Brute Force** and **Better**, then spend most of the time on **Optimal Approach** and its **Dry Run**.",
+          ],
         },
       ],
     },

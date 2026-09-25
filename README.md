@@ -116,7 +116,7 @@ enforces the allowlist.
 |---|---|
 | `npm run dev` | dev server |
 | `npm run seed` | validate and load `content/` in one transaction; `-- --dry-run` to preview. Also corrects the back of recall cards already in someone's deck |
-| `npm run links` | check every resource, problem and aptitude link (LeetCode via its API); exits non-zero on a dead one |
+| `npm run links` | check every resource, problem and aptitude link (LeetCode via its API); exits non-zero on a dead one, or one that now redirects somewhere else |
 | `npm run db:push` | create the schema in an empty database — never against a live one |
 | `npm run migrate` | apply the additive schema changes in `scripts/migrate.ts` (idempotent) |
 | `npm run typecheck` | `tsc --noEmit` |
@@ -168,8 +168,15 @@ docs/roadmap/  personal source material (git-ignored, local only)
 
 ## Status
 
-Phase 1 is authored in full — 17 modules, 75 units, 108 curated resources, 98 problems,
-262 recall cards, 244 pitfalls, 85 checkpoint questions — and the whole loop works:
+Phases 1 and 2 are authored in full — 35 modules, 147 units, 372 resources, 171 problems,
+483 recall cards, 533 pitfalls, 187 checkpoint questions — and the whole loop works:
+
+- **The unit.** Each unit page is a path in order: *start here* (the idea in plain
+  words, for someone meeting it for the first time), *learn it* (one page that
+  teaches it, with the steps to take on that page), *the notes* (the exact rules
+  and traps, for the interview), *check yourself*, *practice*, *finish*. Every
+  resource links the page for that topic — never a course index or a whole sheet —
+  and `validateContent` refuses one that does not.
 
 - **The day.** `lib/planner.ts` generates 4–6 sized blocks against your budget.
   Catch-up at 1.5×/2× pulls the next unit in each track forward; the bad-day
