@@ -18,6 +18,8 @@ import { restFastapi } from "./modules/sde/03-rest-fastapi";
 import { os } from "./modules/corecs/01-os";
 import { dbms } from "./modules/corecs/02-dbms";
 import { cn } from "./modules/corecs/03-cn";
+import { storyBank } from "./modules/career/01-story-bank";
+import { offCampus } from "./modules/career/02-offcampus";
 import { projects } from "./projects";
 import { questions, questionsForModule } from "./checkpoints";
 
@@ -26,6 +28,7 @@ import { questions, questionsForModule } from "./checkpoints";
  * Postgres by scripts/seed.ts — the database is a cache, this is the source.
  */
 export const modules: Module[] = [
+  /* ---------------- phase 1 · foundations ---------------- */
   // dsa
   cppStl, arraysSorting, binarySearch, strings, recursionBacktracking, bitManipulation, linkedLists,
   // devops / sre
@@ -34,6 +37,10 @@ export const modules: Module[] = [
   cppInternals, oop, restFastapi,
   // core cs
   os, dbms, cn,
+
+  /* ---------------- phase 2 · depth ---------------- */
+  // career
+  storyBank, offCampus,
 ];
 
 export { phases, tracks, projects, questions };

@@ -12,6 +12,7 @@ import {
   APPLICATIONS_FROM_WEEK,
   APPLICATIONS_PER_WEEK,
   CADENCE,
+  perWeekFor,
   DSA_CURVE,
   dsaTargetAt,
   STAR_PROMPTS,
@@ -41,7 +42,8 @@ export default async function MetricsPage() {
 
   const due = CADENCE.filter((q) => journey.journeyWeek >= q.fromWeek).map((q) => {
     const done = m.mocksThisWeek.find((x) => x.kind === q.kind)?.n ?? 0;
-    return { ...q, done, short: Math.max(0, Math.ceil(q.perWeek) - done) };
+    const target = Math.ceil(perWeekFor(q, journey.journeyWeek));
+    return { ...q, done, target, short: Math.max(0, target - done) };
   });
 
   const appsOpen = m.appsByStatus.filter(
@@ -144,7 +146,7 @@ export default async function MetricsPage() {
                   <span className="block note text-lo">{q.why}</span>
                 </span>
                 <span className="legend shrink-0 tabular-nums">
-                  {q.done}/{Math.ceil(q.perWeek)}
+                  {q.done}/{q.target}
                 </span>
               </li>
             ))}

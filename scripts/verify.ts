@@ -273,6 +273,10 @@ async function checks(u: typeof users.$inferSelect) {
     `${wk1.length} at week 1, ${wk9.length} at week 9`);
   ok("logging clears a quota",
     cadenceDueFor(1, [{ kind: "tech_mcq", n: 1 }]).every((q) => q.kind !== "tech_mcq"), "");
+  // month 2's second half doubles the mocks: one a week is not enough to stop freezing
+  const mocksAt = (w: number, n: number) => cadenceDueFor(w, [{ kind: "full_mock", n }]).find((q) => q.kind === "full_mock")?.short ?? 0;
+  ok("mocks ramp at week 7", mocksAt(6, 1) === 0 && mocksAt(7, 1) === 1 && mocksAt(7, 2) === 0,
+    `week 6 short ${mocksAt(6, 0)}, week 7 short ${mocksAt(7, 0)}`);
 
   // the DSA curve is measured in active days, so it never runs away from you
   const curveOk = DSA_CURVE.every((c) => dsaTargetAt(c.atDay) === c.target);

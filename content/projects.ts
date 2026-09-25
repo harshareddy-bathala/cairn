@@ -118,6 +118,13 @@ export const projects: Project[] = [
           "Written steps for the three most likely failures, and one of them practised end to end.",
         estMinutes: 120,
       },
+      {
+        slug: "atlas-postmortem",
+        title: "A blameless postmortem, published",
+        definitionOfDone:
+          "One real incident written up blameless: a timeline, the impact in minutes of error budget, contributing causes rather than a culprit, and three action items with owners — one of them already shipped. Linked from the repo README.",
+        estMinutes: 120,
+      },
     ],
   },
   {

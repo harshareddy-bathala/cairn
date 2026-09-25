@@ -3,6 +3,7 @@ import { dsaQuestions } from "./dsa";
 import { devopsQuestions } from "./devops";
 import { sdeQuestions } from "./sde";
 import { corecsQuestions } from "./corecs";
+import { careerQuestions } from "./career";
 
 export type { Question };
 
@@ -19,6 +20,7 @@ export const questions: Question[] = [
   ...devopsQuestions,
   ...sdeQuestions,
   ...corecsQuestions,
+  ...careerQuestions,
 ];
 
 export function questionsForModule(moduleSlug: string) {

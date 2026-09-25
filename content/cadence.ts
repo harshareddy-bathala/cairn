@@ -22,6 +22,8 @@ export type Quota = {
   why: string;
   /** the journey week this obligation starts applying */
   fromWeek: number;
+  /** a later, heavier target: from this journey week, this many per week */
+  rampTo?: { fromWeek: number; perWeek: number };
 };
 
 export const CADENCE: Quota[] = [
@@ -64,6 +66,9 @@ export const CADENCE: Quota[] = [
     minutes: 45,
     why: "A senior, a teacher, a friend, or solo out-loud and recorded. Most people start these too late and find out mid-season that they freeze.",
     fromWeek: 6,
+    // month 2's second half: two a week, because one a week is not enough reps
+    // to stop freezing before the season starts
+    rampTo: { fromWeek: 7, perWeek: 2 },
   },
   {
     kind: "system_design",
@@ -74,6 +79,13 @@ export const CADENCE: Quota[] = [
     fromWeek: 9,
   },
 ];
+
+/** the quota's target in a given journey week — 0 before it starts, and ramped where it ramps */
+export function perWeekFor(q: Quota, journeyWeek: number) {
+  if (journeyWeek < q.fromWeek) return 0;
+  if (q.rampTo && journeyWeek >= q.rampTo.fromWeek) return q.rampTo.perWeek;
+  return q.perWeek;
+}
 
 /** applications per journey week once the off-campus lane opens */
 export const APPLICATIONS_PER_WEEK = 5;

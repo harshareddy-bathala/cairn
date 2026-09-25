@@ -3,7 +3,7 @@ import { db } from "@/db";
 import { openTodayCte, retryUnopened } from "@/lib/open-today";
 import type { DayMode, Difficulty, Outcome } from "@/db/schema";
 import { aptitudeTopicFor } from "@/content/aptitude";
-import { CADENCE } from "@/content/cadence";
+import { CADENCE, perWeekFor } from "@/content/cadence";
 
 /* ------------------------------------------------------------------ *
  * the shape of a day
@@ -849,7 +849,7 @@ export function cadenceDueFor(journeyWeek: number, logged: { kind: string; n: nu
   return CADENCE.filter((q) => journeyWeek >= q.fromWeek)
     .map((q) => {
       const done = logged.find((x) => x.kind === q.kind)?.n ?? 0;
-      return { kind: q.kind, label: q.label, minutes: q.minutes, short: Math.ceil(q.perWeek) - done };
+      return { kind: q.kind, label: q.label, minutes: q.minutes, short: Math.ceil(perWeekFor(q, journeyWeek)) - done };
     })
     .filter((q) => q.short > 0);
 }
