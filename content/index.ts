@@ -17,6 +17,11 @@ import { linuxFoundations } from "./modules/devops/01-linux";
 import { git } from "./modules/devops/02-git";
 import { networking } from "./modules/devops/03-networking";
 import { docker } from "./modules/devops/04-docker";
+import { awsCore } from "./modules/devops/05-aws-core";
+import { cicd } from "./modules/devops/06-cicd";
+import { iac } from "./modules/devops/07-iac";
+import { observability } from "./modules/devops/08-observability";
+import { sre } from "./modules/devops/09-sre";
 import { cppInternals } from "./modules/sde/01-cpp-internals";
 import { oop } from "./modules/sde/02-oop";
 import { restFastapi } from "./modules/sde/03-rest-fastapi";
@@ -46,6 +51,8 @@ export const modules: Module[] = [
   /* ---------------- phase 2 · depth ---------------- */
   // dsa
   stacksQueues, binaryTrees, bst, heapsTries, greedy,
+  // devops / sre
+  awsCore, cicd, iac, observability, sre,
   // career
   storyBank, offCampus,
 ];
